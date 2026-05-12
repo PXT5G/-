@@ -11,11 +11,9 @@ transactions. Payment form filling is limited to known sandbox card numbers.
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
-import threading
 from typing import Callable, Iterable
 
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
@@ -24,9 +22,11 @@ from api_handler import (
     CapSolverClient,
     FiveSimClient,
     IntegrationError,
+    TelegramBotClient,
     UnsupportedIntegrationOperation,
 )
 from browser_engine import BrowserEngine, BrowserEngineError
+from output_manager import OutputManager, ResultRecord
 from proxy_manager import ProxyManager
 
 
@@ -34,9 +34,7 @@ LogCallback = Callable[[str], None]
 
 ACCOUNT_FILE = Path("accounts.txt")
 CARD_FILE = Path("cards.txt")
-SUCCESS_REPORT_FILE = Path("success_test_runs.txt")
 MAX_CONCURRENT_THREADS = 5
-_SUCCESS_REPORT_LOCK = threading.Lock()
 
 SANDBOX_CARD_NUMBERS = {
     "4111111111111111",
@@ -89,6 +87,8 @@ class ScenarioConfig:
     target_url: str
     five_sim_api_key: str = ""
     capsolver_api_key: str = ""
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
     accounts_path: Path = ACCOUNT_FILE
     cards_path: Path = CARD_FILE
     account: AccountData | None = None
@@ -104,11 +104,17 @@ class AutomatedTestScenario:
         config: ScenarioConfig,
         log_callback: LogCallback | None = None,
         thread_label: str = "Thread-1",
+        output_manager: OutputManager | None = None,
     ) -> None:
         self.browser_engine = browser_engine
         self.config = config
         self.log_callback = log_callback or (lambda message: None)
         self.thread_label = thread_label
+        self.output_manager = output_manager or OutputManager()
+        self.telegram_client = TelegramBotClient(
+            config.telegram_bot_token,
+            config.telegram_chat_id,
+        )
 
     def run(self) -> None:
         """Execute the full test scenario with step-by-step logging."""
@@ -136,7 +142,9 @@ class AutomatedTestScenario:
         self._simulate_provider_checks(page)
         cleanup_completed = self._simulate_payment_lifecycle(page, card)
         if cleanup_completed:
-            self._write_success_report(account, card)
+            self._record_success(account, card)
+        else:
+            self._record_failure(account, "E2E flow completed without cleanup success.")
 
         self._log("E2E scenario completed.")
 
@@ -369,16 +377,49 @@ class AutomatedTestScenario:
             self._log("Cleanup control not found; no payment method was removed.")
             return False
 
-    def _write_success_report(self, account: AccountData, card: CardData) -> None:
-        """Write a non-sensitive success report for completed sandbox runs."""
-        timestamp = datetime.now().isoformat(timespec="seconds")
-        line = (
-            f"{timestamp} | target={self.config.target_url} | "
-            f"account={self._mask_username(account.username)} | card={card.masked_number}\n"
+    def _record_success(self, account: AccountData, card: CardData) -> None:
+        """Record a sanitized success and send an optional Telegram notification."""
+        masked_account = self._mask_username(account.username)
+        self.output_manager.record_success(
+            ResultRecord(
+                thread_label=self.thread_label,
+                account=masked_account,
+                target_url=self.config.target_url,
+                status="success",
+                card=card.masked_number,
+                message="Sandbox E2E flow completed with cleanup.",
+            )
         )
-        with _SUCCESS_REPORT_LOCK:
-            SUCCESS_REPORT_FILE.open("a", encoding="utf-8").write(line)
-        self._log("Sandbox success report saved to success_test_runs.txt.")
+        self._log("Success result saved to results/success_log.csv.")
+        self._send_success_notification(masked_account)
+
+    def _record_failure(self, account: AccountData, reason: str) -> None:
+        """Record a sanitized scenario-level failure."""
+        self.output_manager.record_failure(
+            ResultRecord(
+                thread_label=self.thread_label,
+                account=self._mask_username(account.username),
+                target_url=self.config.target_url,
+                status="failed",
+                message=reason,
+            )
+        )
+        self._log("Failure result saved to results/failed_log.csv.")
+
+    def _send_success_notification(self, masked_account: str) -> None:
+        """Send a Telegram success notification when configured."""
+        if not self.telegram_client.is_configured:
+            self._log("Telegram notification skipped; settings are incomplete.")
+            return
+
+        message = f"Success: {masked_account} - Sandbox E2E flow completed."
+        try:
+            self.telegram_client.send_message(message)
+        except IntegrationError as exc:
+            self._log(f"Telegram notification failed: {exc}")
+            return
+
+        self._log("Telegram success notification sent.")
 
     def _fill_first_available(
         self,
@@ -465,10 +506,12 @@ class ConcurrentTaskRunner:
         proxy_manager: ProxyManager,
         base_config: ScenarioConfig,
         log_callback: LogCallback | None = None,
+        output_manager: OutputManager | None = None,
     ) -> None:
         self.proxy_manager = proxy_manager
         self.base_config = base_config
         self.log_callback = log_callback or (lambda message: None)
+        self.output_manager = output_manager or OutputManager()
 
     def run(self, thread_count: int) -> None:
         """Execute up to five browser sessions in parallel."""
@@ -514,6 +557,8 @@ class ConcurrentTaskRunner:
             target_url=self.base_config.target_url,
             five_sim_api_key=self.base_config.five_sim_api_key,
             capsolver_api_key=self.base_config.capsolver_api_key,
+            telegram_bot_token=self.base_config.telegram_bot_token,
+            telegram_chat_id=self.base_config.telegram_chat_id,
             accounts_path=self.base_config.accounts_path,
             cards_path=self.base_config.cards_path,
             account=account,
@@ -526,9 +571,11 @@ class ConcurrentTaskRunner:
                 config=config,
                 log_callback=self.log_callback,
                 thread_label=thread_label,
+                output_manager=self.output_manager,
             )
             scenario.run()
         except Exception as exc:
+            self._record_failure(thread_label, account, str(exc))
             self._log(thread_label, f"Scenario failed: {exc}")
             raise
         finally:
@@ -569,6 +616,23 @@ class ConcurrentTaskRunner:
     def _log(self, label: str, message: str) -> None:
         """Send runner-level events with a clear label."""
         self.log_callback(f"[{label}] {message}")
+
+    def _record_failure(
+        self,
+        thread_label: str,
+        account: AccountData,
+        reason: str,
+    ) -> None:
+        """Record one sanitized failure row."""
+        self.output_manager.record_failure(
+            ResultRecord(
+                thread_label=thread_label,
+                account=AutomatedTestScenario._mask_username(account.username),
+                target_url=self.base_config.target_url,
+                status="failed",
+                message=reason,
+            )
+        )
 
 
 def load_accounts(path: Path = ACCOUNT_FILE) -> list[AccountData]:

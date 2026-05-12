@@ -500,6 +500,8 @@ class AutomationDashboard(ctk.CTk):
                     target_url=self.current_test_url,
                     five_sim_api_key=self.service_config.get("five_sim_api_key", ""),
                     capsolver_api_key=self.service_config.get("capsolver_api_key", ""),
+                    telegram_bot_token=self.service_config.get("telegram_bot_token", ""),
+                    telegram_chat_id=self.service_config.get("telegram_chat_id", ""),
                 ),
                 log_callback=self._append_log_from_worker,
             )
@@ -569,9 +571,21 @@ class AutomationDashboard(ctk.CTk):
             label="CapSolver API Key",
             value=self.service_config.get("capsolver_api_key", ""),
         )
+        self.telegram_bot_token_entry = self._create_settings_entry(
+            settings_card,
+            row=3,
+            label="Telegram Bot Token",
+            value=self.service_config.get("telegram_bot_token", ""),
+        )
+        self.telegram_chat_id_entry = self._create_settings_entry(
+            settings_card,
+            row=4,
+            label="Telegram Chat ID",
+            value=self.service_config.get("telegram_chat_id", ""),
+        )
 
         actions_frame = ctk.CTkFrame(settings_card, fg_color="transparent")
-        actions_frame.grid(row=3, column=0, padx=22, pady=(8, 22), sticky="ew")
+        actions_frame.grid(row=5, column=0, padx=22, pady=(8, 22), sticky="ew")
         actions_frame.grid_columnconfigure(3, weight=1)
 
         save_button = ctk.CTkButton(
@@ -656,9 +670,16 @@ class AutomationDashboard(ctk.CTk):
         """Save provider API keys to local config."""
         five_sim_key = self.five_sim_key_entry.get().strip()
         capsolver_key = self.capsolver_key_entry.get().strip()
+        telegram_bot_token = self.telegram_bot_token_entry.get().strip()
+        telegram_chat_id = self.telegram_chat_id_entry.get().strip()
 
         try:
-            self.config_manager.save(five_sim_key, capsolver_key)
+            self.config_manager.save(
+                five_sim_key,
+                capsolver_key,
+                telegram_bot_token,
+                telegram_chat_id,
+            )
         except OSError as exc:
             message = f"Failed to save API settings: {exc}"
             self.settings_status_label.configure(text="فشل حفظ المفاتيح.")
@@ -668,6 +689,8 @@ class AutomationDashboard(ctk.CTk):
         self.service_config = {
             "five_sim_api_key": five_sim_key,
             "capsolver_api_key": capsolver_key,
+            "telegram_bot_token": telegram_bot_token,
+            "telegram_chat_id": telegram_chat_id,
         }
         self.settings_status_label.configure(text="تم حفظ مفاتيح API بنجاح.")
         self._append_log("Service API keys saved to config.json.")

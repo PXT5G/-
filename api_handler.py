@@ -47,15 +47,25 @@ class ConfigManager:
             {
                 "five_sim_api_key": str(data.get("five_sim_api_key", "")),
                 "capsolver_api_key": str(data.get("capsolver_api_key", "")),
+                "telegram_bot_token": str(data.get("telegram_bot_token", "")),
+                "telegram_chat_id": str(data.get("telegram_chat_id", "")),
             }
         )
         return config
 
-    def save(self, five_sim_api_key: str, capsolver_api_key: str) -> None:
+    def save(
+        self,
+        five_sim_api_key: str,
+        capsolver_api_key: str,
+        telegram_bot_token: str = "",
+        telegram_chat_id: str = "",
+    ) -> None:
         """Persist API keys with owner-only file permissions where supported."""
         payload = {
             "five_sim_api_key": five_sim_api_key.strip(),
             "capsolver_api_key": capsolver_api_key.strip(),
+            "telegram_bot_token": telegram_bot_token.strip(),
+            "telegram_chat_id": telegram_chat_id.strip(),
         }
         temp_path = self.config_path.with_suffix(".json.tmp")
         temp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -69,6 +79,8 @@ class ConfigManager:
         return {
             "five_sim_api_key": "",
             "capsolver_api_key": "",
+            "telegram_bot_token": "",
+            "telegram_chat_id": "",
         }
 
 
@@ -170,6 +182,43 @@ class CapSolverClient:
             "Live CAPTCHA solving is disabled. "
             f"Use a provider test fixture for {website_url!r} / {website_key!r}."
         )
+
+
+class TelegramBotClient:
+    """Small Telegram Bot API client for remote monitoring messages."""
+
+    BASE_URL = "https://api.telegram.org"
+
+    def __init__(self, bot_token: str, chat_id: str, timeout_seconds: int = 20) -> None:
+        self.bot_token = bot_token.strip()
+        self.chat_id = chat_id.strip()
+        self.timeout_seconds = timeout_seconds
+
+    @property
+    def is_configured(self) -> bool:
+        """Return True when both Telegram settings are present."""
+        return bool(self.bot_token and self.chat_id)
+
+    def send_message(self, text: str) -> dict[str, Any]:
+        """Send a plain-text Telegram notification."""
+        if not self.is_configured:
+            raise IntegrationError("Telegram bot token or chat ID is missing.")
+
+        payload = {
+            "chat_id": self.chat_id,
+            "text": text,
+            "disable_web_page_preview": True,
+        }
+        request = Request(
+            f"{self.BASE_URL}/bot{self.bot_token}/sendMessage",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload).encode("utf-8"),
+        )
+        response = _send_json_request(request, self.timeout_seconds)
+        if not response.get("ok"):
+            raise IntegrationError(response.get("description", "Telegram API error."))
+        return response
 
 
 def _send_json_request(request: Request, timeout_seconds: int) -> dict[str, Any]:
