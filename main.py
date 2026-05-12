@@ -4,14 +4,19 @@ Run with:
     python main.py
 
 Requires:
-    pip install customtkinter
+    pip install -r requirements.txt
+    python -m playwright install chromium
 """
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
+import threading
 
 import customtkinter as ctk
+
+from browser_engine import BrowserEngine, BrowserEngineError
 
 
 class AutomationDashboard(ctk.CTk):
@@ -25,6 +30,12 @@ class AutomationDashboard(ctk.CTk):
         self.title("Automation Control Center")
         self.geometry("1100x700")
         self.minsize(900, 600)
+        self.browser_engine = BrowserEngine()
+        self.log_entries = [
+            "[10:05:00] Automation Control Center initialized.",
+            "[10:05:01] Waiting for task activity...",
+        ]
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self._configure_theme()
         self._configure_grid()
@@ -143,10 +154,7 @@ class AutomationDashboard(ctk.CTk):
         elif selected_item == "Credentials":
             self.show_credentials_view()
         elif selected_item == "Task Manager":
-            self.show_placeholder_view(
-                "Task Manager",
-                "Create, schedule, and monitor automation tasks from this panel.",
-            )
+            self.show_task_manager_view()
         elif selected_item == "Live Logs":
             self.show_logs_view()
 
@@ -350,6 +358,112 @@ class AutomationDashboard(ctk.CTk):
 
         self.credentials_status_label.configure(text="تم حفظ البيانات بنجاح!")
 
+    def show_task_manager_view(self) -> None:
+        """Render task controls for starting the browser automation engine."""
+        self._set_active_navigation("Task Manager")
+        self._clear_content()
+
+        task_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        task_frame.grid(row=0, column=0, sticky="nsew", padx=28, pady=28)
+        task_frame.grid_columnconfigure(0, weight=1)
+        task_frame.grid_rowconfigure(1, weight=1)
+
+        heading = ctk.CTkLabel(
+            task_frame,
+            text="Task Manager",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        heading.grid(row=0, column=0, sticky="w", pady=(0, 18))
+
+        control_card = ctk.CTkFrame(
+            task_frame,
+            corner_radius=16,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        control_card.grid(row=1, column=0, sticky="nsew")
+        control_card.grid_columnconfigure(0, weight=1)
+
+        title_label = ctk.CTkLabel(
+            control_card,
+            text="Browser Engine",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        title_label.grid(row=0, column=0, padx=24, pady=(24, 8), sticky="w")
+
+        description_label = ctk.CTkLabel(
+            control_card,
+            text="Start a visible Chromium session for local automation testing.",
+            font=ctk.CTkFont(size=14),
+            text_color=self.colors["muted_text"],
+        )
+        description_label.grid(row=1, column=0, padx=24, pady=(0, 22), sticky="w")
+
+        self.start_button = ctk.CTkButton(
+            control_card,
+            text="Start",
+            height=44,
+            width=150,
+            corner_radius=10,
+            fg_color=self.colors["accent"],
+            hover_color=self.colors["accent_hover"],
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._start_browser_engine,
+        )
+        self.start_button.grid(row=2, column=0, padx=24, pady=(0, 24), sticky="w")
+
+    def _start_browser_engine(self) -> None:
+        """Start the browser engine without blocking the UI event loop."""
+        self.start_button.configure(state="disabled", text="Starting...")
+        self._append_log("Initializing Secure Browser Engine...")
+
+        thread = threading.Thread(target=self._launch_browser_engine, daemon=True)
+        thread.start()
+
+    def _launch_browser_engine(self) -> None:
+        """Launch Playwright in a background thread and report UI status."""
+        try:
+            self.browser_engine.start(headless=False)
+        except BrowserEngineError as exc:
+            self.after(0, self._handle_browser_start_failure, str(exc))
+            return
+
+        self.after(0, self._handle_browser_start_success)
+
+    def _handle_browser_start_success(self) -> None:
+        """Update the UI after a successful browser launch."""
+        self._append_log("Browser Session Started Successfully.")
+        if hasattr(self, "start_button"):
+            self.start_button.configure(state="normal", text="Start")
+
+    def _handle_browser_start_failure(self, error_message: str) -> None:
+        """Update the UI after a failed browser launch."""
+        self._append_log(f"Browser Session Failed: {error_message}")
+        if hasattr(self, "start_button"):
+            self.start_button.configure(state="normal", text="Start")
+
+    def _append_log(self, message: str) -> None:
+        """Append a message to the in-memory log and visible log textbox."""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        entry = f"[{timestamp}] {message}"
+        self.log_entries.append(entry)
+
+        if hasattr(self, "log_textbox") and self.log_textbox.winfo_exists():
+            self.log_textbox.configure(state="normal")
+            self.log_textbox.insert("end", f"{entry}\n")
+            self.log_textbox.see("end")
+            self.log_textbox.configure(state="disabled")
+
+    def _on_close(self) -> None:
+        """Close browser resources before shutting down the application."""
+        try:
+            self.browser_engine.stop()
+        finally:
+            self.destroy()
+
     def show_logs_view(self) -> None:
         """Render a scrollable log area for real-time activity output."""
         self._set_active_navigation("Live Logs")
@@ -379,11 +493,7 @@ class AutomationDashboard(ctk.CTk):
             wrap="word",
         )
         self.log_textbox.grid(row=1, column=0, sticky="nsew")
-        self.log_textbox.insert(
-            "1.0",
-            "[10:05:00] Automation Control Center initialized.\n"
-            "[10:05:01] Waiting for task activity...\n",
-        )
+        self.log_textbox.insert("1.0", "\n".join(self.log_entries) + "\n")
         self.log_textbox.configure(state="disabled")
 
     def show_placeholder_view(self, title: str, message: str) -> None:
