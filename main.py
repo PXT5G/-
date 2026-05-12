@@ -9,6 +9,8 @@ Requires:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import customtkinter as ctk
 
 
@@ -139,10 +141,7 @@ class AutomationDashboard(ctk.CTk):
         if selected_item == "Home":
             self.show_home_view()
         elif selected_item == "Credentials":
-            self.show_placeholder_view(
-                "Credentials",
-                "Secure credential management will be configured here.",
-            )
+            self.show_credentials_view()
         elif selected_item == "Task Manager":
             self.show_placeholder_view(
                 "Task Manager",
@@ -237,6 +236,119 @@ class AutomationDashboard(ctk.CTk):
         description_label.grid(row=2, column=0, padx=22, pady=(6, 22), sticky="w")
 
         return card
+
+    def show_credentials_view(self) -> None:
+        """Render text inputs for cards and account credentials."""
+        self._set_active_navigation("Credentials")
+        self._clear_content()
+
+        credentials_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        credentials_frame.grid(row=0, column=0, sticky="nsew", padx=28, pady=28)
+        credentials_frame.grid_columnconfigure((0, 1), weight=1, uniform="inputs")
+        credentials_frame.grid_rowconfigure(1, weight=1)
+
+        heading = ctk.CTkLabel(
+            credentials_frame,
+            text="Credentials",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        heading.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 18))
+
+        card_input_frame, self.card_list_textbox = self._create_credentials_input(
+            credentials_frame,
+            title="Card List",
+            hint="Format: Number|Month|Year|CVV",
+        )
+        card_input_frame.grid(row=1, column=0, padx=(0, 10), sticky="nsew")
+
+        account_input_frame, self.account_list_textbox = self._create_credentials_input(
+            credentials_frame,
+            title="Account List",
+            hint="Paste accounts or credentials here",
+        )
+        account_input_frame.grid(row=1, column=1, padx=(10, 0), sticky="nsew")
+
+        actions_frame = ctk.CTkFrame(credentials_frame, fg_color="transparent")
+        actions_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(18, 0))
+        actions_frame.grid_columnconfigure(1, weight=1)
+
+        save_button = ctk.CTkButton(
+            actions_frame,
+            text="Save Credentials",
+            height=42,
+            corner_radius=10,
+            fg_color=self.colors["accent"],
+            hover_color=self.colors["accent_hover"],
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._save_credentials,
+        )
+        save_button.grid(row=0, column=0, sticky="w")
+
+        self.credentials_status_label = ctk.CTkLabel(
+            actions_frame,
+            text="",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#60A5FA",
+        )
+        self.credentials_status_label.grid(row=0, column=1, padx=(16, 0), sticky="w")
+
+    def _create_credentials_input(
+        self,
+        parent: ctk.CTkFrame,
+        title: str,
+        hint: str,
+    ) -> tuple[ctk.CTkFrame, ctk.CTkTextbox]:
+        """Create a labeled, large text input area for credential data."""
+        input_frame = ctk.CTkFrame(
+            parent,
+            corner_radius=16,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        input_frame.grid_columnconfigure(0, weight=1)
+        input_frame.grid_rowconfigure(2, weight=1)
+
+        title_label = ctk.CTkLabel(
+            input_frame,
+            text=title,
+            font=ctk.CTkFont(size=15, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        title_label.grid(row=0, column=0, padx=18, pady=(18, 4), sticky="w")
+
+        hint_label = ctk.CTkLabel(
+            input_frame,
+            text=hint,
+            font=ctk.CTkFont(size=12),
+            text_color=self.colors["muted_text"],
+        )
+        hint_label.grid(row=1, column=0, padx=18, pady=(0, 10), sticky="w")
+
+        textbox = ctk.CTkTextbox(
+            input_frame,
+            corner_radius=12,
+            fg_color="#0B1220",
+            border_width=1,
+            border_color=self.colors["border"],
+            text_color=self.colors["text"],
+            font=ctk.CTkFont(family="Consolas", size=13),
+            wrap="none",
+        )
+        textbox.grid(row=2, column=0, padx=18, pady=(0, 18), sticky="nsew")
+
+        return input_frame, textbox
+
+    def _save_credentials(self) -> None:
+        """Persist credential text areas into local text files."""
+        cards = self.card_list_textbox.get("1.0", "end-1c")
+        accounts = self.account_list_textbox.get("1.0", "end-1c")
+
+        Path("cards.txt").write_text(cards, encoding="utf-8")
+        Path("accounts.txt").write_text(accounts, encoding="utf-8")
+
+        self.credentials_status_label.configure(text="تم حفظ البيانات بنجاح!")
 
     def show_logs_view(self) -> None:
         """Render a scrollable log area for real-time activity output."""
