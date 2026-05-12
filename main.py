@@ -25,6 +25,41 @@ from proxy_manager import ProxyManager, ProxyManagerError
 from task_manager import ConcurrentTaskRunner, ScenarioConfig
 
 
+class SimpleTooltip:
+    """Small tooltip helper for CustomTkinter widgets."""
+
+    def __init__(self, widget, text: str) -> None:
+        self.widget = widget
+        self.text = text
+        self.tooltip: ctk.CTkToplevel | None = None
+        widget.bind("<Enter>", self._show)
+        widget.bind("<Leave>", self._hide)
+
+    def _show(self, _event=None) -> None:
+        if self.tooltip is not None or not self.text:
+            return
+        x = self.widget.winfo_rootx() + 18
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 8
+        self.tooltip = ctk.CTkToplevel(self.widget)
+        self.tooltip.wm_overrideredirect(True)
+        self.tooltip.geometry(f"+{x}+{y}")
+        label = ctk.CTkLabel(
+            self.tooltip,
+            text=self.text,
+            corner_radius=8,
+            fg_color="#0B1220",
+            text_color="#E5E7EB",
+            padx=10,
+            pady=6,
+        )
+        label.pack()
+
+    def _hide(self, _event=None) -> None:
+        if self.tooltip is not None:
+            self.tooltip.destroy()
+            self.tooltip = None
+
+
 class AutomationDashboard(ctk.CTk):
     """Main application window for the automation control center."""
 
@@ -33,6 +68,7 @@ class AutomationDashboard(ctk.CTk):
         "Credentials",
         "Task Manager",
         "Live Logs",
+        "Results Explorer",
         "Detailed Error Log",
         "Settings",
     )
@@ -50,6 +86,9 @@ class AutomationDashboard(ctk.CTk):
         self.active_threads_count = 0
         self.dashboard_metric_labels: dict[str, ctk.CTkLabel] = {}
         self.system_health_widgets: dict[str, object] = {}
+        self.success_feed_frame: ctk.CTkScrollableFrame | None = None
+        self.ratio_progress: ctk.CTkProgressBar | None = None
+        self.ratio_label: ctk.CTkLabel | None = None
         self.config_load_error: str | None = None
         try:
             self.service_config = self.config_manager.load()
@@ -190,6 +229,8 @@ class AutomationDashboard(ctk.CTk):
             self.show_task_manager_view()
         elif selected_item == "Live Logs":
             self.show_logs_view()
+        elif selected_item == "Results Explorer":
+            self.show_results_view()
         elif selected_item == "Detailed Error Log":
             self.show_error_log_view()
         elif selected_item == "Settings":
@@ -210,6 +251,9 @@ class AutomationDashboard(ctk.CTk):
         """Remove existing widgets before rendering a new content view."""
         self.dashboard_metric_labels = {}
         self.system_health_widgets = {}
+        self.success_feed_frame = None
+        self.ratio_progress = None
+        self.ratio_label = None
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
@@ -272,6 +316,62 @@ class AutomationDashboard(ctk.CTk):
         self.system_health_widgets = {}
         self._create_health_row(health_card, row=1, key="cpu", label="CPU")
         self._create_health_row(health_card, row=2, key="ram", label="RAM")
+
+        feed_card = ctk.CTkFrame(
+            home_frame,
+            corner_radius=16,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        feed_card.grid(row=4, column=0, columnspan=2, padx=8, pady=(18, 8), sticky="nsew")
+        feed_card.grid_columnconfigure(0, weight=1)
+        feed_card.grid_rowconfigure(1, weight=1)
+
+        feed_title = ctk.CTkLabel(
+            feed_card,
+            text="Success Feed",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        feed_title.grid(row=0, column=0, padx=18, pady=(18, 10), sticky="w")
+
+        self.success_feed_frame = ctk.CTkScrollableFrame(
+            feed_card,
+            fg_color="#0B1220",
+            corner_radius=12,
+        )
+        self.success_feed_frame.grid(row=1, column=0, padx=18, pady=(0, 18), sticky="nsew")
+
+        ratio_card = ctk.CTkFrame(
+            home_frame,
+            corner_radius=16,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        ratio_card.grid(row=4, column=2, padx=8, pady=(18, 8), sticky="nsew")
+        ratio_card.grid_columnconfigure(0, weight=1)
+
+        ratio_title = ctk.CTkLabel(
+            ratio_card,
+            text="Resource Monitor",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        ratio_title.grid(row=0, column=0, padx=18, pady=(18, 10), sticky="w")
+
+        self.ratio_progress = ctk.CTkProgressBar(ratio_card, height=16)
+        self.ratio_progress.grid(row=1, column=0, padx=18, pady=12, sticky="ew")
+        self.ratio_progress.set(0)
+
+        self.ratio_label = ctk.CTkLabel(
+            ratio_card,
+            text="Success / Fail ratio: --",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=self.colors["muted_text"],
+        )
+        self.ratio_label.grid(row=2, column=0, padx=18, pady=(4, 18), sticky="w")
 
         self._refresh_dashboard()
 
@@ -405,6 +505,9 @@ class AutomationDashboard(ctk.CTk):
             self._update_health_widget("ram", ram_percent)
             self.after(2500, self._refresh_dashboard)
 
+        self._refresh_success_feed()
+        self._refresh_ratio_monitor()
+
     def _update_health_widget(self, key: str, percent: float) -> None:
         """Update one health progress row."""
         widget_pair = self.system_health_widgets.get(key)
@@ -449,6 +552,53 @@ class AutomationDashboard(ctk.CTk):
         if total <= 0:
             return 0.0
         return max(0.0, min(((total - available) / total) * 100, 100.0))
+
+    def _refresh_success_feed(self) -> None:
+        """Refresh the live success feed inside the Command Center."""
+        if self.success_feed_frame is None or not self.success_feed_frame.winfo_exists():
+            return
+
+        for widget in self.success_feed_frame.winfo_children():
+            widget.destroy()
+
+        records = self.output_manager.get_success_records(limit=12)
+        if not records:
+            empty = ctk.CTkLabel(
+                self.success_feed_frame,
+                text="No successful activations yet.",
+                font=ctk.CTkFont(size=13),
+                text_color=self.colors["muted_text"],
+            )
+            empty.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+            return
+
+        for row, record in enumerate(reversed(records)):
+            status_icon = "●"
+            line = (
+                f"{status_icon} {record.get('account', '')} | "
+                f"{record.get('timestamp', '')} | "
+                f"{record.get('proxy', 'Direct') or 'Direct'}"
+            )
+            label = ctk.CTkLabel(
+                self.success_feed_frame,
+                text=line,
+                font=ctk.CTkFont(size=12),
+                text_color="#86EFAC",
+                anchor="w",
+            )
+            label.grid(row=row, column=0, padx=10, pady=5, sticky="ew")
+
+    def _refresh_ratio_monitor(self) -> None:
+        """Refresh success/failure ratio visualization."""
+        if self.ratio_progress is None or self.ratio_label is None:
+            return
+        success_count, failed_count = self.output_manager.get_result_counts()
+        total = success_count + failed_count
+        ratio = success_count / total if total else 0
+        self.ratio_progress.set(ratio)
+        self.ratio_label.configure(
+            text=f"Success / Fail ratio: {success_count}/{failed_count} ({ratio * 100:.0f}%)"
+        )
 
     def show_credentials_view(self) -> None:
         """Render text inputs for cards and account credentials."""
@@ -599,6 +749,14 @@ class AutomationDashboard(ctk.CTk):
         )
         title_label.grid(row=0, column=0, padx=24, pady=(24, 8), sticky="w")
 
+        self.task_status_label = ctk.CTkLabel(
+            control_card,
+            text="● Ready",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#86EFAC",
+        )
+        self.task_status_label.grid(row=0, column=0, padx=24, pady=(24, 8), sticky="e")
+
         description_label = ctk.CTkLabel(
             control_card,
             text="Run a safe E2E scenario against an authorized staging or sandbox URL.",
@@ -656,6 +814,10 @@ class AutomationDashboard(ctk.CTk):
             command=self._start_browser_engine,
         )
         self.start_button.grid(row=6, column=0, padx=24, pady=(0, 24), sticky="w")
+        SimpleTooltip(
+            self.start_button,
+            "Starts the selected number of safe sandbox E2E workers.",
+        )
 
     def _update_threads_count_label(self, value: float) -> None:
         """Update the thread-count label when the slider changes."""
@@ -665,6 +827,7 @@ class AutomationDashboard(ctk.CTk):
     def _start_browser_engine(self) -> None:
         """Start the E2E scenario without blocking the UI event loop."""
         self.start_button.configure(state="disabled", text="Running...")
+        self._set_task_status("active")
         self.current_test_url = self.test_url_entry.get().strip()
         self.current_threads_count = int(round(self.threads_count_slider.get()))
         self.active_threads_count = self.current_threads_count
@@ -685,8 +848,6 @@ class AutomationDashboard(ctk.CTk):
                     target_url=self.current_test_url,
                     five_sim_api_key=self.service_config.get("five_sim_api_key", ""),
                     capsolver_api_key=self.service_config.get("capsolver_api_key", ""),
-                    telegram_bot_token=self.service_config.get("telegram_bot_token", ""),
-                    telegram_chat_id=self.service_config.get("telegram_chat_id", ""),
                 ),
                 log_callback=self._append_log_from_worker,
             )
@@ -704,6 +865,7 @@ class AutomationDashboard(ctk.CTk):
         self._append_log("Concurrent E2E Test Scenario Finished Successfully.")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
+        self._set_task_status("ready")
 
     def _handle_browser_start_failure(self, error_message: str) -> None:
         """Update the UI after a failed E2E scenario run."""
@@ -712,6 +874,142 @@ class AutomationDashboard(ctk.CTk):
         self._append_log(f"Concurrent E2E Test Scenario Failed: {error_message}")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
+        self._set_task_status("error")
+
+    def _set_task_status(self, status: str) -> None:
+        """Update the Task Manager status indicator."""
+        if not hasattr(self, "task_status_label") or not self.task_status_label.winfo_exists():
+            return
+        if status == "active":
+            self.task_status_label.configure(text="● Active", text_color="#22C55E")
+        elif status == "error":
+            self.task_status_label.configure(text="● Error", text_color="#F87171")
+        else:
+            self.task_status_label.configure(text="● Ready", text_color="#86EFAC")
+
+    def show_results_view(self) -> None:
+        """Render the internal success results explorer."""
+        self._set_active_navigation("Results Explorer")
+        self._clear_content()
+
+        results_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        results_frame.grid(row=0, column=0, sticky="nsew", padx=28, pady=28)
+        results_frame.grid_columnconfigure(0, weight=1)
+        results_frame.grid_rowconfigure(2, weight=1)
+
+        heading = ctk.CTkLabel(
+            results_frame,
+            text="Results Explorer",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        heading.grid(row=0, column=0, sticky="w", pady=(0, 14))
+
+        actions_frame = ctk.CTkFrame(results_frame, fg_color="transparent")
+        actions_frame.grid(row=1, column=0, sticky="ew", pady=(0, 14))
+        actions_frame.grid_columnconfigure(1, weight=1)
+
+        export_button = ctk.CTkButton(
+            actions_frame,
+            text="Export Success CSV",
+            height=40,
+            corner_radius=10,
+            fg_color=self.colors["accent"],
+            hover_color=self.colors["accent_hover"],
+            command=self._export_success_results,
+        )
+        export_button.grid(row=0, column=0, sticky="w")
+        SimpleTooltip(
+            export_button,
+            "Exports sanitized success records from results/success_log.csv.",
+        )
+
+        self.results_status_label = ctk.CTkLabel(
+            actions_frame,
+            text="",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#60A5FA",
+        )
+        self.results_status_label.grid(row=0, column=1, padx=(16, 0), sticky="w")
+
+        self.results_table_frame = ctk.CTkScrollableFrame(
+            results_frame,
+            corner_radius=14,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        self.results_table_frame.grid(row=2, column=0, sticky="nsew")
+        self.results_table_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
+        self._refresh_results_table()
+
+    def _refresh_results_table(self) -> None:
+        """Load success_log.csv into the Results Explorer table."""
+        if not hasattr(self, "results_table_frame") or not self.results_table_frame.winfo_exists():
+            return
+
+        for widget in self.results_table_frame.winfo_children():
+            widget.destroy()
+
+        headers = ("Timestamp", "Thread", "Account", "Proxy", "Message")
+        for column, header in enumerate(headers):
+            label = ctk.CTkLabel(
+                self.results_table_frame,
+                text=header,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=self.colors["text"],
+            )
+            label.grid(row=0, column=column, padx=12, pady=(12, 8), sticky="w")
+
+        records = self.output_manager.get_success_records()
+        if not records:
+            empty = ctk.CTkLabel(
+                self.results_table_frame,
+                text="No success records found.",
+                font=ctk.CTkFont(size=13),
+                text_color=self.colors["muted_text"],
+            )
+            empty.grid(row=1, column=0, columnspan=5, padx=12, pady=18, sticky="w")
+            return
+
+        for row, record in enumerate(records[-300:], start=1):
+            values = (
+                record.get("timestamp", ""),
+                record.get("thread", ""),
+                record.get("account", ""),
+                record.get("proxy", "Direct") or "Direct",
+                record.get("message", ""),
+            )
+            for column, value in enumerate(values):
+                label = ctk.CTkLabel(
+                    self.results_table_frame,
+                    text=value,
+                    font=ctk.CTkFont(size=12),
+                    text_color="#86EFAC" if column == 2 else self.colors["muted_text"],
+                    wraplength=300 if column == 4 else 160,
+                    justify="left",
+                )
+                label.grid(row=row, column=column, padx=12, pady=6, sticky="nw")
+
+    def _export_success_results(self) -> None:
+        """Export sanitized success results to a user-selected CSV path."""
+        destination = filedialog.asksaveasfilename(
+            title="Export Success Results",
+            defaultextension=".csv",
+            filetypes=(("CSV files", "*.csv"), ("All files", "*.*")),
+        )
+        if not destination:
+            return
+
+        try:
+            exported_path = self.output_manager.export_success_log(Path(destination))
+        except OSError as exc:
+            self.results_status_label.configure(text="Export failed.")
+            self._append_log(f"Results export failed: {exc}")
+            return
+
+        self.results_status_label.configure(text=f"Exported to {exported_path}")
+        self._append_log(f"Success results exported to {exported_path}.")
 
     def show_error_log_view(self) -> None:
         """Render the detailed filterable error report."""
@@ -765,7 +1063,7 @@ class AutomationDashboard(ctk.CTk):
             border_color=self.colors["border"],
         )
         self.error_table_frame.grid(row=2, column=0, sticky="nsew")
-        self.error_table_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+        self.error_table_frame.grid_columnconfigure((0, 1, 2, 3, 4), weight=1)
         self._refresh_error_log_table()
 
     def _refresh_error_log_table(self) -> None:
@@ -776,7 +1074,7 @@ class AutomationDashboard(ctk.CTk):
         for widget in self.error_table_frame.winfo_children():
             widget.destroy()
 
-        headers = ("Timestamp", "Thread-ID", "Error Category", "Description")
+        headers = ("Timestamp", "Thread-ID", "Error Category", "Description", "Artifact Path")
         for column, header in enumerate(headers):
             label = ctk.CTkLabel(
                 self.error_table_frame,
@@ -798,7 +1096,7 @@ class AutomationDashboard(ctk.CTk):
                 font=ctk.CTkFont(size=13),
                 text_color=self.colors["muted_text"],
             )
-            empty_label.grid(row=1, column=0, columnspan=4, padx=12, pady=18, sticky="w")
+            empty_label.grid(row=1, column=0, columnspan=5, padx=12, pady=18, sticky="w")
             return
 
         for row, report in enumerate(reports[-200:], start=1):
@@ -807,6 +1105,7 @@ class AutomationDashboard(ctk.CTk):
                 str(report.get("thread_id", "")),
                 str(report.get("category", "")),
                 str(report.get("description", "")),
+                str(report.get("artifact_path", "")),
             )
             for column, value in enumerate(values):
                 label = ctk.CTkLabel(
@@ -859,28 +1158,17 @@ class AutomationDashboard(ctk.CTk):
             row=1,
             label="5sim API Key",
             value=self.service_config.get("five_sim_api_key", ""),
+            tooltip="Used only for safe 5sim balance/health checks.",
         )
         self.capsolver_key_entry = self._create_settings_entry(
             settings_card,
             row=2,
             label="CapSolver API Key",
             value=self.service_config.get("capsolver_api_key", ""),
+            tooltip="Used only for safe CapSolver balance/health checks.",
         )
-        self.telegram_bot_token_entry = self._create_settings_entry(
-            settings_card,
-            row=3,
-            label="Telegram Bot Token",
-            value=self.service_config.get("telegram_bot_token", ""),
-        )
-        self.telegram_chat_id_entry = self._create_settings_entry(
-            settings_card,
-            row=4,
-            label="Telegram Chat ID",
-            value=self.service_config.get("telegram_chat_id", ""),
-        )
-
         actions_frame = ctk.CTkFrame(settings_card, fg_color="transparent")
-        actions_frame.grid(row=5, column=0, padx=22, pady=(8, 22), sticky="ew")
+        actions_frame.grid(row=3, column=0, padx=22, pady=(8, 22), sticky="ew")
         actions_frame.grid_columnconfigure(3, weight=1)
 
         save_button = ctk.CTkButton(
@@ -894,6 +1182,7 @@ class AutomationDashboard(ctk.CTk):
             command=self._save_service_settings,
         )
         save_button.grid(row=0, column=0, padx=(0, 10), sticky="w")
+        SimpleTooltip(save_button, "Saves local API keys into config.json.")
 
         self.check_apis_button = ctk.CTkButton(
             actions_frame,
@@ -906,6 +1195,7 @@ class AutomationDashboard(ctk.CTk):
             command=self._check_service_apis,
         )
         self.check_apis_button.grid(row=0, column=1, sticky="w")
+        SimpleTooltip(self.check_apis_button, "Checks provider API health without running tasks.")
 
         import_proxy_button = ctk.CTkButton(
             actions_frame,
@@ -918,6 +1208,7 @@ class AutomationDashboard(ctk.CTk):
             command=self._import_proxy_list,
         )
         import_proxy_button.grid(row=0, column=2, padx=(10, 0), sticky="w")
+        SimpleTooltip(import_proxy_button, "Imports proxies from a local text file.")
 
         self.settings_status_label = ctk.CTkLabel(
             actions_frame,
@@ -933,6 +1224,7 @@ class AutomationDashboard(ctk.CTk):
         row: int,
         label: str,
         value: str,
+        tooltip: str = "",
     ) -> ctk.CTkEntry:
         """Create one masked API-key entry row."""
         field_frame = ctk.CTkFrame(parent, fg_color="transparent")
@@ -946,6 +1238,8 @@ class AutomationDashboard(ctk.CTk):
             text_color=self.colors["text"],
         )
         label_widget.grid(row=0, column=0, sticky="w", pady=(0, 6))
+        if tooltip:
+            SimpleTooltip(label_widget, tooltip)
 
         entry = ctk.CTkEntry(
             field_frame,
@@ -957,6 +1251,8 @@ class AutomationDashboard(ctk.CTk):
             show="*",
         )
         entry.grid(row=1, column=0, sticky="ew")
+        if tooltip:
+            SimpleTooltip(entry, tooltip)
         if value:
             entry.insert(0, value)
         return entry
@@ -965,15 +1261,11 @@ class AutomationDashboard(ctk.CTk):
         """Save provider API keys to local config."""
         five_sim_key = self.five_sim_key_entry.get().strip()
         capsolver_key = self.capsolver_key_entry.get().strip()
-        telegram_bot_token = self.telegram_bot_token_entry.get().strip()
-        telegram_chat_id = self.telegram_chat_id_entry.get().strip()
 
         try:
             self.config_manager.save(
                 five_sim_key,
                 capsolver_key,
-                telegram_bot_token,
-                telegram_chat_id,
             )
         except OSError as exc:
             message = f"Failed to save API settings: {exc}"
@@ -984,8 +1276,6 @@ class AutomationDashboard(ctk.CTk):
         self.service_config = {
             "five_sim_api_key": five_sim_key,
             "capsolver_api_key": capsolver_key,
-            "telegram_bot_token": telegram_bot_token,
-            "telegram_chat_id": telegram_chat_id,
         }
         self.settings_status_label.configure(text="تم حفظ مفاتيح API بنجاح.")
         self._append_log("Service API keys saved to config.json.")

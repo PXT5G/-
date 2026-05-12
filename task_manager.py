@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from queue import Empty, Queue
 import time
@@ -23,7 +24,6 @@ from api_handler import (
     CapSolverClient,
     FiveSimClient,
     IntegrationError,
-    TelegramBotClient,
     UnsupportedIntegrationOperation,
 )
 from browser_engine import BrowserEngine, BrowserEngineError
@@ -36,6 +36,7 @@ LogCallback = Callable[[str], None]
 ACCOUNT_FILE = Path("accounts.txt")
 CARD_FILE = Path("cards.txt")
 MAX_CONCURRENT_THREADS = 5
+ARTIFACTS_DIR = Path("results") / "artifacts"
 
 SANDBOX_CARD_NUMBERS = {
     "4111111111111111",
@@ -88,8 +89,6 @@ class ScenarioConfig:
     target_url: str
     five_sim_api_key: str = ""
     capsolver_api_key: str = ""
-    telegram_bot_token: str = ""
-    telegram_chat_id: str = ""
     accounts_path: Path = ACCOUNT_FILE
     cards_path: Path = CARD_FILE
     account: AccountData | None = None
@@ -113,10 +112,6 @@ class AutomatedTestScenario:
         self.log_callback = log_callback or (lambda message: None)
         self.thread_label = thread_label
         self.output_manager = output_manager or OutputManager()
-        self.telegram_client = TelegramBotClient(
-            config.telegram_bot_token,
-            config.telegram_chat_id,
-        )
 
     def run(self) -> bool:
         """Execute the full test scenario with step-by-step logging."""
@@ -152,7 +147,11 @@ class AutomatedTestScenario:
         if cleanup_completed:
             self._record_success(account, card)
         else:
-            self._record_failure(account, "E2E flow completed without cleanup success.")
+            self._record_failure(
+                account,
+                "E2E flow completed without cleanup success.",
+                artifact_path=self._capture_failure_artifact(page),
+            )
 
         self._log("E2E scenario completed.")
         return cleanup_completed
@@ -399,7 +398,7 @@ class AutomatedTestScenario:
             return False
 
     def _record_success(self, account: AccountData, card: CardData) -> None:
-        """Record a sanitized success and send an optional Telegram notification."""
+        """Record a sanitized success for internal UI/result tracking."""
         masked_account = self._mask_username(account.username)
         self.output_manager.record_success(
             ResultRecord(
@@ -408,13 +407,18 @@ class AutomatedTestScenario:
                 target_url=self.config.target_url,
                 status="success",
                 card=card.masked_number,
+                proxy=self.browser_engine.current_proxy_label(),
                 message="Sandbox E2E flow completed with cleanup.",
             )
         )
         self._log("Success result saved to results/success_log.csv.")
-        self._send_success_notification(masked_account)
 
-    def _record_failure(self, account: AccountData, reason: str) -> None:
+    def _record_failure(
+        self,
+        account: AccountData,
+        reason: str,
+        artifact_path: str = "",
+    ) -> None:
         """Record a sanitized scenario-level failure."""
         self.output_manager.record_failure(
             ResultRecord(
@@ -423,24 +427,31 @@ class AutomatedTestScenario:
                 target_url=self.config.target_url,
                 status="failed",
                 message=reason,
+                artifact_path=artifact_path,
             )
         )
         self._log("Failure result saved to results/failed_log.csv.")
 
-    def _send_success_notification(self, masked_account: str) -> None:
-        """Send a Telegram success notification when configured."""
-        if not self.telegram_client.is_configured:
-            self._log("Telegram notification skipped; settings are incomplete.")
-            return
+    def _capture_failure_artifact(self, page: Page | None = None) -> str:
+        """Capture a screenshot or HTML snapshot for failure review."""
+        if page is None:
+            return ""
 
-        message = f"Success: {masked_account} - Sandbox E2E flow completed."
+        ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        safe_thread = self.thread_label.replace(" ", "-").replace("/", "-")
+        screenshot_path = ARTIFACTS_DIR / f"{safe_thread}-{timestamp}.png"
+        html_path = ARTIFACTS_DIR / f"{safe_thread}-{timestamp}.html"
+
         try:
-            self.telegram_client.send_message(message)
-        except IntegrationError as exc:
-            self._log(f"Telegram notification failed: {exc}")
-            return
-
-        self._log("Telegram success notification sent.")
+            page.screenshot(path=str(screenshot_path), full_page=True)
+            return str(screenshot_path)
+        except Exception:
+            try:
+                html_path.write_text(page.content(), encoding="utf-8")
+                return str(html_path)
+            except Exception:
+                return ""
 
     def _fill_first_available(
         self,
@@ -598,8 +609,6 @@ class ConcurrentTaskRunner:
                 target_url=self.base_config.target_url,
                 five_sim_api_key=self.base_config.five_sim_api_key,
                 capsolver_api_key=self.base_config.capsolver_api_key,
-                telegram_bot_token=self.base_config.telegram_bot_token,
-                telegram_chat_id=self.base_config.telegram_chat_id,
                 accounts_path=self.base_config.accounts_path,
                 cards_path=self.base_config.cards_path,
                 account=account,
@@ -628,7 +637,8 @@ class ConcurrentTaskRunner:
                 return
             except Exception as exc:
                 last_error = str(exc)
-                self._record_failure(thread_label, account, last_error)
+                artifact_path = self._capture_runner_artifact(browser_engine, thread_label)
+                self._record_failure(thread_label, account, last_error, artifact_path)
                 self._log(
                     thread_label,
                     f"Attempt {attempt}/{max_attempts} failed: {last_error}",
@@ -690,6 +700,7 @@ class ConcurrentTaskRunner:
         thread_label: str,
         account: AccountData,
         reason: str,
+        artifact_path: str = "",
     ) -> None:
         """Record one sanitized failure row."""
         self.output_manager.record_failure(
@@ -700,8 +711,33 @@ class ConcurrentTaskRunner:
                 status="failed",
                 message=reason,
                 error_category=self._categorize_error(reason),
+                artifact_path=artifact_path,
             )
         )
+
+    @staticmethod
+    def _capture_runner_artifact(
+        browser_engine: BrowserEngine,
+        thread_label: str,
+    ) -> str:
+        """Capture a failure artifact from a runner-owned browser."""
+        if browser_engine.session is None:
+            return ""
+        ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        safe_thread = thread_label.replace(" ", "-").replace("/", "-")
+        screenshot_path = ARTIFACTS_DIR / f"{safe_thread}-{timestamp}-runner.png"
+        html_path = ARTIFACTS_DIR / f"{safe_thread}-{timestamp}-runner.html"
+        page = browser_engine.session.page
+        try:
+            page.screenshot(path=str(screenshot_path), full_page=True)
+            return str(screenshot_path)
+        except Exception:
+            try:
+                html_path.write_text(page.content(), encoding="utf-8")
+                return str(html_path)
+            except Exception:
+                return ""
 
     @staticmethod
     def _categorize_error(reason: str) -> str:
@@ -713,7 +749,7 @@ class ConcurrentTaskRunner:
             return "Navigation"
         if "account" in normalized or "card" in normalized or "data" in normalized:
             return "Input Data"
-        if "telegram" in normalized or "api" in normalized:
+        if "api" in normalized:
             return "Integration"
         return "Runtime"
 

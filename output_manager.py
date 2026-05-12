@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import shutil
 import json
 import re
 import threading
@@ -29,12 +30,22 @@ class ResultRecord:
     message: str
     card: str = ""
     error_category: str = "General"
+    artifact_path: str = ""
+    proxy: str = ""
 
 
 class OutputManager:
     """Write sanitized success and failure records to CSV files."""
 
-    SUCCESS_HEADERS = ("timestamp", "thread", "account", "target_url", "card", "message")
+    SUCCESS_HEADERS = (
+        "timestamp",
+        "thread",
+        "account",
+        "target_url",
+        "card",
+        "proxy",
+        "message",
+    )
     FAILED_HEADERS = ("timestamp", "thread", "account", "target_url", "status", "reason")
 
     def __init__(self, results_dir: Path = RESULTS_DIR) -> None:
@@ -58,6 +69,7 @@ class OutputManager:
                     record.account,
                     record.target_url,
                     record.card,
+                    record.proxy,
                     record.message,
                 ),
             )
@@ -122,6 +134,26 @@ class OutputManager:
             "avg_task_time": avg_task_time,
         }
 
+    def get_result_counts(self) -> tuple[int, int]:
+        """Return success and failure counts."""
+        return self._count_csv_rows(self.success_log), self._count_csv_rows(self.failed_log)
+
+    def get_success_records(self, limit: int | None = None) -> list[dict[str, str]]:
+        """Return success rows from results/success_log.csv."""
+        rows = self._read_csv_rows(self.success_log)
+        if limit is None:
+            return rows
+        return rows[-limit:]
+
+    def export_success_log(self, destination: Path) -> Path:
+        """Copy the success CSV to a user-selected destination."""
+        self.results_dir.mkdir(parents=True, exist_ok=True)
+        if not self.success_log.exists():
+            with self.success_log.open("w", newline="", encoding="utf-8") as csv_file:
+                csv.writer(csv_file).writerow(self.SUCCESS_HEADERS)
+        shutil.copyfile(self.success_log, destination)
+        return destination
+
     def get_error_reports(self, filter_text: str = "") -> list[dict[str, str]]:
         """Return saved error reports, optionally filtered by text."""
         with self._lock:
@@ -176,6 +208,7 @@ class OutputManager:
                 "description": record.message,
                 "account": record.account,
                 "target_url": record.target_url,
+                "artifact_path": record.artifact_path,
             }
         )
         self.error_report.write_text(json.dumps(entries, indent=2), encoding="utf-8")
@@ -187,6 +220,14 @@ class OutputManager:
             return 0
         with path.open("r", newline="", encoding="utf-8") as csv_file:
             return max(sum(1 for _ in csv_file) - 1, 0)
+
+    @staticmethod
+    def _read_csv_rows(path: Path) -> list[dict[str, str]]:
+        """Read CSV rows as dictionaries."""
+        if not path.exists():
+            return []
+        with path.open("r", newline="", encoding="utf-8") as csv_file:
+            return list(csv.DictReader(csv_file))
 
     def _average_duration(self) -> float | None:
         """Calculate average task duration from daily summary lines."""
