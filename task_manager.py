@@ -14,6 +14,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Empty, Queue
+import time
 from typing import Callable, Iterable
 
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
@@ -570,6 +571,7 @@ class ConcurrentTaskRunner:
         last_error = "No attempts were run."
 
         for attempt in range(1, max_attempts + 1):
+            attempt_started_at = time.perf_counter()
             try:
                 account = account_queue.get_nowait()
                 card = card_queue.get_nowait()
@@ -613,6 +615,7 @@ class ConcurrentTaskRunner:
                     AutomatedTestScenario._mask_username(account.username),
                     status,
                     f"Attempt {attempt}/{max_attempts} finished.",
+                    duration_seconds=time.perf_counter() - attempt_started_at,
                 )
                 return
             except Exception as exc:
@@ -633,6 +636,7 @@ class ConcurrentTaskRunner:
                         AutomatedTestScenario._mask_username(account.username),
                         "failed",
                         f"All recovery attempts exhausted: {last_error}",
+                        duration_seconds=time.perf_counter() - attempt_started_at,
                     )
             finally:
                 browser_engine.stop()
@@ -687,8 +691,23 @@ class ConcurrentTaskRunner:
                 target_url=self.base_config.target_url,
                 status="failed",
                 message=reason,
+                error_category=self._categorize_error(reason),
             )
         )
+
+    @staticmethod
+    def _categorize_error(reason: str) -> str:
+        """Map raw error messages to dashboard-friendly categories."""
+        normalized = reason.lower()
+        if "proxy" in normalized or "ip address" in normalized:
+            return "Proxy"
+        if "timeout" in normalized or "page" in normalized or "load" in normalized:
+            return "Navigation"
+        if "account" in normalized or "card" in normalized or "data" in normalized:
+            return "Input Data"
+        if "telegram" in normalized or "api" in normalized:
+            return "Integration"
+        return "Runtime"
 
 
 def load_accounts(path: Path = ACCOUNT_FILE) -> list[AccountData]:

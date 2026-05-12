@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import csv
+import json
+import re
 import threading
 from dataclasses import dataclass
 from datetime import datetime
@@ -13,6 +15,7 @@ RESULTS_DIR = Path("results")
 SUCCESS_LOG = RESULTS_DIR / "success_log.csv"
 FAILED_LOG = RESULTS_DIR / "failed_log.csv"
 DAILY_SUMMARY = RESULTS_DIR / "daily_summary.txt"
+ERROR_REPORT = RESULTS_DIR / "error_report.json"
 
 
 @dataclass(frozen=True)
@@ -25,6 +28,7 @@ class ResultRecord:
     status: str
     message: str
     card: str = ""
+    error_category: str = "General"
 
 
 class OutputManager:
@@ -38,6 +42,7 @@ class OutputManager:
         self.success_log = results_dir / SUCCESS_LOG.name
         self.failed_log = results_dir / FAILED_LOG.name
         self.daily_summary = results_dir / DAILY_SUMMARY.name
+        self.error_report = results_dir / ERROR_REPORT.name
         self._lock = threading.Lock()
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -72,6 +77,7 @@ class OutputManager:
                     record.message,
                 ),
             )
+            self._append_error_report(record)
 
     def append_daily_summary(
         self,
@@ -79,14 +85,67 @@ class OutputManager:
         account: str,
         status: str,
         message: str,
+        duration_seconds: float | None = None,
     ) -> None:
         """Append one human-readable thread summary line."""
+        duration_text = (
+            f" | duration={duration_seconds:.2f}s" if duration_seconds is not None else ""
+        )
         line = (
             f"{self._timestamp()} | {thread_label} | {status} | "
-            f"account={account} | {message}\n"
+            f"account={account} | {message}{duration_text}\n"
         )
         with self._lock:
             self.daily_summary.open("a", encoding="utf-8").write(line)
+
+    def get_dashboard_metrics(
+        self,
+        active_threads: int,
+        proxy_count: int,
+        proxy_has_error: bool,
+    ) -> dict[str, str]:
+        """Read current dashboard counters from result files."""
+        success_count = self._count_csv_rows(self.success_log)
+        failed_count = self._count_csv_rows(self.failed_log)
+        proxy_health = "Direct"
+        if proxy_count > 0:
+            proxy_health = "0%" if proxy_has_error else "100%"
+
+        avg_duration = self._average_duration()
+        avg_task_time = "N/A" if avg_duration is None else f"{avg_duration:.1f}s"
+
+        return {
+            "active_threads": str(active_threads),
+            "total_success": str(success_count),
+            "total_failed": str(failed_count),
+            "proxy_health": proxy_health,
+            "avg_task_time": avg_task_time,
+        }
+
+    def get_error_reports(self, filter_text: str = "") -> list[dict[str, str]]:
+        """Return saved error reports, optionally filtered by text."""
+        with self._lock:
+            if not self.error_report.exists():
+                return []
+            try:
+                data = json.loads(self.error_report.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                return []
+
+        if not isinstance(data, list):
+            return []
+
+        reports = [item for item in data if isinstance(item, dict)]
+        if not filter_text:
+            return reports
+
+        normalized_filter = filter_text.lower()
+        return [
+            item
+            for item in reports
+            if normalized_filter
+            in " ".join(str(value).lower() for value in item.values())
+        ]
 
     @staticmethod
     def _append_row(path: Path, headers: tuple[str, ...], row: tuple[str, ...]) -> None:
@@ -97,6 +156,53 @@ class OutputManager:
             if not file_exists:
                 writer.writerow(headers)
             writer.writerow(row)
+
+    def _append_error_report(self, record: ResultRecord) -> None:
+        """Append one structured failure entry to results/error_report.json."""
+        entries: list[dict[str, str]] = []
+        if self.error_report.exists():
+            try:
+                loaded = json.loads(self.error_report.read_text(encoding="utf-8"))
+                if isinstance(loaded, list):
+                    entries = [item for item in loaded if isinstance(item, dict)]
+            except json.JSONDecodeError:
+                entries = []
+
+        entries.append(
+            {
+                "timestamp": self._timestamp(),
+                "thread_id": record.thread_label,
+                "category": record.error_category,
+                "description": record.message,
+                "account": record.account,
+                "target_url": record.target_url,
+            }
+        )
+        self.error_report.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+
+    @staticmethod
+    def _count_csv_rows(path: Path) -> int:
+        """Count CSV data rows excluding the header."""
+        if not path.exists():
+            return 0
+        with path.open("r", newline="", encoding="utf-8") as csv_file:
+            return max(sum(1 for _ in csv_file) - 1, 0)
+
+    def _average_duration(self) -> float | None:
+        """Calculate average task duration from daily summary lines."""
+        if not self.daily_summary.exists():
+            return None
+
+        durations: list[float] = []
+        pattern = re.compile(r"duration=(\d+(?:\.\d+)?)s")
+        for line in self.daily_summary.read_text(encoding="utf-8").splitlines():
+            match = pattern.search(line)
+            if match:
+                durations.append(float(match.group(1)))
+
+        if not durations:
+            return None
+        return sum(durations) / len(durations)
 
     @staticmethod
     def _timestamp() -> str:

@@ -11,6 +11,7 @@ Requires:
 from __future__ import annotations
 
 from datetime import datetime
+import os
 from pathlib import Path
 import threading
 from tkinter import filedialog
@@ -19,6 +20,7 @@ import customtkinter as ctk
 
 from api_handler import CapSolverClient, ConfigManager, FiveSimClient, IntegrationError
 from browser_engine import BrowserEngine
+from output_manager import OutputManager
 from proxy_manager import ProxyManager, ProxyManagerError
 from task_manager import ConcurrentTaskRunner, ScenarioConfig
 
@@ -26,7 +28,14 @@ from task_manager import ConcurrentTaskRunner, ScenarioConfig
 class AutomationDashboard(ctk.CTk):
     """Main application window for the automation control center."""
 
-    SIDEBAR_ITEMS = ("Home", "Credentials", "Task Manager", "Live Logs", "Settings")
+    SIDEBAR_ITEMS = (
+        "Home",
+        "Credentials",
+        "Task Manager",
+        "Live Logs",
+        "Detailed Error Log",
+        "Settings",
+    )
 
     def __init__(self) -> None:
         super().__init__()
@@ -36,7 +45,11 @@ class AutomationDashboard(ctk.CTk):
         self.minsize(900, 600)
         self.proxy_manager = ProxyManager()
         self.browser_engine = BrowserEngine(proxy_manager=self.proxy_manager)
+        self.output_manager = OutputManager()
         self.config_manager = ConfigManager()
+        self.active_threads_count = 0
+        self.dashboard_metric_labels: dict[str, ctk.CTkLabel] = {}
+        self.system_health_widgets: dict[str, object] = {}
         self.config_load_error: str | None = None
         try:
             self.service_config = self.config_manager.load()
@@ -177,6 +190,8 @@ class AutomationDashboard(ctk.CTk):
             self.show_task_manager_view()
         elif selected_item == "Live Logs":
             self.show_logs_view()
+        elif selected_item == "Detailed Error Log":
+            self.show_error_log_view()
         elif selected_item == "Settings":
             self.show_settings_view()
 
@@ -193,36 +208,72 @@ class AutomationDashboard(ctk.CTk):
 
     def _clear_content(self) -> None:
         """Remove existing widgets before rendering a new content view."""
+        self.dashboard_metric_labels = {}
+        self.system_health_widgets = {}
         for widget in self.content_frame.winfo_children():
             widget.destroy()
 
     def show_home_view(self) -> None:
-        """Render the dashboard overview with placeholder stats."""
+        """Render the live dashboard overview."""
         self._set_active_navigation("Home")
         self._clear_content()
 
         home_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
         home_frame.grid(row=0, column=0, sticky="nsew", padx=28, pady=28)
         home_frame.grid_columnconfigure((0, 1, 2), weight=1, uniform="stats")
-        home_frame.grid_rowconfigure(1, weight=1)
+        home_frame.grid_rowconfigure(2, weight=1)
 
         heading = ctk.CTkLabel(
             home_frame,
-            text="Dashboard Overview",
+            text="Pro Dashboard",
             font=ctk.CTkFont(size=22, weight="bold"),
             text_color=self.colors["text"],
         )
         heading.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 22))
 
-        stats = [
-            ("Success", "0", "Completed automations"),
-            ("Failed", "0", "Needs review"),
-            ("Active Threads", "0", "Currently running"),
+        metric_defs = [
+            ("active_threads", "Active Threads", "Currently running"),
+            ("total_success", "Total Success", "Completed sandbox flows"),
+            ("total_failed", "Total Failed", "Needs review"),
+            ("proxy_health", "Proxy Health %", "Proxy list readiness"),
+            ("avg_task_time", "Avg. Task Time", "From daily summaries"),
         ]
+        self.dashboard_metric_labels = {}
 
-        for column, (title, value, description) in enumerate(stats):
-            card = self._create_stat_card(home_frame, title, value, description)
-            card.grid(row=1, column=column, padx=8, pady=8, sticky="nsew")
+        for index, (key, title, description) in enumerate(metric_defs):
+            row = 1 + index // 3
+            column = index % 3
+            card, value_label = self._create_dashboard_metric_card(
+                home_frame,
+                title,
+                description,
+            )
+            card.grid(row=row, column=column, padx=8, pady=8, sticky="nsew")
+            self.dashboard_metric_labels[key] = value_label
+
+        health_card = ctk.CTkFrame(
+            home_frame,
+            corner_radius=16,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        health_card.grid(row=3, column=0, columnspan=3, padx=8, pady=(18, 8), sticky="ew")
+        health_card.grid_columnconfigure(1, weight=1)
+
+        health_title = ctk.CTkLabel(
+            health_card,
+            text="System Health",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        health_title.grid(row=0, column=0, columnspan=3, padx=22, pady=(20, 12), sticky="w")
+
+        self.system_health_widgets = {}
+        self._create_health_row(health_card, row=1, key="cpu", label="CPU")
+        self._create_health_row(health_card, row=2, key="ram", label="RAM")
+
+        self._refresh_dashboard()
 
     def _create_stat_card(
         self,
@@ -266,6 +317,138 @@ class AutomationDashboard(ctk.CTk):
         description_label.grid(row=2, column=0, padx=22, pady=(6, 22), sticky="w")
 
         return card
+
+    def _create_dashboard_metric_card(
+        self,
+        parent: ctk.CTkFrame,
+        title: str,
+        description: str,
+    ) -> tuple[ctk.CTkFrame, ctk.CTkLabel]:
+        """Create a metric card and expose its value label for live refresh."""
+        card = ctk.CTkFrame(
+            parent,
+            corner_radius=16,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        card.grid_columnconfigure(0, weight=1)
+
+        title_label = ctk.CTkLabel(
+            card,
+            text=title,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            text_color=self.colors["muted_text"],
+        )
+        title_label.grid(row=0, column=0, padx=18, pady=(18, 6), sticky="w")
+
+        value_label = ctk.CTkLabel(
+            card,
+            text="--",
+            font=ctk.CTkFont(size=32, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        value_label.grid(row=1, column=0, padx=18, sticky="w")
+
+        description_label = ctk.CTkLabel(
+            card,
+            text=description,
+            font=ctk.CTkFont(size=12),
+            text_color=self.colors["muted_text"],
+        )
+        description_label.grid(row=2, column=0, padx=18, pady=(4, 18), sticky="w")
+        return card, value_label
+
+    def _create_health_row(
+        self,
+        parent: ctk.CTkFrame,
+        row: int,
+        key: str,
+        label: str,
+    ) -> None:
+        """Create one system health progress row."""
+        label_widget = ctk.CTkLabel(
+            parent,
+            text=label,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        label_widget.grid(row=row, column=0, padx=(22, 12), pady=8, sticky="w")
+
+        progress = ctk.CTkProgressBar(parent, height=14)
+        progress.grid(row=row, column=1, padx=8, pady=8, sticky="ew")
+        progress.set(0)
+
+        value_label = ctk.CTkLabel(
+            parent,
+            text="--%",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=self.colors["muted_text"],
+        )
+        value_label.grid(row=row, column=2, padx=(12, 22), pady=8, sticky="e")
+        self.system_health_widgets[key] = (progress, value_label)
+
+    def _refresh_dashboard(self) -> None:
+        """Refresh dashboard counters and health bars while Home is visible."""
+        if self.dashboard_metric_labels:
+            metrics = self.output_manager.get_dashboard_metrics(
+                active_threads=self.active_threads_count,
+                proxy_count=len(self.proxy_manager.proxies),
+                proxy_has_error=bool(self.proxy_manager.last_error),
+            )
+            for key, label in self.dashboard_metric_labels.items():
+                label.configure(text=metrics.get(key, "--"))
+
+        if self.system_health_widgets:
+            cpu_percent, ram_percent = self._read_system_health()
+            self._update_health_widget("cpu", cpu_percent)
+            self._update_health_widget("ram", ram_percent)
+            self.after(2500, self._refresh_dashboard)
+
+    def _update_health_widget(self, key: str, percent: float) -> None:
+        """Update one health progress row."""
+        widget_pair = self.system_health_widgets.get(key)
+        if not widget_pair:
+            return
+        progress, value_label = widget_pair
+        progress.set(max(0.0, min(percent / 100, 1.0)))
+        value_label.configure(text=f"{percent:.0f}%")
+
+    def _read_system_health(self) -> tuple[float, float]:
+        """Read CPU/RAM utilization using Linux procfs with safe fallbacks."""
+        cpu_percent = self._read_cpu_percent()
+        ram_percent = self._read_ram_percent()
+        return cpu_percent, ram_percent
+
+    @staticmethod
+    def _read_cpu_percent() -> float:
+        """Approximate CPU pressure from load average."""
+        try:
+            load_1m = os.getloadavg()[0]
+            cpu_count = os.cpu_count() or 1
+            return min((load_1m / cpu_count) * 100, 100)
+        except OSError:
+            return 0.0
+
+    @staticmethod
+    def _read_ram_percent() -> float:
+        """Read RAM usage from /proc/meminfo."""
+        try:
+            meminfo = Path("/proc/meminfo").read_text(encoding="utf-8")
+        except OSError:
+            return 0.0
+
+        values: dict[str, float] = {}
+        for line in meminfo.splitlines():
+            key, _, rest = line.partition(":")
+            if key in {"MemTotal", "MemAvailable"}:
+                values[key] = float(rest.strip().split()[0])
+
+        total = values.get("MemTotal", 0)
+        available = values.get("MemAvailable", 0)
+        if total <= 0:
+            return 0.0
+        return max(0.0, min(((total - available) / total) * 100, 100.0))
 
     def show_credentials_view(self) -> None:
         """Render text inputs for cards and account credentials."""
@@ -484,6 +667,8 @@ class AutomationDashboard(ctk.CTk):
         self.start_button.configure(state="disabled", text="Running...")
         self.current_test_url = self.test_url_entry.get().strip()
         self.current_threads_count = int(round(self.threads_count_slider.get()))
+        self.active_threads_count = self.current_threads_count
+        self._refresh_dashboard()
         self._append_log(
             f"Initializing E2E Test Scenario with {self.current_threads_count} thread(s)..."
         )
@@ -514,15 +699,125 @@ class AutomationDashboard(ctk.CTk):
 
     def _handle_browser_start_success(self) -> None:
         """Update the UI after a successful E2E scenario run."""
+        self.active_threads_count = 0
+        self._refresh_dashboard()
         self._append_log("Concurrent E2E Test Scenario Finished Successfully.")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
 
     def _handle_browser_start_failure(self, error_message: str) -> None:
         """Update the UI after a failed E2E scenario run."""
+        self.active_threads_count = 0
+        self._refresh_dashboard()
         self._append_log(f"Concurrent E2E Test Scenario Failed: {error_message}")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
+
+    def show_error_log_view(self) -> None:
+        """Render the detailed filterable error report."""
+        self._set_active_navigation("Detailed Error Log")
+        self._clear_content()
+
+        error_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        error_frame.grid(row=0, column=0, sticky="nsew", padx=28, pady=28)
+        error_frame.grid_columnconfigure(0, weight=1)
+        error_frame.grid_rowconfigure(2, weight=1)
+
+        heading = ctk.CTkLabel(
+            error_frame,
+            text="Detailed Error Log",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        heading.grid(row=0, column=0, sticky="w", pady=(0, 16))
+
+        filter_frame = ctk.CTkFrame(error_frame, fg_color="transparent")
+        filter_frame.grid(row=1, column=0, sticky="ew", pady=(0, 14))
+        filter_frame.grid_columnconfigure(0, weight=1)
+
+        self.error_filter_entry = ctk.CTkEntry(
+            filter_frame,
+            height=40,
+            corner_radius=10,
+            placeholder_text="Filter by thread, category, or description...",
+            fg_color="#0B1220",
+            border_color=self.colors["border"],
+            text_color=self.colors["text"],
+        )
+        self.error_filter_entry.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+
+        filter_button = ctk.CTkButton(
+            filter_frame,
+            text="Apply Filter",
+            height=40,
+            corner_radius=10,
+            fg_color=self.colors["accent"],
+            hover_color=self.colors["accent_hover"],
+            command=self._refresh_error_log_table,
+        )
+        filter_button.grid(row=0, column=1, sticky="e")
+
+        self.error_table_frame = ctk.CTkScrollableFrame(
+            error_frame,
+            corner_radius=14,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        self.error_table_frame.grid(row=2, column=0, sticky="nsew")
+        self.error_table_frame.grid_columnconfigure((0, 1, 2, 3), weight=1)
+        self._refresh_error_log_table()
+
+    def _refresh_error_log_table(self) -> None:
+        """Refresh the error log table using the current filter."""
+        if not hasattr(self, "error_table_frame") or not self.error_table_frame.winfo_exists():
+            return
+
+        for widget in self.error_table_frame.winfo_children():
+            widget.destroy()
+
+        headers = ("Timestamp", "Thread-ID", "Error Category", "Description")
+        for column, header in enumerate(headers):
+            label = ctk.CTkLabel(
+                self.error_table_frame,
+                text=header,
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color=self.colors["text"],
+            )
+            label.grid(row=0, column=column, padx=12, pady=(12, 8), sticky="w")
+
+        filter_text = ""
+        if hasattr(self, "error_filter_entry"):
+            filter_text = self.error_filter_entry.get().strip()
+
+        reports = self.output_manager.get_error_reports(filter_text)
+        if not reports:
+            empty_label = ctk.CTkLabel(
+                self.error_table_frame,
+                text="No error records found.",
+                font=ctk.CTkFont(size=13),
+                text_color=self.colors["muted_text"],
+            )
+            empty_label.grid(row=1, column=0, columnspan=4, padx=12, pady=18, sticky="w")
+            return
+
+        for row, report in enumerate(reports[-200:], start=1):
+            values = (
+                str(report.get("timestamp", "")),
+                str(report.get("thread_id", "")),
+                str(report.get("category", "")),
+                str(report.get("description", "")),
+            )
+            for column, value in enumerate(values):
+                label = ctk.CTkLabel(
+                    self.error_table_frame,
+                    text=value,
+                    font=ctk.CTkFont(size=12),
+                    text_color=self.colors["muted_text"] if column != 2 else "#BFDBFE",
+                    wraplength=360 if column == 3 else 160,
+                    justify="left",
+                )
+                label.grid(row=row, column=column, padx=12, pady=6, sticky="nw")
 
     def show_settings_view(self) -> None:
         """Render service API key settings."""
