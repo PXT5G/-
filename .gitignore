@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+
+# Local secrets and user-provided data
+config.json
+cards.txt
+accounts.txt

@@ -16,13 +16,14 @@ import threading
 
 import customtkinter as ctk
 
+from api_handler import CapSolverClient, ConfigManager, FiveSimClient, IntegrationError
 from browser_engine import BrowserEngine, BrowserEngineError
 
 
 class AutomationDashboard(ctk.CTk):
     """Main application window for the automation control center."""
 
-    SIDEBAR_ITEMS = ("Home", "Credentials", "Task Manager", "Live Logs")
+    SIDEBAR_ITEMS = ("Home", "Credentials", "Task Manager", "Live Logs", "Settings")
 
     def __init__(self) -> None:
         super().__init__()
@@ -31,10 +32,21 @@ class AutomationDashboard(ctk.CTk):
         self.geometry("1100x700")
         self.minsize(900, 600)
         self.browser_engine = BrowserEngine()
+        self.config_manager = ConfigManager()
+        self.config_load_error: str | None = None
+        try:
+            self.service_config = self.config_manager.load()
+        except IntegrationError as exc:
+            self.service_config = ConfigManager.default_config()
+            self.config_load_error = str(exc)
         self.log_entries = [
             "[10:05:00] Automation Control Center initialized.",
             "[10:05:01] Waiting for task activity...",
         ]
+        if self.config_load_error:
+            self.log_entries.append(
+                f"[10:05:02] Settings load warning: {self.config_load_error}"
+            )
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         self._configure_theme()
@@ -157,6 +169,8 @@ class AutomationDashboard(ctk.CTk):
             self.show_task_manager_view()
         elif selected_item == "Live Logs":
             self.show_logs_view()
+        elif selected_item == "Settings":
+            self.show_settings_view()
 
     def _set_active_navigation(self, active_item: str) -> None:
         """Highlight the active sidebar button."""
@@ -444,6 +458,197 @@ class AutomationDashboard(ctk.CTk):
         self._append_log(f"Browser Session Failed: {error_message}")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start")
+
+    def show_settings_view(self) -> None:
+        """Render service API key settings."""
+        self._set_active_navigation("Settings")
+        self._clear_content()
+
+        settings_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+        settings_frame.grid(row=0, column=0, sticky="nsew", padx=28, pady=28)
+        settings_frame.grid_columnconfigure(0, weight=1)
+
+        heading = ctk.CTkLabel(
+            settings_frame,
+            text="Settings",
+            font=ctk.CTkFont(size=22, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        heading.grid(row=0, column=0, sticky="w", pady=(0, 18))
+
+        settings_card = ctk.CTkFrame(
+            settings_frame,
+            corner_radius=16,
+            fg_color=self.colors["surface_light"],
+            border_width=1,
+            border_color=self.colors["border"],
+        )
+        settings_card.grid(row=1, column=0, sticky="ew")
+        settings_card.grid_columnconfigure(0, weight=1)
+
+        intro_label = ctk.CTkLabel(
+            settings_card,
+            text="Store provider API keys locally for integration health checks.",
+            font=ctk.CTkFont(size=14),
+            text_color=self.colors["muted_text"],
+        )
+        intro_label.grid(row=0, column=0, padx=22, pady=(22, 14), sticky="w")
+
+        self.five_sim_key_entry = self._create_settings_entry(
+            settings_card,
+            row=1,
+            label="5sim API Key",
+            value=self.service_config.get("five_sim_api_key", ""),
+        )
+        self.capsolver_key_entry = self._create_settings_entry(
+            settings_card,
+            row=2,
+            label="CapSolver API Key",
+            value=self.service_config.get("capsolver_api_key", ""),
+        )
+
+        actions_frame = ctk.CTkFrame(settings_card, fg_color="transparent")
+        actions_frame.grid(row=3, column=0, padx=22, pady=(8, 22), sticky="ew")
+        actions_frame.grid_columnconfigure(2, weight=1)
+
+        save_button = ctk.CTkButton(
+            actions_frame,
+            text="Save Keys",
+            height=42,
+            corner_radius=10,
+            fg_color=self.colors["accent"],
+            hover_color=self.colors["accent_hover"],
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._save_service_settings,
+        )
+        save_button.grid(row=0, column=0, padx=(0, 10), sticky="w")
+
+        self.check_apis_button = ctk.CTkButton(
+            actions_frame,
+            text="Check APIs",
+            height=42,
+            corner_radius=10,
+            fg_color=self.colors["surface"],
+            hover_color=self.colors["border"],
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._check_service_apis,
+        )
+        self.check_apis_button.grid(row=0, column=1, sticky="w")
+
+        self.settings_status_label = ctk.CTkLabel(
+            actions_frame,
+            text="",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color="#60A5FA",
+        )
+        self.settings_status_label.grid(row=0, column=2, padx=(16, 0), sticky="w")
+
+    def _create_settings_entry(
+        self,
+        parent: ctk.CTkFrame,
+        row: int,
+        label: str,
+        value: str,
+    ) -> ctk.CTkEntry:
+        """Create one masked API-key entry row."""
+        field_frame = ctk.CTkFrame(parent, fg_color="transparent")
+        field_frame.grid(row=row, column=0, padx=22, pady=(0, 14), sticky="ew")
+        field_frame.grid_columnconfigure(0, weight=1)
+
+        label_widget = ctk.CTkLabel(
+            field_frame,
+            text=label,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        label_widget.grid(row=0, column=0, sticky="w", pady=(0, 6))
+
+        entry = ctk.CTkEntry(
+            field_frame,
+            height=42,
+            corner_radius=10,
+            fg_color="#0B1220",
+            border_color=self.colors["border"],
+            text_color=self.colors["text"],
+            show="*",
+        )
+        entry.grid(row=1, column=0, sticky="ew")
+        if value:
+            entry.insert(0, value)
+        return entry
+
+    def _save_service_settings(self) -> None:
+        """Save provider API keys to local config."""
+        five_sim_key = self.five_sim_key_entry.get().strip()
+        capsolver_key = self.capsolver_key_entry.get().strip()
+
+        try:
+            self.config_manager.save(five_sim_key, capsolver_key)
+        except OSError as exc:
+            message = f"Failed to save API settings: {exc}"
+            self.settings_status_label.configure(text="فشل حفظ المفاتيح.")
+            self._append_log(message)
+            return
+
+        self.service_config = {
+            "five_sim_api_key": five_sim_key,
+            "capsolver_api_key": capsolver_key,
+        }
+        self.settings_status_label.configure(text="تم حفظ مفاتيح API بنجاح.")
+        self._append_log("Service API keys saved to config.json.")
+
+    def _check_service_apis(self) -> None:
+        """Check provider API keys without blocking the UI."""
+        five_sim_key = self.five_sim_key_entry.get().strip()
+        capsolver_key = self.capsolver_key_entry.get().strip()
+
+        self.check_apis_button.configure(state="disabled", text="Checking...")
+        self.settings_status_label.configure(text="جاري فحص الاتصالات...")
+        self._append_log("Checking service API connections...")
+
+        thread = threading.Thread(
+            target=self._run_service_api_checks,
+            args=(five_sim_key, capsolver_key),
+            daemon=True,
+        )
+        thread.start()
+
+    def _run_service_api_checks(self, five_sim_key: str, capsolver_key: str) -> None:
+        """Run provider checks in the background."""
+        messages: list[str] = []
+
+        if five_sim_key:
+            try:
+                result = FiveSimClient(five_sim_key).check_balance()
+                balance = result.get("balance", "unknown")
+                currency = result.get("currency", "")
+                messages.append(f"5sim balance check succeeded: {balance} {currency}")
+            except IntegrationError as exc:
+                messages.append(f"5sim balance check failed: {exc}")
+        else:
+            messages.append("5sim API key not provided; skipping balance check.")
+
+        if capsolver_key:
+            try:
+                result = CapSolverClient(capsolver_key).check_balance()
+                balance = result.get("balance", "unknown")
+                messages.append(f"CapSolver balance check succeeded: {balance}")
+            except IntegrationError as exc:
+                messages.append(f"CapSolver balance check failed: {exc}")
+        else:
+            messages.append("CapSolver API key not provided; skipping balance check.")
+
+        self.after(0, self._finish_service_api_checks, messages)
+
+    def _finish_service_api_checks(self, messages: list[str]) -> None:
+        """Display provider check results in the UI and logs."""
+        for message in messages:
+            self._append_log(message)
+
+        if hasattr(self, "settings_status_label"):
+            self.settings_status_label.configure(text="انتهى فحص الاتصالات.")
+        if hasattr(self, "check_apis_button"):
+            self.check_apis_button.configure(state="normal", text="Check APIs")
 
     def _append_log(self, message: str) -> None:
         """Append a message to the in-memory log and visible log textbox."""
