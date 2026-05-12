@@ -17,7 +17,8 @@ import threading
 import customtkinter as ctk
 
 from api_handler import CapSolverClient, ConfigManager, FiveSimClient, IntegrationError
-from browser_engine import BrowserEngine, BrowserEngineError
+from browser_engine import BrowserEngine
+from task_manager import AutomatedTestScenario, ScenarioConfig
 
 
 class AutomationDashboard(ctk.CTk):
@@ -410,54 +411,83 @@ class AutomationDashboard(ctk.CTk):
 
         description_label = ctk.CTkLabel(
             control_card,
-            text="Start a visible Chromium session for local automation testing.",
+            text="Run a safe E2E scenario against an authorized staging or sandbox URL.",
             font=ctk.CTkFont(size=14),
             text_color=self.colors["muted_text"],
         )
         description_label.grid(row=1, column=0, padx=24, pady=(0, 22), sticky="w")
 
+        url_label = ctk.CTkLabel(
+            control_card,
+            text="Target Test URL",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        url_label.grid(row=2, column=0, padx=24, pady=(0, 6), sticky="w")
+
+        self.test_url_entry = ctk.CTkEntry(
+            control_card,
+            height=42,
+            corner_radius=10,
+            fg_color="#0B1220",
+            border_color=self.colors["border"],
+            text_color=self.colors["text"],
+        )
+        self.test_url_entry.grid(row=3, column=0, padx=24, pady=(0, 18), sticky="ew")
+        self.test_url_entry.insert(0, "https://example.com")
+
         self.start_button = ctk.CTkButton(
             control_card,
-            text="Start",
+            text="Start E2E Test",
             height=44,
-            width=150,
+            width=170,
             corner_radius=10,
             fg_color=self.colors["accent"],
             hover_color=self.colors["accent_hover"],
             font=ctk.CTkFont(size=14, weight="bold"),
             command=self._start_browser_engine,
         )
-        self.start_button.grid(row=2, column=0, padx=24, pady=(0, 24), sticky="w")
+        self.start_button.grid(row=4, column=0, padx=24, pady=(0, 24), sticky="w")
 
     def _start_browser_engine(self) -> None:
-        """Start the browser engine without blocking the UI event loop."""
-        self.start_button.configure(state="disabled", text="Starting...")
-        self._append_log("Initializing Secure Browser Engine...")
+        """Start the E2E scenario without blocking the UI event loop."""
+        self.start_button.configure(state="disabled", text="Running...")
+        self.current_test_url = self.test_url_entry.get().strip()
+        self._append_log("Initializing E2E Test Scenario...")
 
         thread = threading.Thread(target=self._launch_browser_engine, daemon=True)
         thread.start()
 
     def _launch_browser_engine(self) -> None:
-        """Launch Playwright in a background thread and report UI status."""
+        """Run the E2E scenario in a background thread and report UI status."""
         try:
-            self.browser_engine.start(headless=False)
-        except BrowserEngineError as exc:
+            scenario = AutomatedTestScenario(
+                browser_engine=self.browser_engine,
+                config=ScenarioConfig(
+                    target_url=self.current_test_url,
+                    five_sim_api_key=self.service_config.get("five_sim_api_key", ""),
+                    capsolver_api_key=self.service_config.get("capsolver_api_key", ""),
+                ),
+                log_callback=self._append_log_from_worker,
+            )
+            scenario.run()
+        except Exception as exc:
             self.after(0, self._handle_browser_start_failure, str(exc))
             return
 
         self.after(0, self._handle_browser_start_success)
 
     def _handle_browser_start_success(self) -> None:
-        """Update the UI after a successful browser launch."""
-        self._append_log("Browser Session Started Successfully.")
+        """Update the UI after a successful E2E scenario run."""
+        self._append_log("E2E Test Scenario Finished Successfully.")
         if hasattr(self, "start_button"):
-            self.start_button.configure(state="normal", text="Start")
+            self.start_button.configure(state="normal", text="Start E2E Test")
 
     def _handle_browser_start_failure(self, error_message: str) -> None:
-        """Update the UI after a failed browser launch."""
-        self._append_log(f"Browser Session Failed: {error_message}")
+        """Update the UI after a failed E2E scenario run."""
+        self._append_log(f"E2E Test Scenario Failed: {error_message}")
         if hasattr(self, "start_button"):
-            self.start_button.configure(state="normal", text="Start")
+            self.start_button.configure(state="normal", text="Start E2E Test")
 
     def show_settings_view(self) -> None:
         """Render service API key settings."""
@@ -661,6 +691,10 @@ class AutomationDashboard(ctk.CTk):
             self.log_textbox.insert("end", f"{entry}\n")
             self.log_textbox.see("end")
             self.log_textbox.configure(state="disabled")
+
+    def _append_log_from_worker(self, message: str) -> None:
+        """Safely append logs generated by a background worker thread."""
+        self.after(0, self._append_log, message)
 
     def _on_close(self) -> None:
         """Close browser resources before shutting down the application."""
