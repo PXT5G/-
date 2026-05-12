@@ -13,11 +13,13 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 import threading
+from tkinter import filedialog
 
 import customtkinter as ctk
 
 from api_handler import CapSolverClient, ConfigManager, FiveSimClient, IntegrationError
 from browser_engine import BrowserEngine
+from proxy_manager import ProxyManager, ProxyManagerError
 from task_manager import AutomatedTestScenario, ScenarioConfig
 
 
@@ -32,7 +34,8 @@ class AutomationDashboard(ctk.CTk):
         self.title("Automation Control Center")
         self.geometry("1100x700")
         self.minsize(900, 600)
-        self.browser_engine = BrowserEngine()
+        self.proxy_manager = ProxyManager()
+        self.browser_engine = BrowserEngine(proxy_manager=self.proxy_manager)
         self.config_manager = ConfigManager()
         self.config_load_error: str | None = None
         try:
@@ -47,6 +50,10 @@ class AutomationDashboard(ctk.CTk):
         if self.config_load_error:
             self.log_entries.append(
                 f"[10:05:02] Settings load warning: {self.config_load_error}"
+            )
+        if self.proxy_manager.last_error:
+            self.log_entries.append(
+                f"[10:05:03] Proxy load warning: {self.proxy_manager.last_error}"
             )
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -539,7 +546,7 @@ class AutomationDashboard(ctk.CTk):
 
         actions_frame = ctk.CTkFrame(settings_card, fg_color="transparent")
         actions_frame.grid(row=3, column=0, padx=22, pady=(8, 22), sticky="ew")
-        actions_frame.grid_columnconfigure(2, weight=1)
+        actions_frame.grid_columnconfigure(3, weight=1)
 
         save_button = ctk.CTkButton(
             actions_frame,
@@ -565,13 +572,25 @@ class AutomationDashboard(ctk.CTk):
         )
         self.check_apis_button.grid(row=0, column=1, sticky="w")
 
+        import_proxy_button = ctk.CTkButton(
+            actions_frame,
+            text="Import Proxy List",
+            height=42,
+            corner_radius=10,
+            fg_color=self.colors["surface"],
+            hover_color=self.colors["border"],
+            font=ctk.CTkFont(size=14, weight="bold"),
+            command=self._import_proxy_list,
+        )
+        import_proxy_button.grid(row=0, column=2, padx=(10, 0), sticky="w")
+
         self.settings_status_label = ctk.CTkLabel(
             actions_frame,
             text="",
             font=ctk.CTkFont(size=13, weight="bold"),
             text_color="#60A5FA",
         )
-        self.settings_status_label.grid(row=0, column=2, padx=(16, 0), sticky="w")
+        self.settings_status_label.grid(row=0, column=3, padx=(16, 0), sticky="w")
 
     def _create_settings_entry(
         self,
@@ -626,6 +645,25 @@ class AutomationDashboard(ctk.CTk):
         }
         self.settings_status_label.configure(text="تم حفظ مفاتيح API بنجاح.")
         self._append_log("Service API keys saved to config.json.")
+
+    def _import_proxy_list(self) -> None:
+        """Import proxies from a user-selected file into proxies.txt."""
+        file_path = filedialog.askopenfilename(
+            title="Import Proxy List",
+            filetypes=(("Text files", "*.txt"), ("All files", "*.*")),
+        )
+        if not file_path:
+            return
+
+        try:
+            count = self.proxy_manager.import_proxy_file(Path(file_path))
+        except (OSError, ProxyManagerError) as exc:
+            self.settings_status_label.configure(text="فشل استيراد البروكسيات.")
+            self._append_log(f"Proxy list import failed: {exc}")
+            return
+
+        self.settings_status_label.configure(text=f"تم استيراد {count} بروكسي.")
+        self._append_log(f"Imported {count} proxies into proxies.txt.")
 
     def _check_service_apis(self) -> None:
         """Check provider API keys without blocking the UI."""

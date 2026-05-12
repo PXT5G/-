@@ -20,6 +20,8 @@ from playwright.sync_api import (
     sync_playwright,
 )
 
+from proxy_manager import ProxyConfig, ProxyManager
+
 
 STANDARD_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -61,12 +63,16 @@ class BrowserEngine:
     def __init__(
         self,
         behavior_settings: BehaviorSettings | None = None,
+        proxy_manager: ProxyManager | None = None,
         user_agent: str = STANDARD_USER_AGENT,
     ) -> None:
         self.session: BrowserSession | None = None
         self.behavior_settings = behavior_settings or BehaviorSettings()
+        self.proxy_manager = proxy_manager or ProxyManager()
         self.user_agent = user_agent
         self._mouse_position = (640.0, 400.0)
+        self.current_proxy: ProxyConfig | None = None
+        self.current_ip_address: str | None = None
 
     @property
     def is_running(self) -> bool:
@@ -86,7 +92,14 @@ class BrowserEngine:
         browser: Browser | None = None
         try:
             playwright = sync_playwright().start()
-            browser = playwright.chromium.launch(headless=headless)
+            self.current_proxy = self.proxy_manager.get_next_proxy()
+            self.current_ip_address = None
+
+            launch_options: dict[str, object] = {"headless": headless}
+            if self.current_proxy is not None:
+                launch_options["proxy"] = self.current_proxy.to_playwright_proxy()
+
+            browser = playwright.chromium.launch(**launch_options)
             context = browser.new_context(
                 viewport={"width": 1280, "height": 800},
                 user_agent=self.user_agent,
@@ -109,6 +122,33 @@ class BrowserEngine:
             page=page,
         )
         return self.session
+
+    def resolve_current_ip(self, timeout_ms: int = 15_000) -> str:
+        """Resolve the browser-visible public IP address for logging."""
+        if self.session is None:
+            raise BrowserEngineError("Browser session has not been started.")
+
+        ip_page = self.session.context.new_page()
+        try:
+            ip_page.goto(
+                "https://api.ipify.org",
+                wait_until="domcontentloaded",
+                timeout=timeout_ms,
+            )
+            ip_address = ip_page.locator("body").inner_text(timeout=5_000).strip()
+        except Exception as exc:
+            raise BrowserEngineError("Unable to resolve browser IP address.") from exc
+        finally:
+            ip_page.close()
+
+        self.current_ip_address = ip_address
+        return ip_address
+
+    def current_proxy_label(self) -> str:
+        """Return a redacted label for the selected proxy."""
+        if self.current_proxy is None:
+            return "Direct connection"
+        return self.current_proxy.redacted
 
     def randomized_delay(
         self,
@@ -221,6 +261,8 @@ class BrowserEngine:
 
         session = self.session
         self.session = None
+        self.current_proxy = None
+        self.current_ip_address = None
         session.browser.close()
         session.playwright.stop()
 

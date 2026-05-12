@@ -114,6 +114,12 @@ class AutomatedTestScenario:
         session = self.browser_engine.start(headless=False)
         page = session.page
         self._log("Browser session ready with UX behavior settings.")
+        self._log(f"Proxy route: {self.browser_engine.current_proxy_label()}")
+        try:
+            current_ip = self.browser_engine.resolve_current_ip()
+            self._log(f"Current browser IP address: {current_ip}")
+        except BrowserEngineError as exc:
+            self._log(f"Could not determine current browser IP address: {exc}")
 
         self._navigate_to_test_page(page)
         self._attempt_account_flow(page, account)
