@@ -51,8 +51,8 @@ def build_webhook_payload(template: str, variables: Dict[str, Any]) -> Dict[str,
 
 def extract_code_or_token(response: Dict[str, Any]) -> Optional[str]:
     """
-    Return the first non-empty ``token`` or ``code`` found in the response tree.
-    ``token`` is preferred when both exist at the same depth (dict key order: token first).
+    Return the first non-empty ``code`` or ``token`` found in the response tree
+    (``code`` is checked before ``token`` at each object level).
     """
 
     def walk(node: Any) -> Optional[str]:
