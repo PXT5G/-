@@ -155,14 +155,6 @@ class AutomationControlCenter(ctk.CTk):
     Main application window: sidebar navigation, header, and dynamic content.
     """
 
-    # Map sidebar keys to human-readable titles for the header area if needed
-    VIEW_TITLES = {
-        "home": "Home",
-        "credentials": "Credentials",
-        "tasks": "Task Manager",
-        "logs": "Live Logs",
-    }
-
     def __init__(self) -> None:
         super().__init__()
 
