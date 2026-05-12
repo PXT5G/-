@@ -24,6 +24,9 @@ class ProxyConfig:
     username: str
     password: str
     scheme: str = "http"
+    country: str = ""
+    locale: str = ""
+    timezone_id: str = ""
 
     @property
     def server(self) -> str:
@@ -42,6 +45,29 @@ class ProxyConfig:
             "username": self.username,
             "password": self.password,
         }
+
+    def device_profile_metadata(self) -> dict[str, object] | None:
+        """Return transparent device profile metadata when locale data exists."""
+        if not self.locale or not self.timezone_id:
+            return None
+
+        viewport = self._viewport_for_country()
+        country_suffix = self.country.lower() or "custom"
+        return {
+            "name": f"proxy-{country_suffix}-{viewport['width']}x{viewport['height']}",
+            "viewport": viewport,
+            "screen": viewport,
+            "locale": self.locale,
+            "timezone_id": self.timezone_id,
+        }
+
+    def _viewport_for_country(self) -> dict[str, int]:
+        """Choose a common desktop viewport for explicit proxy metadata."""
+        if self.country.upper() in {"US", "CA"}:
+            return {"width": 1920, "height": 1080}
+        if self.country.upper() in {"GB", "UK", "DE", "FR", "NL"}:
+            return {"width": 1536, "height": 864}
+        return {"width": 1366, "height": 768}
 
 
 class ProxyManager:
@@ -106,14 +132,21 @@ class ProxyManager:
 
     @staticmethod
     def _parse_proxy_line(line: str, line_number: int) -> ProxyConfig:
-        """Parse ip:port:user:pass proxy rows."""
+        """Parse proxy rows.
+
+        Supported formats:
+            ip:port:user:pass
+            ip:port:user:pass:country:locale:timezone
+        """
         parts = line.split(":")
-        if len(parts) != 4:
+        if len(parts) not in {4, 7}:
             raise ProxyManagerError(
-                f"Invalid proxy format on line {line_number}; expected ip:port:user:pass."
+                "Invalid proxy format on line "
+                f"{line_number}; expected ip:port:user:pass or "
+                "ip:port:user:pass:country:locale:timezone."
             )
 
-        host, port_text, username, password = (part.strip() for part in parts)
+        host, port_text, username, password = (part.strip() for part in parts[:4])
         if not host or not port_text or not username or not password:
             raise ProxyManagerError(
                 f"Invalid proxy value on line {line_number}; all fields are required."
@@ -131,4 +164,21 @@ class ProxyManager:
                 f"Invalid proxy port on line {line_number}: {port_text!r}."
             )
 
-        return ProxyConfig(host=host, port=port, username=username, password=password)
+        country = locale = timezone_id = ""
+        if len(parts) == 7:
+            country, locale, timezone_id = (part.strip() for part in parts[4:])
+            if not country or not locale or not timezone_id:
+                raise ProxyManagerError(
+                    f"Invalid proxy metadata on line {line_number}; "
+                    "country, locale, and timezone are required when metadata is used."
+                )
+
+        return ProxyConfig(
+            host=host,
+            port=port,
+            username=username,
+            password=password,
+            country=country,
+            locale=locale,
+            timezone_id=timezone_id,
+        )

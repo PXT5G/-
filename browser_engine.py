@@ -57,6 +57,49 @@ class BehaviorSettings:
     scroll_pause_seconds: tuple[float, float] = (0.04, 0.16)
 
 
+@dataclass(frozen=True)
+class DeviceProfile:
+    """Transparent desktop profile for UX viewport and locale coverage."""
+
+    name: str
+    viewport: dict[str, int]
+    screen: dict[str, int]
+    locale: str
+    timezone_id: str
+
+
+DESKTOP_DEVICE_PROFILES = (
+    DeviceProfile(
+        name="desktop-us-1080p",
+        viewport={"width": 1920, "height": 1080},
+        screen={"width": 1920, "height": 1080},
+        locale="en-US",
+        timezone_id="America/New_York",
+    ),
+    DeviceProfile(
+        name="desktop-us-1366",
+        viewport={"width": 1366, "height": 768},
+        screen={"width": 1366, "height": 768},
+        locale="en-US",
+        timezone_id="America/Chicago",
+    ),
+    DeviceProfile(
+        name="desktop-gb-1536",
+        viewport={"width": 1536, "height": 864},
+        screen={"width": 1536, "height": 864},
+        locale="en-GB",
+        timezone_id="Europe/London",
+    ),
+    DeviceProfile(
+        name="desktop-de-1440",
+        viewport={"width": 1440, "height": 900},
+        screen={"width": 1440, "height": 900},
+        locale="de-DE",
+        timezone_id="Europe/Berlin",
+    ),
+)
+
+
 class BrowserEngine:
     """Small wrapper around Playwright browser lifecycle operations."""
 
@@ -73,6 +116,7 @@ class BrowserEngine:
         self._mouse_position = (640.0, 400.0)
         self.current_proxy: ProxyConfig | None = None
         self.current_ip_address: str | None = None
+        self.current_device_profile: DeviceProfile | None = None
 
     @property
     def is_running(self) -> bool:
@@ -94,6 +138,7 @@ class BrowserEngine:
             playwright = sync_playwright().start()
             self.current_proxy = self.proxy_manager.get_next_proxy()
             self.current_ip_address = None
+            self.current_device_profile = self._select_device_profile()
 
             launch_options: dict[str, object] = {"headless": headless}
             if self.current_proxy is not None:
@@ -101,9 +146,16 @@ class BrowserEngine:
 
             browser = playwright.chromium.launch(**launch_options)
             context = browser.new_context(
-                viewport={"width": 1280, "height": 800},
+                viewport=self.current_device_profile.viewport,
+                screen=self.current_device_profile.screen,
                 user_agent=self.user_agent,
-                extra_http_headers={"Accept-Language": "en-US,en;q=0.9"},
+                locale=self.current_device_profile.locale,
+                timezone_id=self.current_device_profile.timezone_id,
+                extra_http_headers={
+                    "Accept-Language": self._accept_language_header(
+                        self.current_device_profile.locale
+                    )
+                },
             )
             if simulate_network_latency:
                 context.route("**/*", self._route_with_latency)
@@ -149,6 +201,18 @@ class BrowserEngine:
         if self.current_proxy is None:
             return "Direct connection"
         return self.current_proxy.redacted
+
+    def current_device_profile_label(self) -> str:
+        """Return a short label for the selected transparent device profile."""
+        if self.current_device_profile is None:
+            return "No device profile selected"
+        width = self.current_device_profile.viewport["width"]
+        height = self.current_device_profile.viewport["height"]
+        return (
+            f"{self.current_device_profile.name} "
+            f"({width}x{height}, {self.current_device_profile.locale}, "
+            f"{self.current_device_profile.timezone_id})"
+        )
 
     def randomized_delay(
         self,
@@ -263,6 +327,7 @@ class BrowserEngine:
         self.session = None
         self.current_proxy = None
         self.current_ip_address = None
+        self.current_device_profile = None
         session.browser.close()
         session.playwright.stop()
 
@@ -279,6 +344,22 @@ class BrowserEngine:
         if self.session is None:
             raise BrowserEngineError("Browser session has not been started.")
         return self.session.page
+
+    def _select_device_profile(self) -> DeviceProfile:
+        """Select a transparent UX profile, preferring proxy metadata when present."""
+        if self.current_proxy is not None:
+            proxy_profile_metadata = self.current_proxy.device_profile_metadata()
+            if proxy_profile_metadata is not None:
+                return DeviceProfile(**proxy_profile_metadata)
+        return random.choice(DESKTOP_DEVICE_PROFILES)
+
+    @staticmethod
+    def _accept_language_header(locale: str) -> str:
+        """Build a simple Accept-Language header from a locale."""
+        language = locale.split("-", maxsplit=1)[0]
+        if language == locale:
+            return f"{locale};q=0.9,en;q=0.8"
+        return f"{locale},{language};q=0.9,en;q=0.8"
 
     def _apply_target_offset(
         self,

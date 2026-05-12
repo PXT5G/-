@@ -131,6 +131,7 @@ class AutomatedTestScenario:
         page = session.page
         self._log("Browser session ready with UX behavior settings.")
         self._log(f"Proxy route: {self.browser_engine.current_proxy_label()}")
+        self._log(f"Device profile: {self.browser_engine.current_device_profile_label()}")
         try:
             current_ip = self.browser_engine.resolve_current_ip()
             self._log(f"Current browser IP address: {current_ip}")
