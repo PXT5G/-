@@ -10,6 +10,7 @@ from __future__ import annotations
 import random
 import time
 from dataclasses import dataclass
+from typing import Any, cast
 
 from playwright.sync_api import (
     Browser,
@@ -218,15 +219,15 @@ class BrowserEngine:
             self.current_ip_address = None
             self.current_device_profile = self._select_device_profile()
 
-            launch_options: dict[str, object] = {"headless": headless}
+            launch_options: dict[str, Any] = {"headless": headless}
             if self.current_proxy is not None:
                 launch_options["proxy"] = self.current_proxy.to_playwright_proxy()
 
             browser = playwright.chromium.launch(**launch_options)
             self.current_user_agent = self._select_user_agent()
             context = browser.new_context(
-                viewport=self.current_device_profile.viewport,
-                screen=self.current_device_profile.screen,
+                viewport=cast(Any, self.current_device_profile.viewport),
+                screen=cast(Any, self.current_device_profile.screen),
                 user_agent=self.current_user_agent,
                 locale=self.current_device_profile.locale,
                 timezone_id=self.current_device_profile.timezone_id,

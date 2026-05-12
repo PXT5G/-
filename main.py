@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import threading
 from tkinter import filedialog
+from typing import Any
 
 import customtkinter as ctk
 
@@ -85,7 +86,7 @@ class AutomationDashboard(ctk.CTk):
         self.config_manager = ConfigManager()
         self.active_threads_count = 0
         self.dashboard_metric_labels: dict[str, ctk.CTkLabel] = {}
-        self.system_health_widgets: dict[str, object] = {}
+        self.system_health_widgets: dict[str, Any] = {}
         self.success_feed_frame: ctk.CTkScrollableFrame | None = None
         self.ratio_progress: ctk.CTkProgressBar | None = None
         self.ratio_label: ctk.CTkLabel | None = None

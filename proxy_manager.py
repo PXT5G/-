@@ -6,6 +6,7 @@ import os
 import threading
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 PROXY_FILE = Path("proxies.txt")
@@ -46,7 +47,7 @@ class ProxyConfig:
             "password": self.password,
         }
 
-    def device_profile_metadata(self) -> dict[str, object] | None:
+    def device_profile_metadata(self) -> dict[str, Any] | None:
         """Return transparent device profile metadata when locale data exists."""
         if not self.locale or not self.timezone_id:
             return None
