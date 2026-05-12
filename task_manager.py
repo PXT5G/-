@@ -134,6 +134,7 @@ class AutomatedTestScenario:
         self._log("Browser session ready with UX behavior settings.")
         self._log(f"Proxy route: {self.browser_engine.current_proxy_label()}")
         self._log(f"Device profile: {self.browser_engine.current_device_profile_label()}")
+        self._log(f"User-Agent: {self.browser_engine.current_user_agent_label()}")
         try:
             current_ip = self.browser_engine.resolve_current_ip()
             self._log(f"Current browser IP address: {current_ip}")
@@ -143,6 +144,7 @@ class AutomatedTestScenario:
                 raise
 
         self._perform_pre_task_warmup(page)
+        self._perform_precheck_tab_routine(page)
         self._navigate_to_test_page(page)
         self._attempt_account_flow(page, account)
         self._simulate_provider_checks(page)
@@ -180,6 +182,12 @@ class AutomatedTestScenario:
         self._log("Running local pre-task warmup.")
         self.browser_engine.perform_local_warmup(page)
         self._log("Local pre-task warmup completed.")
+
+    def _perform_precheck_tab_routine(self, page: Page) -> None:
+        """Open a blank tab briefly to test distraction resilience."""
+        self._log("Running pre-check blank tab routine.")
+        self.browser_engine.perform_precheck_tab_switch(page)
+        self._log("Pre-check blank tab routine completed.")
 
     def _attempt_account_flow(self, page: Page, account: AccountData) -> None:
         """Best-effort login/register field filling using common test selectors."""
@@ -446,7 +454,7 @@ class AutomatedTestScenario:
             locator = page.locator(selector).first
             try:
                 locator.wait_for(state="visible", timeout=1_000)
-                locator.fill(value)
+                self.browser_engine.type_text_naturally(locator, value, page)
             except PlaywrightTimeoutError:
                 continue
             except Exception as exc:

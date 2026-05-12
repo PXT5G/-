@@ -28,6 +28,21 @@ STANDARD_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/136.0.0.0 Safari/537.36"
 )
+WINDOWS_EDGE_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
+)
+LINUX_CHROME_USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/136.0.0.0 Safari/537.36"
+)
+MAC_SAFARI_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/17.5 Safari/605.1.15"
+)
 
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
 TRACKER_HOST_KEYWORDS = (
@@ -42,6 +57,44 @@ TRACKER_HOST_KEYWORDS = (
     "segment",
     "mixpanel",
 )
+NEIGHBORING_KEYS = {
+    "a": "qswsz",
+    "b": "vghn",
+    "c": "xdfv",
+    "d": "serfcx",
+    "e": "wsdr",
+    "f": "drtgvc",
+    "g": "ftyhbv",
+    "h": "gyujnb",
+    "i": "ujko",
+    "j": "huikmn",
+    "k": "jiolm",
+    "l": "kop",
+    "m": "njk",
+    "n": "bhjm",
+    "o": "iklp",
+    "p": "ol",
+    "q": "wa",
+    "r": "edft",
+    "s": "awedxz",
+    "t": "rfgy",
+    "u": "yhji",
+    "v": "cfgb",
+    "w": "qase",
+    "x": "zsdc",
+    "y": "tghu",
+    "z": "asx",
+    "1": "2q",
+    "2": "13w",
+    "3": "24e",
+    "4": "35r",
+    "5": "46t",
+    "6": "57y",
+    "7": "68u",
+    "8": "79i",
+    "9": "80o",
+    "0": "9p",
+}
 
 
 class BrowserEngineError(RuntimeError):
@@ -69,6 +122,10 @@ class BehaviorSettings:
     mouse_offset_px: int = 4
     scroll_delta_px: tuple[int, int] = (260, 760)
     scroll_pause_seconds: tuple[float, float] = (0.04, 0.16)
+    typing_pause_seconds: tuple[float, float] = (0.035, 0.16)
+    typo_recovery_pause_seconds: tuple[float, float] = (0.08, 0.24)
+    typing_error_rate: float = 0.035
+    mouse_jitter_px: int = 2
 
 
 @dataclass(frozen=True)
@@ -80,6 +137,7 @@ class DeviceProfile:
     screen: dict[str, int]
     locale: str
     timezone_id: str
+    user_agent: str = STANDARD_USER_AGENT
 
 
 DESKTOP_DEVICE_PROFILES = (
@@ -89,6 +147,7 @@ DESKTOP_DEVICE_PROFILES = (
         screen={"width": 1920, "height": 1080},
         locale="en-US",
         timezone_id="America/New_York",
+        user_agent=STANDARD_USER_AGENT,
     ),
     DeviceProfile(
         name="desktop-us-1366",
@@ -96,6 +155,7 @@ DESKTOP_DEVICE_PROFILES = (
         screen={"width": 1366, "height": 768},
         locale="en-US",
         timezone_id="America/Chicago",
+        user_agent=WINDOWS_EDGE_USER_AGENT,
     ),
     DeviceProfile(
         name="desktop-gb-1536",
@@ -103,6 +163,7 @@ DESKTOP_DEVICE_PROFILES = (
         screen={"width": 1536, "height": 864},
         locale="en-GB",
         timezone_id="Europe/London",
+        user_agent=MAC_SAFARI_USER_AGENT,
     ),
     DeviceProfile(
         name="desktop-de-1440",
@@ -110,6 +171,7 @@ DESKTOP_DEVICE_PROFILES = (
         screen={"width": 1440, "height": 900},
         locale="de-DE",
         timezone_id="Europe/Berlin",
+        user_agent=LINUX_CHROME_USER_AGENT,
     ),
 )
 
@@ -131,6 +193,7 @@ class BrowserEngine:
         self.current_proxy: ProxyConfig | None = None
         self.current_ip_address: str | None = None
         self.current_device_profile: DeviceProfile | None = None
+        self.current_user_agent: str = user_agent
 
     @property
     def is_running(self) -> bool:
@@ -160,10 +223,11 @@ class BrowserEngine:
                 launch_options["proxy"] = self.current_proxy.to_playwright_proxy()
 
             browser = playwright.chromium.launch(**launch_options)
+            self.current_user_agent = self._select_user_agent()
             context = browser.new_context(
                 viewport=self.current_device_profile.viewport,
                 screen=self.current_device_profile.screen,
-                user_agent=self.user_agent,
+                user_agent=self.current_user_agent,
                 locale=self.current_device_profile.locale,
                 timezone_id=self.current_device_profile.timezone_id,
                 extra_http_headers={
@@ -236,6 +300,10 @@ class BrowserEngine:
             f"{self.current_device_profile.timezone_id})"
         )
 
+    def current_user_agent_label(self) -> str:
+        """Return the selected User-Agent for transparent environment reporting."""
+        return self.current_user_agent
+
     def randomized_delay(
         self,
         min_seconds: float | None = None,
@@ -247,7 +315,72 @@ class BrowserEngine:
         max_delay = default_max if max_seconds is None else max_seconds
         delay = random.uniform(min_delay, max_delay)
         time.sleep(delay)
+        if self.session is not None and random.random() < 0.35:
+            self.idle_mouse_jitter(duration_seconds=random.uniform(0.04, 0.12))
         return delay
+
+    def idle_mouse_jitter(
+        self,
+        page: Page | None = None,
+        duration_seconds: float = 0.2,
+    ) -> None:
+        """Move the mouse by 1-2 pixels while idle to model hand micro-movement."""
+        try:
+            active_page = self._get_page(page)
+            viewport = active_page.viewport_size or {"width": 1280, "height": 800}
+            end_time = time.perf_counter() + duration_seconds
+            while time.perf_counter() < end_time:
+                jitter = self.behavior_settings.mouse_jitter_px
+                x = self._mouse_position[0] + random.uniform(-jitter, jitter)
+                y = self._mouse_position[1] + random.uniform(-jitter, jitter)
+                x = min(max(x, 0), viewport["width"] - 1)
+                y = min(max(y, 0), viewport["height"] - 1)
+                active_page.mouse.move(x, y)
+                self._mouse_position = (x, y)
+                time.sleep(random.uniform(0.025, 0.06))
+        except Exception:
+            return
+
+    def type_text_naturally(
+        self,
+        locator,
+        text: str,
+        page: Page | None = None,
+        clear_existing: bool = True,
+    ) -> None:
+        """Type text with variable rhythm, occasional typo, and correction."""
+        active_page = self._get_page(page)
+        locator.click()
+        if clear_existing:
+            active_page.keyboard.press("Control+A")
+            active_page.keyboard.press("Backspace")
+
+        fatigue_interval = random.randint(8, 16)
+        for index, character in enumerate(text, start=1):
+            wrong_character = self._neighboring_key(character)
+            if wrong_character and random.random() < self.behavior_settings.typing_error_rate:
+                active_page.keyboard.type(wrong_character)
+                self.randomized_delay(*self.behavior_settings.typo_recovery_pause_seconds)
+                active_page.keyboard.press("Backspace")
+                self.randomized_delay(*self.behavior_settings.typo_recovery_pause_seconds)
+
+            active_page.keyboard.type(character)
+            self.randomized_delay(*self.behavior_settings.typing_pause_seconds)
+
+            if index % fatigue_interval == 0:
+                self.randomized_delay(0.2, 0.55)
+                fatigue_interval = random.randint(8, 16)
+
+    def perform_precheck_tab_switch(self, page: Page | None = None) -> None:
+        """Open a blank tab briefly, then return to the task tab."""
+        active_page = self._get_page(page)
+        blank_page = active_page.context.new_page()
+        try:
+            blank_page.goto("about:blank", wait_until="domcontentloaded")
+            self.randomized_delay(3.0, 3.0)
+        finally:
+            blank_page.close()
+            active_page.bring_to_front()
 
     def perform_local_warmup(self, page: Page | None = None) -> None:
         """Warm browser primitives on a local test page without external browsing."""
@@ -410,6 +543,7 @@ class BrowserEngine:
         self.current_proxy = None
         self.current_ip_address = None
         self.current_device_profile = None
+        self.current_user_agent = self.user_agent
         session.browser.close()
         session.playwright.stop()
 
@@ -454,6 +588,24 @@ class BrowserEngine:
             if proxy_profile_metadata is not None:
                 return DeviceProfile(**proxy_profile_metadata)
         return random.choice(DESKTOP_DEVICE_PROFILES)
+
+    def _select_user_agent(self) -> str:
+        """Select the configured or profile-provided User-Agent."""
+        if self.user_agent != STANDARD_USER_AGENT:
+            return self.user_agent
+        if self.current_device_profile is not None:
+            return self.current_device_profile.user_agent
+        return STANDARD_USER_AGENT
+
+    @staticmethod
+    def _neighboring_key(character: str) -> str | None:
+        """Return a neighboring keyboard character for typo simulation."""
+        lower_character = character.lower()
+        neighbors = NEIGHBORING_KEYS.get(lower_character)
+        if not neighbors:
+            return None
+        replacement = random.choice(neighbors)
+        return replacement.upper() if character.isupper() else replacement
 
     @staticmethod
     def _accept_language_header(locale: str) -> str:
