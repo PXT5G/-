@@ -10,13 +10,19 @@ transactions. Payment form filling is limited to known sandbox card numbers.
 
 from __future__ import annotations
 
+from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
 
-from api_handler import CapSolverClient, FiveSimClient, IntegrationError
+from api_handler import (
+    CapSolverClient,
+    FiveSimClient,
+    IntegrationError,
+    UnsupportedIntegrationOperation,
+)
 from browser_engine import BrowserEngine, BrowserEngineError
 
 
@@ -24,6 +30,7 @@ LogCallback = Callable[[str], None]
 
 ACCOUNT_FILE = Path("accounts.txt")
 CARD_FILE = Path("cards.txt")
+SUCCESS_REPORT_FILE = Path("success_test_runs.txt")
 
 SANDBOX_CARD_NUMBERS = {
     "4111111111111111",
@@ -111,7 +118,9 @@ class AutomatedTestScenario:
         self._navigate_to_test_page(page)
         self._attempt_account_flow(page, account)
         self._simulate_provider_checks(page)
-        self._simulate_payment_lifecycle(page, card)
+        cleanup_completed = self._simulate_payment_lifecycle(page, card)
+        if cleanup_completed:
+            self._write_success_report(account, card)
 
         self._log("E2E scenario completed.")
 
@@ -205,8 +214,9 @@ class AutomatedTestScenario:
             self._log("5sim key missing; simulated SMS metadata request skipped.")
             return
 
+        client = FiveSimClient(self.config.five_sim_api_key)
         try:
-            balance = FiveSimClient(self.config.five_sim_api_key).check_balance()
+            balance = client.check_balance()
         except IntegrationError as exc:
             self._log(f"5sim metadata check failed: {exc}")
             return
@@ -215,6 +225,10 @@ class AutomatedTestScenario:
             "5sim metadata check completed; "
             f"balance={balance.get('balance', 'unknown')} {balance.get('currency', '')}."
         )
+        try:
+            client.purchase_number(service="sandbox")
+        except UnsupportedIntegrationOperation as exc:
+            self._log(f"Live SMS purchase blocked: {exc}")
 
     def _request_captcha_metadata(self) -> None:
         """Simulate solver readiness by checking CapSolver account status only."""
@@ -222,8 +236,9 @@ class AutomatedTestScenario:
             self._log("CapSolver key missing; simulated challenge metadata skipped.")
             return
 
+        client = CapSolverClient(self.config.capsolver_api_key)
         try:
-            balance = CapSolverClient(self.config.capsolver_api_key).check_balance()
+            balance = client.check_balance()
         except IntegrationError as exc:
             self._log(f"CapSolver metadata check failed: {exc}")
             return
@@ -232,33 +247,43 @@ class AutomatedTestScenario:
             "CapSolver metadata check completed; "
             f"balance={balance.get('balance', 'unknown')}."
         )
+        try:
+            client.solve_captcha(
+                website_url=self.config.target_url,
+                website_key="detected-page-challenge",
+            )
+        except UnsupportedIntegrationOperation as exc:
+            self._log(f"Live CAPTCHA solving blocked: {exc}")
 
-    def _simulate_payment_lifecycle(self, page: Page, card: CardData) -> None:
+    def _simulate_payment_lifecycle(self, page: Page, card: CardData) -> bool:
         """Fill sandbox payment details and attempt cleanup when safe."""
         if not card.is_sandbox_card:
             self._log(
                 "Payment simulation skipped: card is not a recognized sandbox test card."
             )
-            return
+            return False
 
         self._log("Starting sandbox payment-method form simulation.")
         payment_fields_available = self._fill_payment_fields(page, card)
         if not payment_fields_available:
             self._log("Payment fields were not detected; payment simulation skipped.")
-            return
+            return False
 
-        self._click_first_available(
-            page,
-            selectors=(
-                "[data-testid='save-payment-method']",
-                "[data-testid='submit-payment']",
-                "button[type='submit']",
-            ),
-            label="sandbox payment submit",
-        )
-        self._log("Sandbox payment step processed or submitted.")
-
-        self._cleanup_payment_method(page)
+        cleanup_completed = False
+        try:
+            self._click_first_available(
+                page,
+                selectors=(
+                    "[data-testid='save-payment-method']",
+                    "[data-testid='submit-payment']",
+                    "button[type='submit']",
+                ),
+                label="sandbox payment submit",
+            )
+            self._log("Sandbox payment step processed or submitted.")
+        finally:
+            cleanup_completed = self._cleanup_payment_method(page)
+        return cleanup_completed
 
     def _fill_payment_fields(self, page: Page, card: CardData) -> bool:
         """Best-effort payment field filling for test-only card data."""
@@ -308,7 +333,7 @@ class AutomatedTestScenario:
         )
         return all((filled_number, filled_month, filled_year, filled_cvv))
 
-    def _cleanup_payment_method(self, page: Page) -> None:
+    def _cleanup_payment_method(self, page: Page) -> bool:
         """Attempt to remove the sandbox payment method after the test."""
         self._log("Starting cleanup: remove payment method.")
         clicked = self._click_first_available(
@@ -324,7 +349,7 @@ class AutomatedTestScenario:
             required=False,
         )
         if clicked:
-            self._click_first_available(
+            confirmed = self._click_first_available(
                 page,
                 selectors=(
                     "[data-testid='confirm-remove-payment-method']",
@@ -336,8 +361,20 @@ class AutomatedTestScenario:
                 required=False,
             )
             self._log("Cleanup step completed or confirmation attempted.")
+            return confirmed or clicked
         else:
             self._log("Cleanup control not found; no payment method was removed.")
+            return False
+
+    def _write_success_report(self, account: AccountData, card: CardData) -> None:
+        """Write a non-sensitive success report for completed sandbox runs."""
+        timestamp = datetime.now().isoformat(timespec="seconds")
+        line = (
+            f"{timestamp} | target={self.config.target_url} | "
+            f"account={self._mask_username(account.username)} | card={card.masked_number}\n"
+        )
+        SUCCESS_REPORT_FILE.open("a", encoding="utf-8").write(line)
+        self._log("Sandbox success report saved to success_test_runs.txt.")
 
     def _fill_first_available(
         self,

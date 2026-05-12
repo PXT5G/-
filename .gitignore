@@ -5,3 +5,4 @@ __pycache__/
 config.json
 cards.txt
 accounts.txt
+success_test_runs.txt

@@ -96,10 +96,24 @@ class FiveSimClient:
             "Ordering virtual numbers is not supported by this integration module."
         )
 
+    def purchase_number(self, service: str = "discord") -> None:
+        """Block live virtual-number purchases in this test harness."""
+        raise UnsupportedIntegrationOperation(
+            f"Live virtual-number purchases for {service!r} are disabled. "
+            "Use provider sandboxes or mocked fixtures for production-readiness tests."
+        )
+
     def retrieve_sms_code(self) -> None:
         """SMS retrieval workflows are not implemented in this project."""
         raise UnsupportedIntegrationOperation(
             "Retrieving SMS verification codes is not supported by this integration module."
+        )
+
+    def get_sms_code(self, order_id: str) -> None:
+        """Block live SMS-code retrieval in this test harness."""
+        raise UnsupportedIntegrationOperation(
+            f"Live SMS-code retrieval for order {order_id!r} is disabled. "
+            "Use mocked verification-code fixtures in staging tests."
         )
 
     def _request_json(self, method: str, endpoint: str) -> dict[str, Any]:
@@ -148,6 +162,13 @@ class CapSolverClient:
         """CAPTCHA and Turnstile solving is not implemented in this project."""
         raise UnsupportedIntegrationOperation(
             "CAPTCHA/Turnstile solving is not supported by this integration module."
+        )
+
+    def solve_captcha(self, website_url: str, website_key: str) -> None:
+        """Block live CAPTCHA solving in this test harness."""
+        raise UnsupportedIntegrationOperation(
+            "Live CAPTCHA solving is disabled. "
+            f"Use a provider test fixture for {website_url!r} / {website_key!r}."
         )
 
 
