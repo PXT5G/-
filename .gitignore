@@ -8,3 +8,4 @@ accounts.txt
 success_test_runs.txt
 proxies.txt
 results/*.csv
+results/*.txt

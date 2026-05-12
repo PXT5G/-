@@ -12,6 +12,7 @@ from pathlib import Path
 RESULTS_DIR = Path("results")
 SUCCESS_LOG = RESULTS_DIR / "success_log.csv"
 FAILED_LOG = RESULTS_DIR / "failed_log.csv"
+DAILY_SUMMARY = RESULTS_DIR / "daily_summary.txt"
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class OutputManager:
         self.results_dir = results_dir
         self.success_log = results_dir / SUCCESS_LOG.name
         self.failed_log = results_dir / FAILED_LOG.name
+        self.daily_summary = results_dir / DAILY_SUMMARY.name
         self._lock = threading.Lock()
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -70,6 +72,21 @@ class OutputManager:
                     record.message,
                 ),
             )
+
+    def append_daily_summary(
+        self,
+        thread_label: str,
+        account: str,
+        status: str,
+        message: str,
+    ) -> None:
+        """Append one human-readable thread summary line."""
+        line = (
+            f"{self._timestamp()} | {thread_label} | {status} | "
+            f"account={account} | {message}\n"
+        )
+        with self._lock:
+            self.daily_summary.open("a", encoding="utf-8").write(line)
 
     @staticmethod
     def _append_row(path: Path, headers: tuple[str, ...], row: tuple[str, ...]) -> None:

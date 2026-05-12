@@ -13,7 +13,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from queue import Queue
+from queue import Empty, Queue
 from typing import Callable, Iterable
 
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
@@ -93,6 +93,7 @@ class ScenarioConfig:
     cards_path: Path = CARD_FILE
     account: AccountData | None = None
     card: CardData | None = None
+    max_recovery_attempts: int = 2
 
 
 class AutomatedTestScenario:
@@ -116,7 +117,7 @@ class AutomatedTestScenario:
             config.telegram_chat_id,
         )
 
-    def run(self) -> None:
+    def run(self) -> bool:
         """Execute the full test scenario with step-by-step logging."""
         self._log("E2E scenario started.")
         account = self.config.account or self._load_first_account()
@@ -137,7 +138,10 @@ class AutomatedTestScenario:
             self._log(f"Current browser IP address: {current_ip}")
         except BrowserEngineError as exc:
             self._log(f"Could not determine current browser IP address: {exc}")
+            if self.browser_engine.current_proxy is not None:
+                raise
 
+        self._perform_pre_task_warmup(page)
         self._navigate_to_test_page(page)
         self._attempt_account_flow(page, account)
         self._simulate_provider_checks(page)
@@ -148,6 +152,7 @@ class AutomatedTestScenario:
             self._record_failure(account, "E2E flow completed without cleanup success.")
 
         self._log("E2E scenario completed.")
+        return cleanup_completed
 
     def _load_first_account(self) -> AccountData:
         """Load the first non-empty account row from accounts.txt."""
@@ -166,8 +171,14 @@ class AutomatedTestScenario:
     def _navigate_to_test_page(self, page: Page) -> None:
         """Open the staging/login/register page."""
         self._log(f"Navigating to test page: {self.config.target_url}")
-        page.goto(self.config.target_url, wait_until="domcontentloaded", timeout=45_000)
+        page.goto(self.config.target_url, wait_until="domcontentloaded", timeout=30_000)
         self.browser_engine.randomized_delay()
+
+    def _perform_pre_task_warmup(self, page: Page) -> None:
+        """Warm the browser locally before opening the target URL."""
+        self._log("Running local pre-task warmup.")
+        self.browser_engine.perform_local_warmup(page)
+        self._log("Local pre-task warmup completed.")
 
     def _attempt_account_flow(self, page: Page, account: AccountData) -> None:
         """Best-effort login/register field filling using common test selectors."""
@@ -525,6 +536,10 @@ class ConcurrentTaskRunner:
         for index in range(thread_count):
             account_queue.put(accounts[index])
             card_queue.put(cards[index])
+        for index in range(thread_count, len(accounts)):
+            account_queue.put(accounts[index])
+        for index in range(thread_count, len(cards)):
+            card_queue.put(cards[index])
 
         self._log("Runner", f"Starting {thread_count} concurrent E2E session(s).")
         with ThreadPoolExecutor(max_workers=thread_count) as executor:
@@ -551,37 +566,77 @@ class ConcurrentTaskRunner:
     ) -> None:
         """Run one isolated scenario with its own BrowserEngine."""
         thread_label = f"Thread-{index}"
-        account = account_queue.get_nowait()
-        card = card_queue.get_nowait()
-        browser_engine = BrowserEngine(proxy_manager=self.proxy_manager)
-        config = ScenarioConfig(
-            target_url=self.base_config.target_url,
-            five_sim_api_key=self.base_config.five_sim_api_key,
-            capsolver_api_key=self.base_config.capsolver_api_key,
-            telegram_bot_token=self.base_config.telegram_bot_token,
-            telegram_chat_id=self.base_config.telegram_chat_id,
-            accounts_path=self.base_config.accounts_path,
-            cards_path=self.base_config.cards_path,
-            account=account,
-            card=card,
-        )
+        max_attempts = self.base_config.max_recovery_attempts + 1
+        last_error = "No attempts were run."
 
-        try:
-            scenario = AutomatedTestScenario(
-                browser_engine=browser_engine,
-                config=config,
-                log_callback=self.log_callback,
-                thread_label=thread_label,
-                output_manager=self.output_manager,
+        for attempt in range(1, max_attempts + 1):
+            try:
+                account = account_queue.get_nowait()
+                card = card_queue.get_nowait()
+            except Empty:
+                self._log(thread_label, "No unused account/card pair left for recovery.")
+                self.output_manager.append_daily_summary(
+                    thread_label,
+                    "unavailable",
+                    "failed",
+                    f"Exhausted data after error: {last_error}",
+                )
+                return
+
+            browser_engine = BrowserEngine(proxy_manager=self.proxy_manager)
+            config = ScenarioConfig(
+                target_url=self.base_config.target_url,
+                five_sim_api_key=self.base_config.five_sim_api_key,
+                capsolver_api_key=self.base_config.capsolver_api_key,
+                telegram_bot_token=self.base_config.telegram_bot_token,
+                telegram_chat_id=self.base_config.telegram_chat_id,
+                accounts_path=self.base_config.accounts_path,
+                cards_path=self.base_config.cards_path,
+                account=account,
+                card=card,
+                max_recovery_attempts=self.base_config.max_recovery_attempts,
             )
-            scenario.run()
-        except Exception as exc:
-            self._record_failure(thread_label, account, str(exc))
-            self._log(thread_label, f"Scenario failed: {exc}")
-            raise
-        finally:
-            browser_engine.stop()
-            self._log(thread_label, "Browser resources released.")
+
+            try:
+                self._log(thread_label, f"Attempt {attempt}/{max_attempts} started.")
+                scenario = AutomatedTestScenario(
+                    browser_engine=browser_engine,
+                    config=config,
+                    log_callback=self.log_callback,
+                    thread_label=thread_label,
+                    output_manager=self.output_manager,
+                )
+                succeeded = scenario.run()
+                status = "success" if succeeded else "completed_without_success"
+                self.output_manager.append_daily_summary(
+                    thread_label,
+                    AutomatedTestScenario._mask_username(account.username),
+                    status,
+                    f"Attempt {attempt}/{max_attempts} finished.",
+                )
+                return
+            except Exception as exc:
+                last_error = str(exc)
+                self._record_failure(thread_label, account, last_error)
+                self._log(
+                    thread_label,
+                    f"Attempt {attempt}/{max_attempts} failed: {last_error}",
+                )
+                if attempt < max_attempts:
+                    self._log(
+                        thread_label,
+                        "Recovering with a fresh browser, proxy, account, and card.",
+                    )
+                else:
+                    self.output_manager.append_daily_summary(
+                        thread_label,
+                        AutomatedTestScenario._mask_username(account.username),
+                        "failed",
+                        f"All recovery attempts exhausted: {last_error}",
+                    )
+            finally:
+                browser_engine.stop()
+                self._log(thread_label, "Browser resources released.")
 
     def _validate_unique_inputs(
         self,

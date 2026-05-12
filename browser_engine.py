@@ -29,6 +29,20 @@ STANDARD_USER_AGENT = (
     "Chrome/136.0.0.0 Safari/537.36"
 )
 
+BLOCKED_RESOURCE_TYPES = {"image", "media", "font"}
+TRACKER_HOST_KEYWORDS = (
+    "doubleclick",
+    "googlesyndication",
+    "google-analytics",
+    "analytics",
+    "adservice",
+    "adsystem",
+    "facebook.net",
+    "hotjar",
+    "segment",
+    "mixpanel",
+)
+
 
 class BrowserEngineError(RuntimeError):
     """Raised when the browser engine cannot complete an operation."""
@@ -127,6 +141,7 @@ class BrowserEngine:
         self,
         headless: bool = False,
         simulate_network_latency: bool = True,
+        block_heavy_resources: bool = True,
     ) -> BrowserSession:
         """Start a Chromium browser session for local testing."""
         if self.session is not None:
@@ -157,8 +172,15 @@ class BrowserEngine:
                     )
                 },
             )
-            if simulate_network_latency:
-                context.route("**/*", self._route_with_latency)
+            if simulate_network_latency or block_heavy_resources:
+                context.route(
+                    "**/*",
+                    lambda route: self._route_with_controls(
+                        route,
+                        simulate_network_latency=simulate_network_latency,
+                        block_heavy_resources=block_heavy_resources,
+                    ),
+                )
             page = context.new_page()
         except Exception as exc:
             if browser is not None:
@@ -226,6 +248,66 @@ class BrowserEngine:
         delay = random.uniform(min_delay, max_delay)
         time.sleep(delay)
         return delay
+
+    def perform_local_warmup(self, page: Page | None = None) -> None:
+        """Warm browser primitives on a local test page without external browsing."""
+        active_page = self._get_page(page)
+        warmup_blocks = "".join(
+            f"<section class='warmup-block'>Warmup content block {index}</section>"
+            for index in range(1, 24)
+        )
+        active_page.set_content(
+            f"""
+            <!doctype html>
+            <html>
+              <head>
+                <style>
+                  body {{
+                    margin: 0;
+                    font-family: Arial, sans-serif;
+                    background: #f8fafc;
+                    color: #0f172a;
+                  }}
+                  .warmup-block {{
+                    min-height: 220px;
+                    margin: 18px;
+                    padding: 24px;
+                    border-radius: 14px;
+                    background: white;
+                    box-shadow: 0 1px 6px rgba(15, 23, 42, 0.12);
+                  }}
+                  #warmup-target {{
+                    margin: 18px;
+                    padding: 18px;
+                    border-radius: 12px;
+                    background: #dbeafe;
+                    cursor: default;
+                  }}
+                </style>
+              </head>
+              <body>
+                <div id="warmup-target">Local non-link warmup target</div>
+                {warmup_blocks}
+              </body>
+            </html>
+            """,
+            wait_until="domcontentloaded",
+        )
+
+        self.randomized_delay(0.15, 0.35)
+        for _ in range(2):
+            self.scroll_realistically(active_page)
+        target = active_page.locator("#warmup-target").first
+        target.wait_for(state="visible", timeout=2_000)
+        box = target.bounding_box()
+        if box is not None:
+            self.move_mouse_naturally(
+                box["x"] + box["width"] / 2,
+                box["y"] + box["height"] / 2,
+                active_page,
+            )
+            active_page.mouse.click(*self._mouse_position)
+        self.randomized_delay(0.15, 0.35)
 
     def move_mouse_naturally(
         self,
@@ -331,11 +413,31 @@ class BrowserEngine:
         session.browser.close()
         session.playwright.stop()
 
-    def _route_with_latency(self, route: Route) -> None:
-        """Add optional network delay before continuing each request."""
-        min_ms, max_ms = self.behavior_settings.network_latency_ms
-        time.sleep(random.uniform(min_ms, max_ms) / 1000)
+    def _route_with_controls(
+        self,
+        route: Route,
+        simulate_network_latency: bool,
+        block_heavy_resources: bool,
+    ) -> None:
+        """Apply bandwidth-saving blocks and optional network delay."""
+        if block_heavy_resources and self._should_block_request(route):
+            route.abort()
+            return
+
+        if simulate_network_latency:
+            min_ms, max_ms = self.behavior_settings.network_latency_ms
+            time.sleep(random.uniform(min_ms, max_ms) / 1000)
         route.continue_()
+
+    @staticmethod
+    def _should_block_request(route: Route) -> bool:
+        """Block heavy resources and common analytics/ad hosts for test speed."""
+        request = route.request
+        if request.resource_type in BLOCKED_RESOURCE_TYPES:
+            return True
+
+        url = request.url.lower()
+        return any(keyword in url for keyword in TRACKER_HOST_KEYWORDS)
 
     def _get_page(self, page: Page | None = None) -> Page:
         """Return the requested page or the active session page."""
