@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -51,47 +52,50 @@ class ProxyManager:
         self.proxies: list[ProxyConfig] = []
         self._next_index = 0
         self.last_error: str | None = None
+        self._lock = threading.Lock()
         self.reload()
 
     def reload(self, strict: bool = False) -> int:
         """Reload proxies from disk and return the number of valid entries."""
-        if not self.proxy_path.exists():
-            self.proxies = []
+        with self._lock:
+            if not self.proxy_path.exists():
+                self.proxies = []
+                self._next_index = 0
+                self.last_error = None
+                return 0
+
+            loaded: list[ProxyConfig] = []
+            try:
+                for line_number, line in enumerate(
+                    self.proxy_path.read_text(encoding="utf-8").splitlines(),
+                    start=1,
+                ):
+                    stripped = line.strip()
+                    if not stripped or stripped.startswith("#"):
+                        continue
+                    loaded.append(self._parse_proxy_line(stripped, line_number))
+            except ProxyManagerError as exc:
+                self.proxies = []
+                self._next_index = 0
+                self.last_error = str(exc)
+                if strict:
+                    raise
+                return 0
+
+            self.proxies = loaded
             self._next_index = 0
             self.last_error = None
-            return 0
-
-        loaded: list[ProxyConfig] = []
-        try:
-            for line_number, line in enumerate(
-                self.proxy_path.read_text(encoding="utf-8").splitlines(),
-                start=1,
-            ):
-                stripped = line.strip()
-                if not stripped or stripped.startswith("#"):
-                    continue
-                loaded.append(self._parse_proxy_line(stripped, line_number))
-        except ProxyManagerError as exc:
-            self.proxies = []
-            self._next_index = 0
-            self.last_error = str(exc)
-            if strict:
-                raise
-            return 0
-
-        self.proxies = loaded
-        self._next_index = 0
-        self.last_error = None
-        return len(self.proxies)
+            return len(self.proxies)
 
     def get_next_proxy(self) -> ProxyConfig | None:
         """Return the next proxy in round-robin order."""
-        if not self.proxies:
-            return None
+        with self._lock:
+            if not self.proxies:
+                return None
 
-        proxy = self.proxies[self._next_index]
-        self._next_index = (self._next_index + 1) % len(self.proxies)
-        return proxy
+            proxy = self.proxies[self._next_index]
+            self._next_index = (self._next_index + 1) % len(self.proxies)
+            return proxy
 
     def import_proxy_file(self, source_path: Path) -> int:
         """Import a proxy list file into proxies.txt and reload it."""

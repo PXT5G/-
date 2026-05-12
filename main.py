@@ -20,7 +20,7 @@ import customtkinter as ctk
 from api_handler import CapSolverClient, ConfigManager, FiveSimClient, IntegrationError
 from browser_engine import BrowserEngine
 from proxy_manager import ProxyManager, ProxyManagerError
-from task_manager import AutomatedTestScenario, ScenarioConfig
+from task_manager import ConcurrentTaskRunner, ScenarioConfig
 
 
 class AutomationDashboard(ctk.CTk):
@@ -443,6 +443,24 @@ class AutomationDashboard(ctk.CTk):
         self.test_url_entry.grid(row=3, column=0, padx=24, pady=(0, 18), sticky="ew")
         self.test_url_entry.insert(0, "https://example.com")
 
+        self.threads_count_label = ctk.CTkLabel(
+            control_card,
+            text="Threads Count: 1",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        self.threads_count_label.grid(row=4, column=0, padx=24, pady=(0, 6), sticky="w")
+
+        self.threads_count_slider = ctk.CTkSlider(
+            control_card,
+            from_=1,
+            to=5,
+            number_of_steps=4,
+            command=self._update_threads_count_label,
+        )
+        self.threads_count_slider.grid(row=5, column=0, padx=24, pady=(0, 18), sticky="ew")
+        self.threads_count_slider.set(1)
+
         self.start_button = ctk.CTkButton(
             control_card,
             text="Start E2E Test",
@@ -454,13 +472,21 @@ class AutomationDashboard(ctk.CTk):
             font=ctk.CTkFont(size=14, weight="bold"),
             command=self._start_browser_engine,
         )
-        self.start_button.grid(row=4, column=0, padx=24, pady=(0, 24), sticky="w")
+        self.start_button.grid(row=6, column=0, padx=24, pady=(0, 24), sticky="w")
+
+    def _update_threads_count_label(self, value: float) -> None:
+        """Update the thread-count label when the slider changes."""
+        count = int(round(value))
+        self.threads_count_label.configure(text=f"Threads Count: {count}")
 
     def _start_browser_engine(self) -> None:
         """Start the E2E scenario without blocking the UI event loop."""
         self.start_button.configure(state="disabled", text="Running...")
         self.current_test_url = self.test_url_entry.get().strip()
-        self._append_log("Initializing E2E Test Scenario...")
+        self.current_threads_count = int(round(self.threads_count_slider.get()))
+        self._append_log(
+            f"Initializing E2E Test Scenario with {self.current_threads_count} thread(s)..."
+        )
 
         thread = threading.Thread(target=self._launch_browser_engine, daemon=True)
         thread.start()
@@ -468,16 +494,16 @@ class AutomationDashboard(ctk.CTk):
     def _launch_browser_engine(self) -> None:
         """Run the E2E scenario in a background thread and report UI status."""
         try:
-            scenario = AutomatedTestScenario(
-                browser_engine=self.browser_engine,
-                config=ScenarioConfig(
+            runner = ConcurrentTaskRunner(
+                proxy_manager=self.proxy_manager,
+                base_config=ScenarioConfig(
                     target_url=self.current_test_url,
                     five_sim_api_key=self.service_config.get("five_sim_api_key", ""),
                     capsolver_api_key=self.service_config.get("capsolver_api_key", ""),
                 ),
                 log_callback=self._append_log_from_worker,
             )
-            scenario.run()
+            runner.run(self.current_threads_count)
         except Exception as exc:
             self.after(0, self._handle_browser_start_failure, str(exc))
             return
@@ -486,13 +512,13 @@ class AutomationDashboard(ctk.CTk):
 
     def _handle_browser_start_success(self) -> None:
         """Update the UI after a successful E2E scenario run."""
-        self._append_log("E2E Test Scenario Finished Successfully.")
+        self._append_log("Concurrent E2E Test Scenario Finished Successfully.")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
 
     def _handle_browser_start_failure(self, error_message: str) -> None:
         """Update the UI after a failed E2E scenario run."""
-        self._append_log(f"E2E Test Scenario Failed: {error_message}")
+        self._append_log(f"Concurrent E2E Test Scenario Failed: {error_message}")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
 

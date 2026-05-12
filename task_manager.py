@@ -10,9 +10,12 @@ transactions. Payment form filling is limited to known sandbox card numbers.
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
+from queue import Queue
+import threading
 from typing import Callable, Iterable
 
 from playwright.sync_api import Page, TimeoutError as PlaywrightTimeoutError
@@ -24,6 +27,7 @@ from api_handler import (
     UnsupportedIntegrationOperation,
 )
 from browser_engine import BrowserEngine, BrowserEngineError
+from proxy_manager import ProxyManager
 
 
 LogCallback = Callable[[str], None]
@@ -31,6 +35,8 @@ LogCallback = Callable[[str], None]
 ACCOUNT_FILE = Path("accounts.txt")
 CARD_FILE = Path("cards.txt")
 SUCCESS_REPORT_FILE = Path("success_test_runs.txt")
+MAX_CONCURRENT_THREADS = 5
+_SUCCESS_REPORT_LOCK = threading.Lock()
 
 SANDBOX_CARD_NUMBERS = {
     "4111111111111111",
@@ -85,6 +91,8 @@ class ScenarioConfig:
     capsolver_api_key: str = ""
     accounts_path: Path = ACCOUNT_FILE
     cards_path: Path = CARD_FILE
+    account: AccountData | None = None
+    card: CardData | None = None
 
 
 class AutomatedTestScenario:
@@ -95,16 +103,18 @@ class AutomatedTestScenario:
         browser_engine: BrowserEngine,
         config: ScenarioConfig,
         log_callback: LogCallback | None = None,
+        thread_label: str = "Thread-1",
     ) -> None:
         self.browser_engine = browser_engine
         self.config = config
         self.log_callback = log_callback or (lambda message: None)
+        self.thread_label = thread_label
 
     def run(self) -> None:
         """Execute the full test scenario with step-by-step logging."""
         self._log("E2E scenario started.")
-        account = self._load_first_account()
-        card = self._load_first_card()
+        account = self.config.account or self._load_first_account()
+        card = self.config.card or self._load_first_card()
         self._log(f"Loaded account: {self._mask_username(account.username)}")
         self._log(f"Loaded payment test card: {card.masked_number}")
 
@@ -132,30 +142,17 @@ class AutomatedTestScenario:
 
     def _load_first_account(self) -> AccountData:
         """Load the first non-empty account row from accounts.txt."""
-        line = self._read_first_data_line(self.config.accounts_path, "account")
-        parts = [part.strip() for part in line.replace(",", "|").split("|")]
-        if len(parts) < 2 or not parts[0] or not parts[1]:
-            raise TaskManagerError("accounts.txt must contain username|password.")
-        return AccountData(username=parts[0], password=parts[1])
+        accounts = load_accounts(self.config.accounts_path)
+        if not accounts:
+            raise TaskManagerError("accounts.txt does not contain any account rows.")
+        return accounts[0]
 
     def _load_first_card(self) -> CardData:
         """Load the first non-empty test-card row from cards.txt."""
-        line = self._read_first_data_line(self.config.cards_path, "card")
-        parts = [part.strip() for part in line.split("|")]
-        if len(parts) != 4 or not all(parts):
-            raise TaskManagerError("cards.txt must contain Number|Month|Year|CVV.")
-        return CardData(number=parts[0], month=parts[1], year=parts[2], cvv=parts[3])
-
-    def _read_first_data_line(self, path: Path, label: str) -> str:
-        """Return the first non-empty, non-comment line from a local data file."""
-        if not path.exists():
-            raise TaskManagerError(f"{path.name} is missing; add one {label} row first.")
-
-        for line in path.read_text(encoding="utf-8").splitlines():
-            stripped = line.strip()
-            if stripped and not stripped.startswith("#"):
-                return stripped
-        raise TaskManagerError(f"{path.name} does not contain any {label} rows.")
+        cards = load_cards(self.config.cards_path)
+        if not cards:
+            raise TaskManagerError("cards.txt does not contain any card rows.")
+        return cards[0]
 
     def _navigate_to_test_page(self, page: Page) -> None:
         """Open the staging/login/register page."""
@@ -379,7 +376,8 @@ class AutomatedTestScenario:
             f"{timestamp} | target={self.config.target_url} | "
             f"account={self._mask_username(account.username)} | card={card.masked_number}\n"
         )
-        SUCCESS_REPORT_FILE.open("a", encoding="utf-8").write(line)
+        with _SUCCESS_REPORT_LOCK:
+            SUCCESS_REPORT_FILE.open("a", encoding="utf-8").write(line)
         self._log("Sandbox success report saved to success_test_runs.txt.")
 
     def _fill_first_available(
@@ -456,4 +454,161 @@ class AutomatedTestScenario:
 
     def _log(self, message: str) -> None:
         """Send a scenario event to the UI log callback."""
-        self.log_callback(message)
+        self.log_callback(f"[{self.thread_label}] {message}")
+
+
+class ConcurrentTaskRunner:
+    """Run multiple isolated E2E scenarios concurrently."""
+
+    def __init__(
+        self,
+        proxy_manager: ProxyManager,
+        base_config: ScenarioConfig,
+        log_callback: LogCallback | None = None,
+    ) -> None:
+        self.proxy_manager = proxy_manager
+        self.base_config = base_config
+        self.log_callback = log_callback or (lambda message: None)
+
+    def run(self, thread_count: int) -> None:
+        """Execute up to five browser sessions in parallel."""
+        thread_count = self._normalize_thread_count(thread_count)
+        accounts = load_accounts(self.base_config.accounts_path)
+        cards = load_cards(self.base_config.cards_path)
+        self._validate_unique_inputs(thread_count, accounts, cards)
+        account_queue: Queue[AccountData] = Queue()
+        card_queue: Queue[CardData] = Queue()
+        for index in range(thread_count):
+            account_queue.put(accounts[index])
+            card_queue.put(cards[index])
+
+        self._log("Runner", f"Starting {thread_count} concurrent E2E session(s).")
+        with ThreadPoolExecutor(max_workers=thread_count) as executor:
+            futures = [
+                executor.submit(
+                    self._run_single_thread,
+                    index,
+                    account_queue,
+                    card_queue,
+                )
+                for index in range(1, thread_count + 1)
+            ]
+
+            for future in as_completed(futures):
+                future.result()
+
+        self._log("Runner", "All concurrent E2E sessions finished.")
+
+    def _run_single_thread(
+        self,
+        index: int,
+        account_queue: Queue[AccountData],
+        card_queue: Queue[CardData],
+    ) -> None:
+        """Run one isolated scenario with its own BrowserEngine."""
+        thread_label = f"Thread-{index}"
+        account = account_queue.get_nowait()
+        card = card_queue.get_nowait()
+        browser_engine = BrowserEngine(proxy_manager=self.proxy_manager)
+        config = ScenarioConfig(
+            target_url=self.base_config.target_url,
+            five_sim_api_key=self.base_config.five_sim_api_key,
+            capsolver_api_key=self.base_config.capsolver_api_key,
+            accounts_path=self.base_config.accounts_path,
+            cards_path=self.base_config.cards_path,
+            account=account,
+            card=card,
+        )
+
+        try:
+            scenario = AutomatedTestScenario(
+                browser_engine=browser_engine,
+                config=config,
+                log_callback=self.log_callback,
+                thread_label=thread_label,
+            )
+            scenario.run()
+        except Exception as exc:
+            self._log(thread_label, f"Scenario failed: {exc}")
+            raise
+        finally:
+            browser_engine.stop()
+            self._log(thread_label, "Browser resources released.")
+
+    def _validate_unique_inputs(
+        self,
+        thread_count: int,
+        accounts: list[AccountData],
+        cards: list[CardData],
+    ) -> None:
+        """Ensure each worker receives unique local data and proxy capacity."""
+        if len(accounts) < thread_count:
+            raise TaskManagerError(
+                f"Need at least {thread_count} account rows for concurrent execution."
+            )
+        if len(cards) < thread_count:
+            raise TaskManagerError(
+                f"Need at least {thread_count} card rows for concurrent execution."
+            )
+        if thread_count > 1 and len(self.proxy_manager.proxies) < thread_count:
+            raise TaskManagerError(
+                f"Need at least {thread_count} proxies for concurrent geographic testing."
+            )
+
+    @staticmethod
+    def _normalize_thread_count(thread_count: int) -> int:
+        """Clamp thread count to the supported range."""
+        if thread_count < 1:
+            raise TaskManagerError("Threads Count must be at least 1.")
+        if thread_count > MAX_CONCURRENT_THREADS:
+            raise TaskManagerError(
+                f"Threads Count cannot exceed {MAX_CONCURRENT_THREADS}."
+            )
+        return thread_count
+
+    def _log(self, label: str, message: str) -> None:
+        """Send runner-level events with a clear label."""
+        self.log_callback(f"[{label}] {message}")
+
+
+def load_accounts(path: Path = ACCOUNT_FILE) -> list[AccountData]:
+    """Load all account rows from accounts.txt."""
+    rows = _read_data_lines(path, "account")
+    accounts: list[AccountData] = []
+    for index, line in enumerate(rows, start=1):
+        parts = [part.strip() for part in line.replace(",", "|").split("|")]
+        if len(parts) < 2 or not parts[0] or not parts[1]:
+            raise TaskManagerError(
+                f"Invalid account row {index}; expected username|password."
+            )
+        accounts.append(AccountData(username=parts[0], password=parts[1]))
+    return accounts
+
+
+def load_cards(path: Path = CARD_FILE) -> list[CardData]:
+    """Load all card rows from cards.txt."""
+    rows = _read_data_lines(path, "card")
+    cards: list[CardData] = []
+    for index, line in enumerate(rows, start=1):
+        parts = [part.strip() for part in line.split("|")]
+        if len(parts) != 4 or not all(parts):
+            raise TaskManagerError(
+                f"Invalid card row {index}; expected Number|Month|Year|CVV."
+            )
+        cards.append(CardData(number=parts[0], month=parts[1], year=parts[2], cvv=parts[3]))
+    return cards
+
+
+def _read_data_lines(path: Path, label: str) -> list[str]:
+    """Return non-empty, non-comment rows from a local data file."""
+    if not path.exists():
+        raise TaskManagerError(f"{path.name} is missing; add {label} rows first.")
+
+    rows = [
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if not rows:
+        raise TaskManagerError(f"{path.name} does not contain any {label} rows.")
+    return rows
