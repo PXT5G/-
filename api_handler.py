@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -94,6 +95,35 @@ class FiveSimClient:
             "email": profile.get("email"),
         }
 
+    def benchmark_profile_latency(self) -> dict[str, Any]:
+        """Measure safe 5sim profile endpoint latency without buying numbers."""
+        started_at = time.perf_counter()
+        response = self._request_json("GET", "/user/profile")
+        latency_ms = (time.perf_counter() - started_at) * 1000
+        return {
+            "provider": "5sim",
+            "endpoint": "/user/profile",
+            "latency_ms": round(latency_ms, 2),
+            "ok": True,
+            "balance": response.get("balance"),
+            "currency": response.get("currency", "RUB"),
+        }
+
+    def benchmark_activation_endpoint_shape(
+        self,
+        country: str = "sandbox",
+        operator: str = "any",
+        service: str = "sandbox",
+    ) -> dict[str, Any]:
+        """Return the activation endpoint shape without issuing a live request."""
+        endpoint = f"/user/buy/activation/{country}/{operator}/{service}"
+        return {
+            "provider": "5sim",
+            "endpoint": endpoint,
+            "method": "GET",
+            "live_request_enabled": False,
+        }
+
     def order_discord_number(self) -> None:
         """Phone-number ordering is not implemented in this project."""
         raise UnsupportedIntegrationOperation(
@@ -161,6 +191,36 @@ class CapSolverClient:
         if response.get("errorId"):
             raise IntegrationError(response.get("errorDescription", "CapSolver API error."))
         return {"balance": response.get("balance"), "package_id": response.get("packageId")}
+
+    def benchmark_balance_latency(self) -> dict[str, Any]:
+        """Measure safe CapSolver balance endpoint latency without creating tasks."""
+        started_at = time.perf_counter()
+        response = self.check_balance()
+        latency_ms = (time.perf_counter() - started_at) * 1000
+        return {
+            "provider": "CapSolver",
+            "endpoint": "/getBalance",
+            "latency_ms": round(latency_ms, 2),
+            "ok": True,
+            "balance": response.get("balance"),
+        }
+
+    def benchmark_task_endpoint_shape(
+        self,
+        website_url: str,
+        website_key: str,
+    ) -> dict[str, Any]:
+        """Return task API endpoint shape without creating a live CAPTCHA task."""
+        return {
+            "provider": "CapSolver",
+            "create_endpoint": "/createTask",
+            "result_endpoint": "/getTaskResult",
+            "method": "POST",
+            "task_type": "HCaptchaTaskProxyless",
+            "website_url": website_url,
+            "website_key": website_key,
+            "live_request_enabled": False,
+        }
 
     def solve_challenge(self) -> None:
         """CAPTCHA and Turnstile solving is not implemented in this project."""

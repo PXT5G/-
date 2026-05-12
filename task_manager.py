@@ -248,7 +248,7 @@ class AutomatedTestScenario:
 
         client = FiveSimClient(self.config.five_sim_api_key)
         try:
-            balance = client.check_balance()
+            latency_result = client.benchmark_profile_latency()
         except IntegrationError as exc:
             self._log(f"5sim metadata check failed: {exc}")
             if self._is_resource_error(str(exc)):
@@ -256,8 +256,15 @@ class AutomatedTestScenario:
             raise
 
         self._log(
-            "5sim metadata check completed; "
-            f"balance={balance.get('balance', 'unknown')} {balance.get('currency', '')}."
+            "5sim latency benchmark completed; "
+            f"{latency_result.get('latency_ms')}ms; "
+            f"balance={latency_result.get('balance', 'unknown')} "
+            f"{latency_result.get('currency', '')}."
+        )
+        endpoint_shape = client.benchmark_activation_endpoint_shape()
+        self._log(
+            "5sim activation endpoint shape recorded without live request: "
+            f"{endpoint_shape.get('endpoint')}"
         )
         try:
             client.purchase_number(service="sandbox")
@@ -276,7 +283,7 @@ class AutomatedTestScenario:
 
         client = CapSolverClient(self.config.capsolver_api_key)
         try:
-            balance = client.check_balance()
+            latency_result = client.benchmark_balance_latency()
         except IntegrationError as exc:
             self._log(f"CapSolver metadata check failed: {exc}")
             if self._is_resource_error(str(exc)):
@@ -284,8 +291,18 @@ class AutomatedTestScenario:
             raise
 
         self._log(
-            "CapSolver metadata check completed; "
-            f"balance={balance.get('balance', 'unknown')}."
+            "CapSolver latency benchmark completed; "
+            f"{latency_result.get('latency_ms')}ms; "
+            f"balance={latency_result.get('balance', 'unknown')}."
+        )
+        endpoint_shape = client.benchmark_task_endpoint_shape(
+            website_url=self.config.target_url,
+            website_key="detected-page-challenge",
+        )
+        self._log(
+            "CapSolver task endpoint shape recorded without live request: "
+            f"{endpoint_shape.get('create_endpoint')} -> "
+            f"{endpoint_shape.get('result_endpoint')}"
         )
         try:
             client.solve_captcha(
