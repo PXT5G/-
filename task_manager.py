@@ -15,7 +15,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from queue import Empty, Queue
-import threading
 import time
 from typing import Callable, Iterable
 
@@ -584,15 +583,11 @@ class ConcurrentTaskRunner:
         base_config: ScenarioConfig,
         log_callback: LogCallback | None = None,
         output_manager: OutputManager | None = None,
-        pause_event: threading.Event | None = None,
     ) -> None:
         self.proxy_manager = proxy_manager
         self.base_config = base_config
         self.log_callback = log_callback or (lambda message: None)
         self.output_manager = output_manager or OutputManager()
-        self.pause_event = pause_event or threading.Event()
-        if not pause_event:
-            self.pause_event.set()
 
     def run(self, thread_count: int) -> None:
         """Execute up to five browser sessions in parallel."""
@@ -653,10 +648,7 @@ class ConcurrentTaskRunner:
                 )
                 return
 
-            browser_engine = BrowserEngine(
-                proxy_manager=self.proxy_manager,
-                pause_event=self.pause_event,
-            )
+            browser_engine = BrowserEngine(proxy_manager=self.proxy_manager)
             config = ScenarioConfig(
                 target_url=self.base_config.target_url,
                 five_sim_api_key=self.base_config.five_sim_api_key,
