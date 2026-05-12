@@ -242,15 +242,18 @@ class AutomatedTestScenario:
     def _request_sms_metadata(self) -> None:
         """Simulate provider readiness by checking 5sim account status only."""
         if not self.config.five_sim_api_key:
-            self._log("5sim key missing; simulated SMS metadata request skipped.")
-            return
+            raise TaskManagerError(
+                "Resource Error: 5sim key missing while phone verification is required."
+            )
 
         client = FiveSimClient(self.config.five_sim_api_key)
         try:
             balance = client.check_balance()
         except IntegrationError as exc:
             self._log(f"5sim metadata check failed: {exc}")
-            return
+            if self._is_resource_error(str(exc)):
+                raise TaskManagerError(f"Resource Error: {exc}") from exc
+            raise
 
         self._log(
             "5sim metadata check completed; "
@@ -260,19 +263,25 @@ class AutomatedTestScenario:
             client.purchase_number(service="sandbox")
         except UnsupportedIntegrationOperation as exc:
             self._log(f"Live SMS purchase blocked: {exc}")
+            raise TaskManagerError(
+                "Resource Error: Phone verification requires manual sandbox fixture."
+            ) from exc
 
     def _request_captcha_metadata(self) -> None:
         """Simulate solver readiness by checking CapSolver account status only."""
         if not self.config.capsolver_api_key:
-            self._log("CapSolver key missing; simulated challenge metadata skipped.")
-            return
+            raise TaskManagerError(
+                "Resource Error: CapSolver key missing while CAPTCHA is required."
+            )
 
         client = CapSolverClient(self.config.capsolver_api_key)
         try:
             balance = client.check_balance()
         except IntegrationError as exc:
             self._log(f"CapSolver metadata check failed: {exc}")
-            return
+            if self._is_resource_error(str(exc)):
+                raise TaskManagerError(f"Resource Error: {exc}") from exc
+            raise
 
         self._log(
             "CapSolver metadata check completed; "
@@ -285,6 +294,9 @@ class AutomatedTestScenario:
             )
         except UnsupportedIntegrationOperation as exc:
             self._log(f"Live CAPTCHA solving blocked: {exc}")
+            raise TaskManagerError(
+                "Resource Error: CAPTCHA requires manual sandbox fixture."
+            ) from exc
 
     def _simulate_payment_lifecycle(self, page: Page, card: CardData) -> bool:
         """Fill sandbox payment details and attempt cleanup when safe."""
@@ -513,6 +525,21 @@ class AutomatedTestScenario:
         except Exception:
             return False
         return any(word.lower() in body_text for word in words)
+
+    @staticmethod
+    def _is_resource_error(message: str) -> bool:
+        """Detect provider resource errors for dashboard categorization."""
+        normalized = message.lower()
+        resource_markers = (
+            "no funds",
+            "insufficient funds",
+            "no numbers",
+            "no number",
+            "no balance",
+            "zero balance",
+            "resource",
+        )
+        return any(marker in normalized for marker in resource_markers)
 
     @staticmethod
     def _mask_username(username: str) -> str:
@@ -745,6 +772,14 @@ class ConcurrentTaskRunner:
         normalized = reason.lower()
         if "proxy" in normalized or "ip address" in normalized:
             return "Proxy"
+        if (
+            "resource error" in normalized
+            or "no funds" in normalized
+            or "insufficient funds" in normalized
+            or "no numbers" in normalized
+            or "manual sandbox fixture" in normalized
+        ):
+            return "Resource Error"
         if "timeout" in normalized or "page" in normalized or "load" in normalized:
             return "Navigation"
         if "account" in normalized or "card" in normalized or "data" in normalized:
