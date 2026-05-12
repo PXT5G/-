@@ -8,6 +8,7 @@ evasion behavior.
 from __future__ import annotations
 
 import random
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any, cast
@@ -185,11 +186,15 @@ class BrowserEngine:
         behavior_settings: BehaviorSettings | None = None,
         proxy_manager: ProxyManager | None = None,
         user_agent: str = STANDARD_USER_AGENT,
+        pause_event: threading.Event | None = None,
     ) -> None:
         self.session: BrowserSession | None = None
         self.behavior_settings = behavior_settings or BehaviorSettings()
         self.proxy_manager = proxy_manager or ProxyManager()
         self.user_agent = user_agent
+        self._pause_event = pause_event or threading.Event()
+        if not pause_event:
+            self._pause_event.set()
         self._mouse_position = (640.0, 400.0)
         self.current_proxy: ProxyConfig | None = None
         self.current_ip_address: str | None = None
@@ -305,12 +310,17 @@ class BrowserEngine:
         """Return the selected User-Agent for transparent environment reporting."""
         return self.current_user_agent
 
+    def wait_if_paused(self) -> None:
+        """Block until the pause gate is opened. No-op when running."""
+        self._pause_event.wait()
+
     def randomized_delay(
         self,
         min_seconds: float | None = None,
         max_seconds: float | None = None,
     ) -> float:
         """Pause for a randomized think-time interval and return its duration."""
+        self.wait_if_paused()
         default_min, default_max = self.behavior_settings.think_time_seconds
         min_delay = default_min if min_seconds is None else min_seconds
         max_delay = default_max if max_seconds is None else max_seconds

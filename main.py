@@ -84,6 +84,8 @@ class AutomationDashboard(ctk.CTk):
         self.browser_engine = BrowserEngine(proxy_manager=self.proxy_manager)
         self.output_manager = OutputManager()
         self.config_manager = ConfigManager()
+        self.task_pause_event = threading.Event()
+        self.task_pause_event.set()
         self.active_threads_count = 0
         self.dashboard_metric_labels: dict[str, ctk.CTkLabel] = {}
         self.system_health_widgets: dict[str, Any] = {}
@@ -803,8 +805,11 @@ class AutomationDashboard(ctk.CTk):
         self.threads_count_slider.grid(row=5, column=0, padx=24, pady=(0, 18), sticky="ew")
         self.threads_count_slider.set(1)
 
+        button_row = ctk.CTkFrame(control_card, fg_color="transparent")
+        button_row.grid(row=6, column=0, padx=24, pady=(0, 24), sticky="ew")
+
         self.start_button = ctk.CTkButton(
-            control_card,
+            button_row,
             text="Start E2E Test",
             height=44,
             width=170,
@@ -814,10 +819,28 @@ class AutomationDashboard(ctk.CTk):
             font=ctk.CTkFont(size=14, weight="bold"),
             command=self._start_browser_engine,
         )
-        self.start_button.grid(row=6, column=0, padx=24, pady=(0, 24), sticky="w")
+        self.start_button.grid(row=0, column=0, sticky="w")
         SimpleTooltip(
             self.start_button,
             "Starts the selected number of safe sandbox E2E workers.",
+        )
+
+        self.pause_button = ctk.CTkButton(
+            button_row,
+            text="Pause",
+            height=44,
+            width=120,
+            corner_radius=10,
+            fg_color=self.colors["surface"],
+            hover_color=self.colors["border"],
+            font=ctk.CTkFont(size=14, weight="bold"),
+            state="disabled",
+            command=self._toggle_pause,
+        )
+        self.pause_button.grid(row=0, column=1, padx=(12, 0), sticky="w")
+        SimpleTooltip(
+            self.pause_button,
+            "Pause or resume all running E2E workers.",
         )
 
     def _update_threads_count_label(self, value: float) -> None:
@@ -828,6 +851,9 @@ class AutomationDashboard(ctk.CTk):
     def _start_browser_engine(self) -> None:
         """Start the E2E scenario without blocking the UI event loop."""
         self.start_button.configure(state="disabled", text="Running...")
+        self.task_pause_event.set()
+        if hasattr(self, "pause_button") and self.pause_button.winfo_exists():
+            self.pause_button.configure(state="normal", text="Pause")
         self._set_task_status("active")
         self.current_test_url = self.test_url_entry.get().strip()
         self.current_threads_count = int(round(self.threads_count_slider.get()))
@@ -840,6 +866,21 @@ class AutomationDashboard(ctk.CTk):
         thread = threading.Thread(target=self._launch_browser_engine, daemon=True)
         thread.start()
 
+    def _toggle_pause(self) -> None:
+        """Toggle the pause state of all running E2E workers."""
+        if self.task_pause_event.is_set():
+            self.task_pause_event.clear()
+            self._set_task_status("paused")
+            if hasattr(self, "pause_button") and self.pause_button.winfo_exists():
+                self.pause_button.configure(text="Resume")
+            self._append_log("All E2E workers paused.")
+        else:
+            self.task_pause_event.set()
+            self._set_task_status("active")
+            if hasattr(self, "pause_button") and self.pause_button.winfo_exists():
+                self.pause_button.configure(text="Pause")
+            self._append_log("All E2E workers resumed.")
+
     def _launch_browser_engine(self) -> None:
         """Run the E2E scenario in a background thread and report UI status."""
         try:
@@ -851,6 +892,7 @@ class AutomationDashboard(ctk.CTk):
                     capsolver_api_key=self.service_config.get("capsolver_api_key", ""),
                 ),
                 log_callback=self._append_log_from_worker,
+                pause_event=self.task_pause_event,
             )
             runner.run(self.current_threads_count)
         except Exception as exc:
@@ -862,19 +904,25 @@ class AutomationDashboard(ctk.CTk):
     def _handle_browser_start_success(self) -> None:
         """Update the UI after a successful E2E scenario run."""
         self.active_threads_count = 0
+        self.task_pause_event.set()
         self._refresh_dashboard()
         self._append_log("Concurrent E2E Test Scenario Finished Successfully.")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
+        if hasattr(self, "pause_button") and self.pause_button.winfo_exists():
+            self.pause_button.configure(state="disabled", text="Pause")
         self._set_task_status("ready")
 
     def _handle_browser_start_failure(self, error_message: str) -> None:
         """Update the UI after a failed E2E scenario run."""
         self.active_threads_count = 0
+        self.task_pause_event.set()
         self._refresh_dashboard()
         self._append_log(f"Concurrent E2E Test Scenario Failed: {error_message}")
         if hasattr(self, "start_button"):
             self.start_button.configure(state="normal", text="Start E2E Test")
+        if hasattr(self, "pause_button") and self.pause_button.winfo_exists():
+            self.pause_button.configure(state="disabled", text="Pause")
         self._set_task_status("error")
 
     def _set_task_status(self, status: str) -> None:
@@ -883,6 +931,8 @@ class AutomationDashboard(ctk.CTk):
             return
         if status == "active":
             self.task_status_label.configure(text="● Active", text_color="#22C55E")
+        elif status == "paused":
+            self.task_status_label.configure(text="● Paused", text_color="#FACC15")
         elif status == "error":
             self.task_status_label.configure(text="● Error", text_color="#F87171")
         else:
