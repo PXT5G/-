@@ -293,6 +293,11 @@ class AutomationControlCenter(ctk.CTk):
         self._current_view_key = key
 
     @property
+    def home_view(self) -> HomeView:
+        """Access Home stat cards when wiring metrics from your automation layer."""
+        return self._content_views["home"]  # type: ignore[return-value]
+
+    @property
     def logs_view(self) -> LiveLogsView:
         """Convenient access for wiring automation log callbacks."""
         return self._content_views["logs"]  # type: ignore[return-value]
