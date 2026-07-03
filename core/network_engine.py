@@ -1,13 +1,12 @@
 """
-Asynchronous network engine with padding, TLS mimicry hooks, and multiplexing.
+Asynchronous network engine — polymorphic stealth, padding, TLS mimicry, multiplexing.
 
-SKILL BREAKDOWN: Network Stealth / TLS Fingerprint Mimicry
------------------------------------------------------------
-TLS fingerprinting (JA3/JA4) inspects ClientHello cipher suites, extensions,
-and curve order. Pure ``ssl`` module in CPython exposes limited control; this
-engine documents mimicry *intent* via ``TLSProfile`` metadata and optional
-cipher reordering while performing real async I/O through aiohttp. Students
-learn where Python ends and specialized clients (curl-impersonate, utls) begin.
+SKILL BREAKDOWN: Network Stealth / Protocol Analysis
+----------------------------------------------------
+The network layer composes transport personas (TLS), application headers
+(HTTP/2/3 simulation), and traffic shaping (padding, chaff) into a single
+async pipeline so protocol analysts can observe how each knob shifts
+observable entropy and response timing signatures.
 """
 
 from __future__ import annotations
@@ -20,6 +19,7 @@ import ssl
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
 import aiohttp
 
@@ -45,7 +45,6 @@ class TLSProfile:
     cipher_suites: Optional[List[str]] = None
 
 
-# Educational profiles — cipher names for logging / partial context setup
 _CHROME_PROFILE = TLSProfile(
     name="chrome_124",
     cipher_suites=[
@@ -76,17 +75,13 @@ class NetworkResponse:
     padded: bool
     tls_profile: str
     entropy: float
+    jitter_delay_s: float = 0.0
+    protocol_snapshot: Dict[str, object] = field(default_factory=dict)
 
 
 class NetworkEngine:
     """
-    Async HTTP client with connection multiplexing and traffic shaping.
-
-    SKILL BREAKDOWN: Asynchronous Multiplexing
-    --------------------------------------------
-    aiohttp reuses TCP connections via a connector pool, allowing concurrent
-    requests without thread-per-socket overhead. Limiting ``limit_per_host``
-    avoids accidental self-DoS while teaching backpressure concepts.
+    Async HTTP client with polymorphic stealth and connection multiplexing.
     """
 
     def __init__(
@@ -101,6 +96,7 @@ class NetworkEngine:
         self._session: Optional[aiohttp.ClientSession] = None
         self._semaphore = asyncio.Semaphore(max_connections)
         self._padding_enabled = True
+        self._discovered_endpoints: List[str] = []
 
     @property
     def padding_enabled(self) -> bool:
@@ -109,6 +105,10 @@ class NetworkEngine:
     @padding_enabled.setter
     def padding_enabled(self, value: bool) -> None:
         self._padding_enabled = value
+
+    @property
+    def discovered_endpoints(self) -> List[str]:
+        return list(self._discovered_endpoints)
 
     def _build_ssl_context(self, profile: TLSProfile) -> ssl.SSLContext:
         """
@@ -148,7 +148,6 @@ class NetworkEngine:
             self._session = None
 
     def set_tls_profile(self, profile_name: str) -> str:
-        """Switch TLS mimicry profile by name."""
         mapping = {
             "chrome_124": _CHROME_PROFILE,
             "firefox_125": _FIREFOX_PROFILE,
@@ -178,19 +177,31 @@ class NetworkEngine:
         return padded, True
 
     def _response_entropy(self, body: bytes) -> float:
-        """Shannon entropy estimate of response body (educational metric)."""
         if not body:
             return 0.0
         freq: Dict[int, int] = {}
         for byte in body[:4096]:
             freq[byte] = freq.get(byte, 0) + 1
         length = sum(freq.values())
-
         entropy = 0.0
         for count in freq.values():
             p = count / length
             entropy -= p * math.log2(p)
         return min(entropy, 8.0)
+
+    def _record_endpoint(self, url: str) -> None:
+        """
+        Track discovered endpoints for session topology view.
+
+        SKILL BREAKDOWN: Session Topology Mapping
+        -----------------------------------------
+        Canonicalizing URLs (scheme/host/path) builds a graph of observed
+        API surfaces during probes — foundation for dependency-aware fuzzing.
+        """
+        parsed = urlparse(url)
+        canonical = f"{parsed.scheme}://{parsed.netloc}{parsed.path or '/'}"
+        if canonical not in self._discovered_endpoints:
+            self._discovered_endpoints.append(canonical)
 
     async def request(
         self,
@@ -200,18 +211,18 @@ class NetworkEngine:
         extra_headers: Optional[Dict[str, str]] = None,
     ) -> NetworkResponse:
         """
-        Execute a single stealth-wrapped HTTP request.
+        Execute a stealth-orchestrated HTTP request with polymorphic headers.
 
         SKILL BREAKDOWN: Protocol Logic Analysis
         ----------------------------------------
-        Normalizing status, headers, timing, and entropy equips downstream
-        analyzers to diff anomalous responses without re-parsing raw sockets.
+        Capturing jitter delay, protocol snapshot, and response entropy in
+        one struct enables multi-dimensional anomaly scoring downstream.
         """
         await self.start()
         assert self._session is not None
 
         async with self._semaphore:
-            await self._stealth.apply_request_jitter()
+            jitter_delay, _ = await self._stealth.orchestrate_request_jitter()
             headers = self._stealth.get_headers()
             if extra_headers:
                 headers.update(extra_headers)
@@ -223,6 +234,7 @@ class NetworkEngine:
                 raw = await resp.read()
                 elapsed_ms = (time.perf_counter() - start) * 1000.0
                 preview = raw[:512].decode("utf-8", errors="replace")
+                self._record_endpoint(url)
                 return NetworkResponse(
                     url=url,
                     status=resp.status,
@@ -232,40 +244,43 @@ class NetworkEngine:
                     padded=was_padded,
                     tls_profile=self._tls_profile.name,
                     entropy=self._response_entropy(raw),
+                    jitter_delay_s=jitter_delay,
+                    protocol_snapshot=self._stealth.get_protocol_snapshot(),
                 )
 
-    async def multiplex(
-        self,
-        jobs: List[Tuple[str, str]],
-    ) -> List[NetworkResponse]:
+    async def multiplex(self, jobs: List[Tuple[str, str]]) -> List[NetworkResponse]:
         """
-        Fan-out multiple requests concurrently with bounded semaphore.
+        Fan-out concurrent requests with bounded semaphore.
 
         SKILL BREAKDOWN: Async Multiplexing
         -----------------------------------
-        ``asyncio.gather`` schedules coroutines cooperatively; combined with
-        a semaphore, we cap in-flight work to preserve fairness and socket
-        hygiene on research targets.
+        ``asyncio.gather`` plus semaphore caps preserves socket hygiene and
+        teaches backpressure when scanning multiple protocol endpoints.
         """
         tasks = [self.request(method, url) for method, url in jobs]
         return await asyncio.gather(*tasks, return_exceptions=False)
 
     async def fingerprint_probe(self, url: str) -> Dict[str, Any]:
         """
-        Emit a diagnostic struct describing active TLS persona and headers.
+        Emit diagnostics for TLS persona, pseudo-JA3, and protocol simulation.
 
         SKILL BREAKDOWN: TLS Fingerprint Spoofing (Diagnostics)
         -------------------------------------------------------
-        Hashing the ordered cipher string produces a teaching aid analogous
-        to JA3 components — not a wire-accurate JA3, but sufficient to
-        reason about profile rotation effects in coursework.
+        Hashing cipher strings approximates JA3 pedagogy; coupling with HTTP/2
+        pseudo-order and QUIC CID shows multi-layer fingerprint surfaces.
         """
         cipher_str = ":".join(self._tls_profile.cipher_suites or [])
         pseudo_ja3 = hashlib.md5(cipher_str.encode(), usedforsecurity=False).hexdigest()
         headers = self._stealth.get_headers()
+        protocol = self._stealth.get_protocol_snapshot()
         return {
             "tls_profile": self._tls_profile.name,
             "pseudo_fingerprint": pseudo_ja3,
             "user_agent": headers.get("User-Agent", ""),
             "header_count": len(headers),
+            "protocol_snapshot": protocol,
+            "chaff_packets": self._stealth.chaff_packet_count,
         }
+
+    def clear_topology(self) -> None:
+        self._discovered_endpoints.clear()

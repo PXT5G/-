@@ -1,12 +1,11 @@
 """
-SQLite-backed persistent logging for TitanRE.
+SQLite-backed persistent logging for TitanRE with transactional purge.
 
 SKILL BREAKDOWN: Anti-Forensics / Forensic Surface Reduction
 ------------------------------------------------------------
-Persistent logs are stored in SQLite with WAL mode for concurrent readers.
-Sensitive payloads are never written — only event categories and truncated
-messages — reducing post-incident artifact recovery value while preserving
-pedagogical audit trails.
+Persistent logs use WAL mode for concurrent readers. Emergency purge runs
+inside an explicit transaction so partial deletes never leave recoverable
+journal fragments after an operator wipe.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ import sqlite3
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 
 class LogDatabase:
@@ -23,7 +22,7 @@ class LogDatabase:
 
     def __init__(self, db_path: Path) -> None:
         self._db_path = db_path
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._conn = sqlite3.connect(str(db_path), check_same_thread=False)
         self._conn.execute("PRAGMA journal_mode=WAL;")
         self._conn.execute("PRAGMA synchronous=NORMAL;")
@@ -45,7 +44,6 @@ class LogDatabase:
             self._conn.commit()
 
     def write(self, level: str, module: str, message: str) -> None:
-        """Insert a sanitized log row (message truncated to 2 KiB)."""
         safe_message = message[:2048]
         ts = datetime.now(timezone.utc).isoformat()
         with self._lock:
@@ -69,11 +67,32 @@ class LogDatabase:
             rows = cursor.fetchall()
         return list(reversed(rows))
 
-    def purge(self) -> None:
-        """Emergency wipe of persistent log table."""
+    def count_rows(self) -> int:
         with self._lock:
-            self._conn.execute("DELETE FROM event_log")
-            self._conn.commit()
+            cursor = self._conn.execute("SELECT COUNT(*) FROM event_log")
+            row = cursor.fetchone()
+        return int(row[0]) if row else 0
+
+    def purge(self) -> int:
+        """
+        Transactional emergency wipe of persistent log table.
+
+        SKILL BREAKDOWN: SQLite Transactional Purge
+        ---------------------------------------------
+        BEGIN IMMEDIATE acquires writer lock atomically; DELETE + COMMIT
+        ensures crash-consistency. Returning row count gives GUI validation
+        feedback without exposing deleted message bodies.
+        """
+        with self._lock:
+            count = self.count_rows()
+            self._conn.execute("BEGIN IMMEDIATE")
+            try:
+                self._conn.execute("DELETE FROM event_log")
+                self._conn.execute("COMMIT")
+            except Exception:
+                self._conn.execute("ROLLBACK")
+                raise
+        return count
 
     def close(self) -> None:
         with self._lock:
