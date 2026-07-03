@@ -8,3 +8,14 @@ venv/
 mdt/node_modules/
 mdt/.next/
 mdt/out/
+
+# Local secrets and user-provided data
+config.json
+cards.txt
+accounts.txt
+success_test_runs.txt
+proxies.txt
+results/*.csv
+results/*.txt
+results/*.json
+results/artifacts/
