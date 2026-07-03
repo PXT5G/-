@@ -32,7 +32,8 @@ local function OpenMDT(payload)
         data = payload or BuildDefaultPayload(),
     })
 
-    -- Discord Bot API / ESX: استبدل BuildDefaultPayload ببيانات حقيقية
+    -- Discord Bot API / ESX: استبدل BuildDefaultPayload ببيانات من سيرفر FiveM الخاص بك
+  -- ملاحظة: بوت Discord في هذا المستودع مخصص لـ PlayStation MDT Web فقط — لا يربط هنا
 end
 
 -- ─── إغلاق الواجهة ───────────────────────────────────────────
@@ -97,18 +98,9 @@ RegisterNUICallback('searchCitizen', function(data, cb)
     local query = data.query or ''
     local mode  = data.mode or 'name'
 
-    if ApiEnabled() then
-        MdtApiRequest('GET', '/api/citizens/search?q=' .. query .. '&mode=' .. mode, nil, function(ok, res)
-            if ok and res and res.results then
-                cb({ ok = true, results = res.results })
-                return
-            end
-            cb({ ok = true, results = {} })
-        end)
-        return
-    end
+    -- FiveM: اربط بسيرفرك عبر TriggerServerEvent — ليس ببوت PlayStation
+    -- TriggerServerEvent('mdt:server:searchCitizen', query, mode)
 
-    -- Fallback تجريبي بدون API
     cb({
         ok = true,
         results = {
@@ -129,19 +121,8 @@ end)
 ]]
 RegisterNUICallback('exportDiscord', function(data, cb)
     local exportType = data.type or 'warrant'
-
-    if ApiEnabled() then
-        MdtApiRequest('POST', '/api/export', {
-            type = exportType,
-            data = data.payload or data,
-            officer = { name = 'FiveM Officer' },
-        }, function(ok, res)
-            cb({ ok = ok, sent = ok and res and res.sent })
-        end)
-        return
-    end
-
-    print(('[MDT] Export Discord: %s'):format(exportType))
+    -- FiveM: webhook أو سيرفر خاص — ليس بوت PlayStation
+    print(('[MDT] Export: %s'):format(exportType))
     cb({ ok = true, sent = false })
 end)
 
@@ -149,12 +130,7 @@ end)
   معالجة غرامة
 ]]
 RegisterNUICallback('processFine', function(data, cb)
-    if ApiEnabled() then
-        MdtApiRequest('POST', '/api/fines', data, function(ok)
-            cb({ ok = ok })
-        end)
-        return
-    end
+    -- TriggerServerEvent('mdt:server:processFine', data)
     print(('[MDT] Fine processed: $%s'):format(data.total or 0))
     cb({ ok = true })
 end)

@@ -1,6 +1,14 @@
-# FiveM MDT NUI — Glassmorphism Interface
+# FiveM MDT NUI — مثال تصميم (منفصل)
 
-واجهة **NUI** احترافية لسكربت MDT على FiveM — Glassmorphism، Neon Glow، حركات سلسة، وربط كامل مع Lua.
+واجهة **NUI** Glassmorphism — **مرجع لتصميم FiveM** وليس جزءاً من نظام PlayStation.
+
+| | PlayStation (الأساسي) | FiveM (هذا المجلد) |
+|--|----------------------|---------------------|
+| الواجهة | `mdt/` ويب | NUI داخل اللعبة |
+| الباكند | `discord-bot/` | سيرفرك (ESX/QBCore) |
+| الربط | ❌ لا يتصل ببعض | |
+
+> بوت Discord في `discord-bot/` **مخصص لسوني فقط** — لا تربطه هنا.
 
 ## التثبيت
 

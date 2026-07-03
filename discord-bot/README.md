@@ -1,26 +1,18 @@
-# Discord Bot — مركز الربط لـ MDT
+# Discord Bot — باكند MDT لـ PlayStation RP
 
-**مصدر بيانات واحد** يربط:
-- `mdt/` — تطبيق الويب (Next.js)
-- `fivem-mdt-nui/` — واجهة FiveM
-- Discord — أوامر slash + قنوات
+هذا البوت مخصص **لمجتمع السوني** الذي يستخدم **MDT Web** (`mdt/`).
 
-**بدون تعارض:** كل خدمة تعمل في عملية منفصلة وتتواصل عبر REST API فقط.
+**ليس** باكند لـ FiveM. مجلد `fivem-mdt-nui/` مثال منفصل ولا يتصل بهذا البوت.
 
-## الهيكل
+## الدور
+
+1. **REST API** — MDT Web يقرأ/يكتب البيانات (مواطنون، بلاغات، مذكرات، خدمة…)
+2. **Discord** — أوامر slash، إشعارات، قنوات، تصدير لأعضاء السيرفر
+3. **تخزين** — `data/store.json` (مصدر الحقيقة لمجتمع السوني)
 
 ```
-discord-bot/
-├── src/
-│   ├── index.js           # تشغيل البوت + API
-│   ├── api/server.js      # REST API
-│   ├── bot/discord-client.js
-│   ├── store/json-store.js  # قاعدة بيانات JSON
-│   └── integrate/hooks.js   # ربط بوتك المخصص
-├── custom/
-│   └── index.js           # ← ضع ملف بوتك هنا
-├── data/seed.json
-└── .env
+MDT Web ──► discord-bot API ──► Discord Server
+              (PlayStation RP)
 ```
 
 ## التثبيت
@@ -28,77 +20,71 @@ discord-bot/
 ```bash
 cd discord-bot
 cp .env.example .env
-# عدّل DISCORD_BOT_TOKEN و API_SECRET
+# DISCORD_BOT_TOKEN — توكن بوت سيرفر السوني
+# API_SECRET — مفتاح سري مشترك مع mdt/.env.local
 npm install
 npm start
 ```
 
-الـ API يعمل على: `http://127.0.0.1:3921`
-
 ## ربط MDT Web
 
-في `mdt/.env.local`:
-
+`mdt/.env.local`:
 ```env
 DISCORD_BOT_API_URL=http://127.0.0.1:3921
-DISCORD_BOT_API_SECRET=نفس_القيمة_في_discord-bot
+DISCORD_BOT_API_SECRET=نفس_قيمة_API_SECRET
 ```
 
-## ربط FiveM
+عند النشر (Vercel/VPS): ضع URL البوت الحقيقي بدل `127.0.0.1`.
 
-في `server.cfg`:
+## دمج ملف بوتك (عندما تجلبه)
 
-```cfg
-set mdt_api_url "http://127.0.0.1:3921"
-set mdt_api_secret "نفس_API_SECRET"
-ensure mdt-nui
-```
-
-## API Endpoints
-
-| Method | Path | الوصف |
-|--------|------|--------|
-| GET | `/health` | فحص الحالة |
-| GET | `/api/citizens/search?q=&mode=` | بحث مواطن |
-| GET | `/api/citizens/:id` | ملف مواطن |
-| GET | `/api/incidents` | البلاغات |
-| GET | `/api/warrants` | المذكرات |
-| POST | `/api/duty` | سجل خدمة |
-| POST | `/api/export` | تصدير Discord |
-| POST | `/api/fines` | غرامة |
-
-**المصادقة:** `Authorization: Bearer <API_SECRET>`
-
-## دمج بوتك الحالي
-
-1. افتح `custom/index.js`
-2. انسخ منطق بوتك إلى الـ hooks (لا تستدعِ `client.login` — النظام يفعل ذلك)
+ضع منطق بوتك في `custom/index.js`:
 
 ```javascript
 export default {
   async onReady({ client }) {
-    // كود بوتك عند التشغيل
+    // أوامرك الحالية، قنواتك، أحداثك
   },
   async onDuty({ entry, discordClient }) {
-    // عند تبديل الخدمة من MDT
+    // عند دخول/خروج خدمة من MDT Web
+  },
+  async onExport({ type, data, officer, discordClient }) {
+    // إرسال مذكرة/تقرير لقناة أو DM
   },
   extendApi({ api }) {
-    api.get('/my/custom', (req, res) => res.json({ ok: true }));
+    // مسارات API إضافية إن احتجت
   },
 };
 ```
 
-## أوامر Discord
+**قواعد لتجنب التعارض:**
+- لا تشغّل `client.login()` في `custom/` — النظام يفعل ذلك
+- لا تفتح منفذ API ثانٍ — استخدم `extendApi`
+- البيانات المشتركة عبر `store/json-store.js` أو API
+
+## API
+
+| Method | Path | الاستخدام |
+|--------|------|-----------|
+| GET | `/api/citizens/search` | بحث DOJ |
+| GET | `/api/citizens/:id` | ملف مواطن |
+| GET | `/api/incidents` | بلاغات |
+| GET | `/api/warrants` | مذكرات |
+| POST | `/api/duty` | سجل خدمة |
+| POST | `/api/export` | تصدير Discord |
+| POST | `/api/fines` | غرامة |
+
+مصادقة: `Authorization: Bearer <API_SECRET>`
+
+## أوامر Discord (افتراضية)
 
 - `/search` — بحث مواطن
-- `/warrants` — مذكرات نشطة
+- `/warrants` — مذكرات
 - `/dispatch` — بلاغات
-- `/mdt` — معلومات النظام
+- `/mdt` — رابط/معلومات الويب
 
-## Fallback بدون البوت
+يمكنك استبدالها أو إضافتها من `custom/index.js` عبر `onInteraction`.
 
-إذا البوت غير مشغّل:
-- MDT Web يستخدم البيانات المحلية (mock)
-- FiveM يستخدم بيانات تجريبية
+## بدون البوت
 
-لا يحدث تعارض أو تعطّل.
+MDT Web يعمل ببيانات تجريبية محلية — مفيد للتطوير قبل ربط بوتك.

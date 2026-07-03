@@ -19,9 +19,8 @@ async function main() {
 
   const app = createApiApp(discordClient);
   app.listen(config.api.port, () => {
-    console.log(`[api] MDT Discord API listening on http://127.0.0.1:${config.api.port}`);
-    console.log('[api] MDT Web: set DISCORD_BOT_API_URL=http://127.0.0.1:' + config.api.port);
-    console.log('[api] FiveM: set mdt_api_url and mdt_api_secret convars');
+    console.log(`[api] PlayStation MDT API → http://127.0.0.1:${config.api.port}`);
+    console.log('[api] اربط mdt/.env.local فقط — FiveM لا يستخدم هذا البوت');
   });
 }
 

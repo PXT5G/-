@@ -1,6 +1,8 @@
-# نظام MDT المتقدم — نسخة ويب
+# نظام MDT المتقدم — نسخة ويب (PlayStation RP)
 
-نسخة ويب من **Advanced MDT** (مثل kartik MDT لـ FiveM) مخصصة لمجتمعات RP على PlayStation حيث لا يتوفر سكربت سيرفر — الباكند عبر **Discord Bot API / Webhooks**.
+نسخة ويب من **Advanced MDT** مخصصة لمجتمعات RP على **PlayStation** — لا يتوفر سكربت داخل اللعبة، لذلك الباكند عبر **بوت Discord** (`discord-bot/`).
+
+> **FiveM:** مجلد `fivem-mdt-nui/` مثال تصميم فقط — **غير مربوط** ببوت السوني.
 
 ## المميزات (مطابقة FiveM MDT)
 
@@ -44,15 +46,19 @@ npm run dev
 | `tbradley` | `Command@1234` | مشرف |
 | `smitchell` | `Lspd@5678` | رقيب |
 
-## الربط مع Discord / FiveM
+## الربط مع Discord (PlayStation)
 
-ابحث عن `Discord Bot API` في الكود — كل تعليق يحدد نقطة الربط.
+الباكند الرسمي: **`discord-bot/`** — شغّله ثم اضبط:
 
-للتصدير إلى Discord DM:
 ```env
-DISCORD_EXPORT_WEBHOOK_URL=https://discord.com/api/webhooks/...
-MDT_JWT_SECRET=your-secret
+# mdt/.env.local
+DISCORD_BOT_API_URL=http://127.0.0.1:3921
+DISCORD_BOT_API_SECRET=نفس_API_SECRET_في_discord-bot
 ```
+
+عند جلب ملف بوتك، ضعه في `discord-bot/custom/index.js` — راجع `discord-bot/README.md`.
+
+بدون البوت: يعمل MDT ببيانات تجريبية للتطوير.
 
 ## هيكل الأمان
 

@@ -1,44 +1,68 @@
-# نظام MDT المتقدم
+# نظام MDT المتقدم — PlayStation RP
 
-مستودع يحتوي على نسختين:
+مشروع **MDT ويب** لمجتمعات الـ RP على **PlayStation** — لا يوجد سكربت سيرفر داخل اللعبة، لذلك الباكند عبر **بوت Discord**.
 
-| المجلد | الوصف |
-|--------|--------|
-| `mdt/` | تطبيق ويب Next.js (مصادقة، إدارة، DOJ) |
-| `fivem-mdt-nui/` | واجهة NUI لـ FiveM |
-| `discord-bot/` | **بوت Discord + REST API** — يربط الجميع |
+## المكونات
 
-## الربط الموحّد (بدون تعارض)
+| المجلد | الاستخدام | ملاحظة |
+|--------|-----------|--------|
+| **`mdt/`** | واجهة الويب للعسكريين | **المنتج الرئيسي** |
+| **`discord-bot/`** | باكند البيانات + Discord | **يربط مع MDT Web فقط** |
+| `fivem-mdt-nui/` | مثال واجهة NUI | **اختياري** — لسيرفرات FiveM، **غير مربوط** بالبوت |
+
+## المعمارية (PlayStation)
 
 ```
-┌─────────────┐     ┌─────────────────┐     ┌──────────┐
-│  MDT Web    │────►│  discord-bot    │────►│ Discord  │
-│  (Next.js)  │     │  API :3921      │     │ Server   │
-└─────────────┘     └────────▲────────┘     └──────────┘
-┌─────────────┐              │
-│  FiveM NUI  │──────────────┘
-└─────────────┘
+العسكري (متصفح / جوال)
+        │
+        ▼
+   MDT Web (mdt/)
+        │  REST API
+        ▼
+  discord-bot (:3921)
+        │
+        ▼
+   سيرفر Discord
+   (أوامر، قنوات، DM، سجلات)
 ```
 
-1. شغّل البوت: `cd discord-bot && npm install && npm start`
-2. اضبط `mdt/.env.local`: `DISCORD_BOT_API_URL` + `DISCORD_BOT_API_SECRET`
-3. اضبط FiveM: `set mdt_api_url` + `set mdt_api_secret`
-4. ضع بوتك في `discord-bot/custom/index.js`
+- **لا FiveM** في هذا المسار
+- البوت = قاعدة البيانات + أوامر Discord لمجتمع السوني
+- MDT Web يعمل حتى لو البوت مطفّى (بيانات تجريبية مؤقتاً)
 
-راجع `discord-bot/README.md` للتفاصيل.
+## التشغيل السريع
 
-## تشغيل الويب
-
+### 1. البوت (باكند السوني)
 ```bash
-cd mdt && npm install && npm run dev
+cd discord-bot
+cp .env.example .env
+npm install
+npm start
 ```
 
-## تثبيت FiveM NUI
-
+### 2. MDT Web
 ```bash
-# انسخ fivem-mdt-nui إلى resources ثم:
-ensure mdt-nui
+cd mdt
+cp .env.example .env.local
+npm install
+npm run dev
 ```
 
-راجع `fivem-mdt-nui/README.md` للتفاصيل.
+في `.env.local`:
+```env
+DISCORD_BOT_API_URL=http://127.0.0.1:3921
+DISCORD_BOT_API_SECRET=نفس_API_SECRET_في_البوت
+```
 
+### 3. دمج بوتك
+عندما تجلب ملف البوت، ضعه في:
+`discord-bot/custom/index.js`
+
+---
+
+## FiveM (مثال منفصل فقط)
+
+مجلد `fivem-mdt-nui/` مرجع لتصميم NUI — **لا يستخدم بوت PlayStation**.
+إن احتجته لسيرفر FiveM، اربطه بسيرفرك (ESX/QBCore) وليس بـ `discord-bot/`.
+
+راجع `fivem-mdt-nui/README.md`.

@@ -1,6 +1,6 @@
 /**
- * عميل Discord Bot API — جسر موحّد بين MDT Web و discord-bot
- * إذا لم يُضبط DISCORD_BOT_API_URL يُستخدم fallback المحلي (mock)
+ * عميل Discord Bot API — باكند PlayStation MDT Web فقط
+ * FiveM (fivem-mdt-nui) لا يستخدم هذا المسار
  */
 
 const API_URL = process.env.DISCORD_BOT_API_URL?.replace(/\/$/, "");
