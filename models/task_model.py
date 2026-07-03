@@ -1,12 +1,12 @@
 """
-Task and module state models for TitanRE MVC layer — Sovereign Core extensions.
+Task and module state models for TitanRE — vulnerability flow extensions.
 
-SKILL BREAKDOWN: Protocol Logic Analysis
-----------------------------------------
-Explicit enumerations for module modes and task lifecycle prevent ambiguous
-string comparisons across threads. Sovereign-phase structs extend telemetry
-with constant-time immunity scores and jurisdictional shard integrity for
-the Security Center V2 dashboard.
+SKILL BREAKDOWN: Graph Theory / Vulnerability Path Modeling
+-----------------------------------------------------------
+``VulnerabilityPathNode`` vertices and ``FlowMatrixStep`` edges form a
+directed execution graph operators can traverse in the Visual Flow Matrix —
+mirroring how elite researchers chain Auth → Session → Resource steps to
+surface BOLA and mass-assignment flaws.
 """
 
 from __future__ import annotations
@@ -17,16 +17,12 @@ from typing import Any, Dict, List, Optional
 
 
 class ModuleMode(Enum):
-    """Operational modes toggled from the GUI module panel."""
-
     STEALTH = auto()
     FUZZING = auto()
     ANALYSIS = auto()
 
 
 class TaskStatus(Enum):
-    """Lifecycle states for background jobs."""
-
     IDLE = "idle"
     RUNNING = "running"
     SUCCESS = "success"
@@ -34,18 +30,105 @@ class TaskStatus(Enum):
     ABORTED = "aborted"
 
 
+class VulnerabilityType(str, Enum):
+    """API logic flaw classifications detected by the path tracer."""
+
+    SAFE_PATH = "SAFE_PATH"
+    SUSPICIOUS_JITTER = "SUSPICIOUS_JITTER"
+    BOLA_IDOR = "BOLA/IDOR"
+    MASS_ASSIGNMENT = "MASS_ASSIGNMENT"
+    ERROR_PROPAGATION = "ERROR_PROPAGATION"
+
+
+class FlowStepStatus(str, Enum):
+    """Visual flow matrix node severity band."""
+
+    SAFE = "SAFE"
+    SUSPICIOUS = "SUSPICIOUS"
+    CRITICAL = "CRITICAL"
+
+
+@dataclass
+class VulnerabilityPathNode:
+    """
+    Graph vertex for a detected vulnerability along an execution path.
+
+    SKILL BREAKDOWN: Vulnerability Graph Modeling
+    -----------------------------------------------
+    Storing ``path_url``, typed flaw, severity, and ``remediation_vector`` per
+    node enables both GUI highlighting and dependency routing when anomalies
+    propagate across sequential API hops.
+    """
+
+    node_id: str
+    path_url: str
+    vulnerability_type: str
+    severity_score: float
+    remediation_vector: str
+    step_index: int = 0
+    propagated_from: Optional[str] = None
+    evidence: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "node_id": self.node_id,
+            "path_url": self.path_url,
+            "vulnerability_type": self.vulnerability_type,
+            "severity_score": round(self.severity_score, 2),
+            "remediation_vector": self.remediation_vector,
+            "step_index": self.step_index,
+            "propagated_from": self.propagated_from,
+            "evidence": self.evidence,
+        }
+
+
+@dataclass
+class FlowMatrixStep:
+    """
+    Single hop in the Visual Flow Matrix (e.g. SAFE PATH ➔ SUSPICIOUS ➔ CRITICAL).
+
+    SKILL BREAKDOWN: Stateful Path Tracing
+    ----------------------------------------
+    Sequential steps model multi-hop API flows so analysts see *where* in the
+    chain a flaw emerged rather than isolated per-request alerts.
+    """
+
+    label: str
+    status: FlowStepStatus
+    step_number: int = 0
+
+    def display(self) -> str:
+        return f"[{self.status.value} PATH] {self.label}"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "label": self.label,
+            "status": self.status.value,
+            "step_number": self.step_number,
+            "display": self.display(),
+        }
+
+
+@dataclass
+class VulnerabilityFlowState:
+    """Aggregated vulnerability flow output for GUI rendering."""
+
+    matrix_steps: List[FlowMatrixStep] = field(default_factory=list)
+    path_nodes: List[VulnerabilityPathNode] = field(default_factory=list)
+    trace_detail: str = ""
+    matrix_line: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "matrix_steps": [s.to_dict() for s in self.matrix_steps],
+            "path_nodes": [n.to_dict() for n in self.path_nodes],
+            "trace_detail": self.trace_detail,
+            "matrix_line": self.matrix_line,
+        }
+
+
 @dataclass
 class ShardIntegrityStatus:
-    """
-    Multi-jurisdictional shard quorum verification result from boot recovery.
-
-    SKILL BREAKDOWN: Jurisdictional Shard Integrity
-    ------------------------------------------------
-    Reporting which of the three simulated non-extradition shards were
-    recovered confirms operators that persistent logs were not tampered with
-    before in-memory reassembly.
-    """
-
     quorum_met: bool = False
     shards_present: int = 0
     shards_required: int = 3
@@ -66,16 +149,6 @@ class ShardIntegrityStatus:
 
 @dataclass
 class SecurityTelemetry:
-    """
-    Real-time Security Center metrics streamed to the GUI.
-
-    SKILL BREAKDOWN: Sovereign Core Telemetry
-    -------------------------------------------
-    ``memory_constancy`` approximates side-channel timing immunity; ``decoy_efficiency``
-    tracks how effectively cryptographic decoys and tracker-poison samples
-    dilute adversarial classifier signal.
-    """
-
     memory_entropy: float = 0.0
     memory_encrypted_ratio: float = 1.0
     network_entropy: float = 0.0
@@ -88,6 +161,8 @@ class SecurityTelemetry:
     decoy_efficiency: float = 0.0
     pqc_agility_active: bool = True
     tracker_poison_samples: int = 0
+    vulnerability_count: int = 0
+    max_severity: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -103,21 +178,13 @@ class SecurityTelemetry:
             "decoy_efficiency": round(self.decoy_efficiency, 4),
             "pqc_agility_active": self.pqc_agility_active,
             "tracker_poison_samples": self.tracker_poison_samples,
+            "vulnerability_count": self.vulnerability_count,
+            "max_severity": round(self.max_severity, 2),
         }
 
 
 @dataclass
 class TopologyNode:
-    """
-    Hierarchical node for interactive Session Topology tree.
-
-    SKILL BREAKDOWN: Attack-Surface Graph Modeling
-    ------------------------------------------------
-    Tree nodes carry depth tier labels (T0 root, T1 endpoint, T2 field) so
-    the GUI can render multi-tier collapsible hierarchies without external
-    graph libraries.
-    """
-
     node_id: str
     label: str
     tier: int = 0
@@ -136,8 +203,6 @@ class TopologyNode:
 
 @dataclass
 class WipeValidation:
-    """Post-wipe validation artifact for GUI confirmation."""
-
     memory_artifacts_cleared: int = 0
     fragments_destroyed: int = 0
     db_rows_purged: int = 0
@@ -160,8 +225,6 @@ class WipeValidation:
 
 @dataclass
 class TaskState:
-    """Thread-safe snapshot of runtime metrics surfaced in the dashboard."""
-
     status: TaskStatus = TaskStatus.IDLE
     active_threads: int = 0
     memory_entropy: float = 0.0
@@ -178,6 +241,7 @@ class TaskState:
     telemetry: SecurityTelemetry = field(default_factory=SecurityTelemetry)
     session_topology: List[str] = field(default_factory=list)
     topology_tree: List[TopologyNode] = field(default_factory=list)
+    vulnerability_flow: VulnerabilityFlowState = field(default_factory=VulnerabilityFlowState)
     wipe_validation: WipeValidation = field(default_factory=WipeValidation)
     shard_integrity: ShardIntegrityStatus = field(default_factory=ShardIntegrityStatus)
 
@@ -193,25 +257,40 @@ class TaskState:
             "telemetry": self.telemetry.to_dict(),
             "session_topology": list(self.session_topology),
             "topology_tree": [n.to_dict() for n in self.topology_tree],
+            "vulnerability_flow": self.vulnerability_flow.to_dict(),
             "wipe_validation": self.wipe_validation.to_dict(),
             "shard_integrity": self.shard_integrity.to_dict(),
         }
 
     def clone(self) -> "TaskState":
         def _clone_nodes(nodes: List[TopologyNode]) -> List[TopologyNode]:
-            cloned: List[TopologyNode] = []
-            for n in nodes:
-                cloned.append(
-                    TopologyNode(
-                        node_id=n.node_id,
-                        label=n.label,
-                        tier=n.tier,
-                        expanded=n.expanded,
-                        children=_clone_nodes(n.children),
-                    )
+            return [
+                TopologyNode(
+                    node_id=n.node_id,
+                    label=n.label,
+                    tier=n.tier,
+                    expanded=n.expanded,
+                    children=_clone_nodes(n.children),
                 )
-            return cloned
+                for n in nodes
+            ]
 
+        def _clone_vuln_nodes(nodes: List[VulnerabilityPathNode]) -> List[VulnerabilityPathNode]:
+            return [
+                VulnerabilityPathNode(
+                    node_id=n.node_id,
+                    path_url=n.path_url,
+                    vulnerability_type=n.vulnerability_type,
+                    severity_score=n.severity_score,
+                    remediation_vector=n.remediation_vector,
+                    step_index=n.step_index,
+                    propagated_from=n.propagated_from,
+                    evidence=n.evidence,
+                )
+                for n in nodes
+            ]
+
+        vf = self.vulnerability_flow
         return TaskState(
             status=self.status,
             active_threads=self.active_threads,
@@ -233,9 +312,17 @@ class TaskState:
                 decoy_efficiency=self.telemetry.decoy_efficiency,
                 pqc_agility_active=self.telemetry.pqc_agility_active,
                 tracker_poison_samples=self.telemetry.tracker_poison_samples,
+                vulnerability_count=self.telemetry.vulnerability_count,
+                max_severity=self.telemetry.max_severity,
             ),
             session_topology=list(self.session_topology),
             topology_tree=_clone_nodes(self.topology_tree),
+            vulnerability_flow=VulnerabilityFlowState(
+                matrix_steps=list(vf.matrix_steps),
+                path_nodes=_clone_vuln_nodes(vf.path_nodes),
+                trace_detail=vf.trace_detail,
+                matrix_line=vf.matrix_line,
+            ),
             wipe_validation=WipeValidation(
                 memory_artifacts_cleared=self.wipe_validation.memory_artifacts_cleared,
                 fragments_destroyed=self.wipe_validation.fragments_destroyed,

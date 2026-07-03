@@ -16,7 +16,15 @@ from typing import Callable, Dict, List, Optional
 import customtkinter as ctk
 
 from controller import TitanREController
-from models.task_model import ModuleMode, TaskState, TaskStatus, TopologyNode, WipeValidation
+from models.task_model import (
+    FlowStepStatus,
+    ModuleMode,
+    TaskState,
+    TaskStatus,
+    TopologyNode,
+    VulnerabilityFlowState,
+    WipeValidation,
+)
 
 
 COLORS = {
@@ -36,6 +44,9 @@ COLORS = {
     "tier0": "#60a5fa",
     "tier1": "#34d399",
     "tier2": "#a78bfa",
+    "flow_safe": "#22c55e",
+    "flow_suspicious": "#f59e0b",
+    "flow_critical": "#ef4444",
 }
 
 
@@ -117,6 +128,63 @@ class StatusIndicator(ctk.CTkFrame):
 
     def set_value(self, text: str, color: Optional[str] = None) -> None:
         self.value_label.configure(text=text, text_color=color or COLORS["text"])
+
+
+class VulnerabilityFlowMatrix(ctk.CTkFrame):
+    """
+    Visual flow matrix: [SAFE PATH] ➔ [SUSPICIOUS JITTER] ➔ [CRITICAL: PATH LEAK].
+
+    SKILL BREAKDOWN: Vulnerability Visual Flow Matrix
+    ---------------------------------------------------
+    Color-coded hop labels teach operators to read sequential API flows as
+    attack narratives rather than isolated scanner findings.
+    """
+
+    STATUS_COLORS = {
+        FlowStepStatus.SAFE: COLORS["flow_safe"],
+        FlowStepStatus.SUSPICIOUS: COLORS["flow_suspicious"],
+        FlowStepStatus.CRITICAL: COLORS["flow_critical"],
+    }
+
+    def __init__(self, master: ctk.CTkFrame, **kwargs) -> None:
+        super().__init__(master, fg_color="#0a0f1a", corner_radius=8, **kwargs)
+        self._flow_row = ctk.CTkFrame(self, fg_color="transparent")
+        self._flow_row.pack(fill="x", padx=8, pady=8)
+        self._placeholder = ctk.CTkLabel(
+            self._flow_row,
+            text="[SAFE PATH] Awaiting vulnerability flow scan…",
+            font=ctk.CTkFont(family="Consolas", size=12),
+            text_color=COLORS["muted"],
+        )
+        self._placeholder.pack(anchor="w")
+
+    def render(self, flow: VulnerabilityFlowState) -> None:
+        for child in self._flow_row.winfo_children():
+            child.destroy()
+        if not flow.matrix_steps:
+            ctk.CTkLabel(
+                self._flow_row,
+                text="[SAFE PATH] Awaiting vulnerability flow scan…",
+                font=ctk.CTkFont(family="Consolas", size=12),
+                text_color=COLORS["muted"],
+            ).pack(anchor="w")
+            return
+
+        for index, step in enumerate(flow.matrix_steps):
+            color = self.STATUS_COLORS.get(step.status, COLORS["text"])
+            ctk.CTkLabel(
+                self._flow_row,
+                text=step.display(),
+                font=ctk.CTkFont(family="Consolas", size=12, weight="bold"),
+                text_color=color,
+            ).pack(side="left", padx=(0, 4))
+            if index < len(flow.matrix_steps) - 1:
+                ctk.CTkLabel(
+                    self._flow_row,
+                    text="➔",
+                    font=ctk.CTkFont(size=14, weight="bold"),
+                    text_color=COLORS["muted"],
+                ).pack(side="left", padx=(0, 4))
 
 
 class CollapsibleTopologyTree(ctk.CTkScrollableFrame):
@@ -225,15 +293,16 @@ class TitanREGui(ctk.CTk):
         main = ctk.CTkFrame(self, fg_color=COLORS["bg"], corner_radius=0)
         main.grid(row=0, column=1, sticky="nsew")
         main.grid_columnconfigure(0, weight=1)
-        main.grid_rowconfigure(4, weight=1)
+        main.grid_rowconfigure(5, weight=1)
 
         self._build_header(main).grid(row=0, column=0, sticky="ew", padx=20, pady=(14, 4))
         self._build_quantum_node(main).grid(row=1, column=0, sticky="ew", padx=20, pady=4)
         self._build_security_center(main).grid(row=2, column=0, sticky="ew", padx=20, pady=4)
         self._build_status_row(main).grid(row=3, column=0, sticky="ew", padx=20, pady=4)
+        self._build_vuln_flow_panel(main).grid(row=4, column=0, sticky="ew", padx=20, pady=4)
 
         bottom = ctk.CTkFrame(main, fg_color="transparent")
-        bottom.grid(row=4, column=0, sticky="nsew", padx=20, pady=(4, 14))
+        bottom.grid(row=5, column=0, sticky="nsew", padx=20, pady=(4, 14))
         bottom.grid_columnconfigure(0, weight=3)
         bottom.grid_columnconfigure(1, weight=2)
         bottom.grid_rowconfigure(0, weight=1)
@@ -306,6 +375,13 @@ class TitanREGui(ctk.CTk):
             fg_color=COLORS["accent"],
             hover_color=COLORS["accent_hover"],
             command=self._on_probe,
+        ).pack(fill="x", pady=3)
+        ctk.CTkButton(
+            actions,
+            text="Run Vulnerability Flow Scan",
+            fg_color=COLORS["flow_critical"],
+            hover_color="#b91c1c",
+            command=self._on_vuln_flow,
         ).pack(fill="x", pady=3)
         ctk.CTkButton(
             actions,
@@ -426,6 +502,19 @@ class TitanREGui(ctk.CTk):
         self.ind_task.grid(row=1, column=0, columnspan=4, sticky="nsew", pady=(6, 0))
         return row
 
+    def _build_vuln_flow_panel(self, parent: ctk.CTkFrame) -> ctk.CTkFrame:
+        """Vulnerability Visual Flow Matrix panel."""
+        panel = ctk.CTkFrame(parent, fg_color=COLORS["panel"], corner_radius=12)
+        ctk.CTkLabel(
+            panel,
+            text="VULNERABILITY VISUAL FLOW MATRIX",
+            font=ctk.CTkFont(size=11, weight="bold"),
+            text_color=COLORS["flow_critical"],
+        ).pack(anchor="w", padx=14, pady=(10, 4))
+        self.vuln_flow_matrix = VulnerabilityFlowMatrix(panel, height=52)
+        self.vuln_flow_matrix.pack(fill="x", padx=10, pady=(0, 10))
+        return panel
+
     def _build_log_panel(self, parent: ctk.CTkFrame) -> ctk.CTkFrame:
         panel = ctk.CTkFrame(parent, fg_color=COLORS["panel"], corner_radius=12)
         panel.grid_columnconfigure(0, weight=1)
@@ -441,7 +530,7 @@ class TitanREGui(ctk.CTk):
         ).pack(side="left")
         self.target_entry = ctk.CTkEntry(top, placeholder_text="https://example.com", width=280)
         self.target_entry.pack(side="right")
-        self.target_entry.insert(0, "https://httpbin.org/anything")
+        self.target_entry.insert(0, "http://127.0.0.1:8765")
 
         self.log_text = ctk.CTkTextbox(
             panel,
@@ -459,7 +548,8 @@ class TitanREGui(ctk.CTk):
     def _build_topology_panel(self, parent: ctk.CTkFrame) -> ctk.CTkFrame:
         panel = ctk.CTkFrame(parent, fg_color=COLORS["panel"], corner_radius=12)
         panel.grid_columnconfigure(0, weight=1)
-        panel.grid_rowconfigure(1, weight=1)
+        panel.grid_rowconfigure(1, weight=2)
+        panel.grid_rowconfigure(3, weight=2)
 
         ctk.CTkLabel(
             panel,
@@ -471,9 +561,29 @@ class TitanREGui(ctk.CTk):
         self.topology_tree = CollapsibleTopologyTree(
             panel,
             toggle_callback=self._on_topology_toggle,
-            height=320,
+            height=180,
         )
-        self.topology_tree.grid(row=1, column=0, sticky="nsew", padx=12, pady=(4, 10))
+        self.topology_tree.grid(row=1, column=0, sticky="nsew", padx=12, pady=(4, 4))
+
+        ctk.CTkLabel(
+            panel,
+            text="Vulnerability Trace Detail",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=COLORS["flow_critical"],
+        ).grid(row=2, column=0, sticky="w", padx=12, pady=(6, 2))
+
+        self.vuln_trace_text = ctk.CTkTextbox(
+            panel,
+            font=ctk.CTkFont(family="Consolas", size=11),
+            fg_color="#0a0f1a",
+            text_color=COLORS["flow_suspicious"],
+            border_width=1,
+            border_color=COLORS["border"],
+            wrap="word",
+            height=140,
+        )
+        self.vuln_trace_text.grid(row=3, column=0, sticky="nsew", padx=12, pady=(4, 10))
+        self.vuln_trace_text.insert("end", "(run Vulnerability Flow Scan to populate trace…)\n")
         return panel
 
     # ------------------------------------------------------------------
@@ -557,6 +667,12 @@ class TitanREGui(ctk.CTk):
         if state.topology_tree:
             self.topology_tree.render(state.topology_tree)
 
+        if state.vulnerability_flow:
+            self.vuln_flow_matrix.render(state.vulnerability_flow)
+            self.vuln_trace_text.delete("1.0", "end")
+            self.vuln_trace_text.insert("end", state.vulnerability_flow.trace_detail or "")
+            self.vuln_trace_text.see("end")
+
     def _render_wipe_validation(self, validation: WipeValidation) -> None:
         color = COLORS["success"] if validation.success else COLORS["danger"]
         icon = "✓" if validation.success else "✗"
@@ -585,6 +701,17 @@ class TitanREGui(ctk.CTk):
             self._append_log("WARN", "Enter a target URL before running probe.")
             return
         self.controller.run_network_probe(url)
+
+    def _on_vuln_flow(self) -> None:
+        url = self.target_entry.get().strip()
+        if not url:
+            self._append_log("WARN", "Enter target base URL (e.g. http://127.0.0.1:8765).")
+            return
+        if not self._module_vars[ModuleMode.FUZZING].get():
+            self._append_log("INFO", "Enabling Fuzzing module for vulnerability flow scan.")
+            self._module_vars[ModuleMode.FUZZING].set(True)
+            self.controller.toggle_module(ModuleMode.FUZZING, True)
+        self.controller.run_vulnerability_flow_scan(url)
 
     def _on_fuzz(self) -> None:
         url = self.target_entry.get().strip()

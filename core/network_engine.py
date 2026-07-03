@@ -209,6 +209,8 @@ class NetworkEngine:
         url: str,
         data: Optional[bytes] = None,
         extra_headers: Optional[Dict[str, str]] = None,
+        *,
+        skip_padding: bool = False,
     ) -> NetworkResponse:
         """
         Execute a stealth-orchestrated HTTP request with polymorphic headers.
@@ -227,7 +229,15 @@ class NetworkEngine:
             if extra_headers:
                 headers.update(extra_headers)
 
-            padded_body, was_padded = self._apply_traffic_padding(data)
+            content_type = headers.get("Content-Type", headers.get("content-type", ""))
+            pad_json = (
+                not skip_padding
+                and "application/json" not in content_type.lower()
+            )
+            if pad_json:
+                padded_body, was_padded = self._apply_traffic_padding(data)
+            else:
+                padded_body, was_padded = data or b"", False
             start = time.perf_counter()
 
             async with self._session.request(method, url, headers=headers, data=padded_body) as resp:

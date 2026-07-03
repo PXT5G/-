@@ -11,6 +11,7 @@ threads start, while response feedback posts via the async loop only.
 from __future__ import annotations
 
 import asyncio
+import json
 import queue
 import secrets
 import threading
@@ -30,6 +31,7 @@ from models.task_model import (
     TaskState,
     TaskStatus,
     TopologyNode,
+    VulnerabilityFlowState,
     WipeValidation,
 )
 
@@ -192,6 +194,7 @@ class TitanREController:
             wipe_validation=validation,
             session_topology=[],
             topology_tree=[],
+            vulnerability_flow=VulnerabilityFlowState(),
         )
         if self._wipe_callback:
             self._wipe_callback(validation)
@@ -201,6 +204,10 @@ class TitanREController:
 
     def run_sample_fuzz(self, url: str) -> None:
         self._enqueue(self._job_sample_fuzz(url))
+
+    def run_vulnerability_flow_scan(self, base_url: str) -> None:
+        """Schedule Auth → Session → Resource vulnerability path trace."""
+        self._enqueue(self._job_vulnerability_flow(base_url))
 
     def get_task_state(self) -> TaskState:
         with self._state_lock:
@@ -288,7 +295,13 @@ class TitanREController:
                 cases = self._fuzzer.mutate_json_payload(base_payload, rounds=6)
 
                 async def _sender(payload: Any) -> Dict[str, Any]:
-                    body = json_bytes(str(payload))
+                    body = (
+                        json.dumps(payload).encode("utf-8")
+                        if isinstance(payload, dict)
+                        else json_bytes(str(payload))
+                        if payload is not None
+                        else b""
+                    )
                     resp = await self._network.request("POST", url, data=body)
                     self._stealth.ingest_target_response(
                         resp.status,
@@ -304,6 +317,7 @@ class TitanREController:
 
                 results = await self._fuzzer.run_cases(cases, _sender)
                 anomalies = [r for r in results if r.anomaly_score >= 0.5]
+                flow_state = self._fuzzer.last_flow_state
                 self._log(
                     "INFO",
                     f"Fuzz complete — {len(results)} cases, {len(anomalies)} anomalies.",
@@ -316,9 +330,71 @@ class TitanREController:
                     last_message=f"Fuzzed {len(results)} cases ({len(anomalies)} anomalies)",
                     session_topology=topology_lines,
                     topology_tree=topology_tree,
+                    vulnerability_flow=flow_state,
                 )
             except Exception as exc:  # noqa: BLE001
                 self._log("ERROR", f"Fuzz job failed: {exc}")
+                self._publish_state(status=TaskStatus.FAILED, last_message=str(exc))
+            finally:
+                self._worker_end()
+
+        return _coro
+
+    def _job_vulnerability_flow(self, base_url: str):
+        async def _coro() -> None:
+            if not self._fuzzer.enabled:
+                self._log("WARN", "Fuzzing module disabled — enable Fuzzing to run vulnerability flow scan.")
+                return
+            self._worker_begin()
+            try:
+                self._stealth.rotate_persona()
+                base = base_url.rstrip("/")
+
+                async def _flow_sender(method: str, url: str, payload: Any) -> Dict[str, Any]:
+                    if isinstance(payload, dict):
+                        body = json.dumps(payload).encode("utf-8")
+                    else:
+                        body = str(payload).encode("utf-8")
+                    extra: Dict[str, str] = {"Content-Type": "application/json"}
+                    token = self._fuzzer.path_tracer.session_token
+                    if token:
+                        extra["Authorization"] = f"Bearer {token}"
+                    req_body = None if method.upper() == "GET" else body
+                    resp = await self._network.request(method, url, data=req_body, extra_headers=extra)
+                    self._stealth.ingest_target_response(
+                        resp.status, resp.elapsed_ms, len(resp.body_preview)
+                    )
+                    return {
+                        "status_code": resp.status,
+                        "body": resp.body_preview,
+                        "headers": resp.headers,
+                        "elapsed_ms": resp.elapsed_ms,
+                    }
+
+                flow_state = await self._fuzzer.run_vulnerability_flow_scan(base, _flow_sender)
+                critical = [
+                    n for n in flow_state.path_nodes if n.severity_score >= 7.0
+                ]
+                self._log("INFO", f"Vulnerability flow: {flow_state.matrix_line}")
+                for node in critical[:4]:
+                    self._log(
+                        "WARN",
+                        f"{node.vulnerability_type} ({node.severity_score:.1f}) @ {node.path_url}",
+                    )
+
+                topology_lines = self._build_session_topology_lines()
+                topology_tree = self._build_topology_tree()
+                self._db.write_topology(topology_lines)
+                self._publish_state(
+                    status=TaskStatus.SUCCESS,
+                    last_message=f"Flow scan: {len(flow_state.path_nodes)} findings",
+                    session_topology=topology_lines,
+                    topology_tree=topology_tree,
+                    vulnerability_flow=flow_state,
+                )
+                self._db.write("WARN" if critical else "INFO", "vuln-flow", flow_state.matrix_line)
+            except Exception as exc:  # noqa: BLE001
+                self._log("ERROR", f"Vulnerability flow scan failed: {exc}")
                 self._publish_state(status=TaskStatus.FAILED, last_message=str(exc))
             finally:
                 self._worker_end()
@@ -459,6 +535,8 @@ class TitanREController:
         return min(1.0, (keys * 0.06) + (enc_ratio * 0.35) + (constancy * 0.25) + (rng * 0.1))
 
     def _build_telemetry(self) -> SecurityTelemetry:
+        vuln_nodes = self._fuzzer.path_tracer.path_nodes
+        max_sev = max((n.severity_score for n in vuln_nodes), default=0.0)
         return SecurityTelemetry(
             memory_entropy=self._compute_memory_entropy(),
             memory_encrypted_ratio=self._state_manager.memory_encrypted_ratio,
@@ -472,6 +550,8 @@ class TitanREController:
             decoy_efficiency=self._state_manager.decoy_efficiency,
             pqc_agility_active=self._state_manager.pqc_agility_active,
             tracker_poison_samples=self._stealth.tracker_poison_samples,
+            vulnerability_count=len(vuln_nodes),
+            max_severity=max_sev,
         )
 
     def _publish_telemetry_only(self) -> None:
@@ -496,6 +576,7 @@ class TitanREController:
         network_entropy: Optional[float] = None,
         session_topology: Optional[List[str]] = None,
         topology_tree: Optional[List[TopologyNode]] = None,
+        vulnerability_flow: Optional[VulnerabilityFlowState] = None,
         wipe_validation: Optional[WipeValidation] = None,
     ) -> None:
         with self._state_lock:
@@ -511,6 +592,8 @@ class TitanREController:
                 self._state.session_topology = session_topology
             if topology_tree is not None:
                 self._state.topology_tree = topology_tree
+            if vulnerability_flow is not None:
+                self._state.vulnerability_flow = vulnerability_flow
             if wipe_validation is not None:
                 self._state.wipe_validation = wipe_validation
             self._state.telemetry = self._build_telemetry()
