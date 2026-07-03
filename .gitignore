@@ -3,3 +3,8 @@ __pycache__/
 *$py.class
 .venv/
 venv/
+
+# Next.js MDT
+mdt/node_modules/
+mdt/.next/
+mdt/out/

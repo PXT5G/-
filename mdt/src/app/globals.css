@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  --mdt-bg: #0b1120;
+  --mdt-panel: rgba(15, 23, 42, 0.72);
+  --mdt-panel-border: rgba(51, 65, 85, 0.55);
+  --mdt-foreground: #e2e8f0;
+  --mdt-muted: #94a3b8;
+  --mdt-neon-green: #22ff88;
+  --mdt-neon-red: #ff3b5c;
+  --mdt-neon-blue: #38bdf8;
+}
+
+@theme inline {
+  --color-mdt-bg: var(--mdt-bg);
+  --color-mdt-panel: var(--mdt-panel);
+  --color-mdt-panel-border: var(--mdt-panel-border);
+  --color-mdt-foreground: var(--mdt-foreground);
+  --color-mdt-muted: var(--mdt-muted);
+  --color-neon-green: var(--mdt-neon-green);
+  --color-neon-red: var(--mdt-neon-red);
+  --color-neon-blue: var(--mdt-neon-blue);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--mdt-bg);
+  color: var(--mdt-foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* RTL-ready: flip layout when dir="rtl" is set on <html> */
+[dir="rtl"] .sidebar-nav-icon {
+  margin-inline-end: 0.75rem;
+  margin-inline-start: 0;
+}
+
+.mdt-panel {
+  background: var(--mdt-panel);
+  border: 1px solid var(--mdt-panel-border);
+  backdrop-filter: blur(12px);
+}
+
+.mdt-glow-green {
+  box-shadow: 0 0 12px rgba(34, 255, 136, 0.25);
+}
+
+.mdt-glow-red {
+  box-shadow: 0 0 12px rgba(255, 59, 92, 0.25);
+}
+
+.mdt-glow-blue {
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+/* Custom scrollbar for tactical UI */
+.mdt-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.mdt-scroll::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+  border-radius: 3px;
+}
