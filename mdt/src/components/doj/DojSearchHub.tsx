@@ -11,29 +11,53 @@ import { useNotifications } from "@/context/NotificationContext";
 import { CitizenAvatar } from "./CitizenAvatar";
 import { cn } from "@/lib/utils/cn";
 
+import type { CitizenDossier } from "@/types/doj-dossier";
+
 type SearchMode = "name" | "id" | "phone" | "plate";
 
 export function DojSearchHub() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<SearchMode>("name");
+  const [remoteResults, setRemoteResults] = useState<CitizenDossier[] | null>(null);
   const { toast } = useNotifications();
 
-  const results = useMemo(() => {
+  const localResults = useMemo(() => {
     if (!query.trim()) return [];
     return searchDossiers(query, mode);
   }, [query, mode]);
 
-  const handleSearch = () => {
+  const displayList = query.trim()
+    ? (remoteResults ?? localResults)
+    : citizenDossiers;
+
+  const handleSearch = async () => {
     if (!query.trim()) {
       toast({ title: messages.doj.enterQuery, variant: "warning" });
       return;
     }
-    if (results.length === 0) {
+
+    let hits = localResults;
+    try {
+      const res = await fetch(
+        `/api/mdt/citizens?q=${encodeURIComponent(query)}&mode=${encodeURIComponent(mode)}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.results) {
+          hits = data.results as CitizenDossier[];
+          setRemoteResults(hits);
+        }
+      }
+    } catch {
+      setRemoteResults(null);
+    }
+
+    if (hits.length === 0) {
       toast({ title: messages.doj.noResults, message: `لا يوجد سجل لـ "${query}"`, variant: "info" });
     } else {
       toast({
         title: messages.doj.resultsFound,
-        message: `${results.length} ملف(ات)`,
+        message: `${hits.length} ملف(ات)`,
         variant: "success",
       });
     }
@@ -83,7 +107,10 @@ export function DojSearchHub() {
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-mdt-muted" />
             <input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setRemoteResults(null);
+              }}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
               placeholder={messages.doj.searchPlaceholder}
               className="w-full rounded-xl border border-mdt-panel-border bg-slate-950 py-3 ps-10 pe-4 text-sm outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-400/20"
@@ -100,9 +127,9 @@ export function DojSearchHub() {
         {/* Discord Bot API: GET /doj/search?q=&mode= — full citizen dossier from backend */}
       </Panel>
 
-      {(results.length > 0 || !query) && (
+      {(displayList.length > 0 || !query) && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(query ? results : citizenDossiers).map((d) => (
+          {displayList.map((d) => (
             <Link
               key={d.id}
               href={`/doj/${d.id}`}

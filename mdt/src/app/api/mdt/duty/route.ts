@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/guards";
 import { appendAudit } from "@/lib/auth/user-store";
+import { botFetch, isDiscordBotConfigured } from "@/lib/discord/api-client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +16,18 @@ export async function POST(req: NextRequest) {
       details: `${session.officer.callsign} — ${session.officer.department}`,
     });
 
-    // Discord Bot API: POST /duty-logs — mirror FiveM auto duty tracking
+    if (isDiscordBotConfigured()) {
+      await botFetch("/api/duty", {
+        method: "POST",
+        body: {
+          action,
+          officer: session.officer,
+          department: session.officer.department,
+          callsign: session.officer.callsign,
+        },
+      });
+    }
+
     return NextResponse.json({ ok: true, action });
   } catch {
     return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });

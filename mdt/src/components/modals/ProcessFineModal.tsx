@@ -32,9 +32,12 @@ async function processFineToDiscord(payload: {
   total: number;
   officerName: string;
 }) {
-  console.info("[MDT] Discord Webhook — fine log payload:", payload);
-  // Discord Bot API: POST /logs/fines or Discord Webhook URL from env
-  return { ok: true };
+  const res = await fetch("/api/mdt/fines", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  return { ok: res.ok };
 }
 
 export function ProcessFineModal() {

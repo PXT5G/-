@@ -3,9 +3,18 @@ mdt/node_modules/
 mdt/.next/
 mdt/out/
 
+# Discord Bot
+discord-bot/node_modules/
+discord-bot/data/store.json
+discord-bot/data/audit.json
+
 # Local secrets and runtime data
 mdt/data/
-.env*
+.env
+.env.local
+.env.*.local
+!.env.example
+!**/.env.example
 *.pem
 
 # misc

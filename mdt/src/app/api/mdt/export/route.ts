@@ -1,16 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/guards";
+import { botFetch, isDiscordBotConfigured } from "@/lib/discord/api-client";
 
-/**
- * Export warrants or duty records to Discord DM (private) — like FiveM MDT export feature.
- * Set DISCORD_EXPORT_WEBHOOK_URL or route through your Discord Bot API.
- */
 export async function POST(req: NextRequest) {
   try {
     const session = await requireSession();
     const body = await req.json();
     const { type, data } = body as { type: "warrants" | "duty"; data: unknown };
 
+    if (isDiscordBotConfigured()) {
+      const res = await botFetch<{ ok: boolean; sent: boolean }>("/api/export", {
+        method: "POST",
+        body: {
+          type,
+          data,
+          officer: {
+            name: session.officer.name,
+            username: session.username,
+            callsign: session.officer.callsign,
+          },
+        },
+      });
+      if (res.ok) {
+        return NextResponse.json({ ok: true, sent: res.data.sent, source: "discord-bot" });
+      }
+    }
+
+    // Fallback: webhook مباشر أو log
     const payload = {
       embeds: [
         {
@@ -35,12 +51,11 @@ export async function POST(req: NextRequest) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-    } else {
-      console.info("[MDT Export] Discord payload (no webhook configured):", payload);
+      return NextResponse.json({ ok: true, sent: true, source: "webhook" });
     }
 
-    // Discord Bot API: POST /export/dm — send privately to officer's Discord DM
-    return NextResponse.json({ ok: true, sent: Boolean(webhook) });
+    console.info("[MDT Export] local fallback:", payload);
+    return NextResponse.json({ ok: true, sent: false, source: "local" });
   } catch {
     return NextResponse.json({ error: "FAILED" }, { status: 500 });
   }

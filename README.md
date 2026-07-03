@@ -4,8 +4,28 @@
 
 | المجلد | الوصف |
 |--------|--------|
-| `mdt/` | تطبيق ويب Next.js كامل (مصادقة، إدارة، DOJ) |
-| `fivem-mdt-nui/` | واجهة NUI لـ FiveM — Glassmorphism + Lua |
+| `mdt/` | تطبيق ويب Next.js (مصادقة، إدارة، DOJ) |
+| `fivem-mdt-nui/` | واجهة NUI لـ FiveM |
+| `discord-bot/` | **بوت Discord + REST API** — يربط الجميع |
+
+## الربط الموحّد (بدون تعارض)
+
+```
+┌─────────────┐     ┌─────────────────┐     ┌──────────┐
+│  MDT Web    │────►│  discord-bot    │────►│ Discord  │
+│  (Next.js)  │     │  API :3921      │     │ Server   │
+└─────────────┘     └────────▲────────┘     └──────────┘
+┌─────────────┐              │
+│  FiveM NUI  │──────────────┘
+└─────────────┘
+```
+
+1. شغّل البوت: `cd discord-bot && npm install && npm start`
+2. اضبط `mdt/.env.local`: `DISCORD_BOT_API_URL` + `DISCORD_BOT_API_SECRET`
+3. اضبط FiveM: `set mdt_api_url` + `set mdt_api_secret`
+4. ضع بوتك في `discord-bot/custom/index.js`
+
+راجع `discord-bot/README.md` للتفاصيل.
 
 ## تشغيل الويب
 

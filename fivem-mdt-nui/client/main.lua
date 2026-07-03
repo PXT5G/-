@@ -97,11 +97,18 @@ RegisterNUICallback('searchCitizen', function(data, cb)
     local query = data.query or ''
     local mode  = data.mode or 'name'
 
-  -- TriggerServerEvent('mdt:server:searchCitizen', query, mode)
-  -- أو استعلام Discord Bot API ثم:
-  -- TriggerClientEvent('mdt-nui:searchResults', source, results)
+    if ApiEnabled() then
+        MdtApiRequest('GET', '/api/citizens/search?q=' .. query .. '&mode=' .. mode, nil, function(ok, res)
+            if ok and res and res.results then
+                cb({ ok = true, results = res.results })
+                return
+            end
+            cb({ ok = true, results = {} })
+        end)
+        return
+    end
 
-    -- نتائج تجريبية للتطوير بدون سيرفر
+    -- Fallback تجريبي بدون API
     cb({
         ok = true,
         results = {
@@ -122,16 +129,32 @@ end)
 ]]
 RegisterNUICallback('exportDiscord', function(data, cb)
     local exportType = data.type or 'warrant'
-  -- TriggerServerEvent('mdt:server:exportDiscord', exportType, data.payload)
+
+    if ApiEnabled() then
+        MdtApiRequest('POST', '/api/export', {
+            type = exportType,
+            data = data.payload or data,
+            officer = { name = 'FiveM Officer' },
+        }, function(ok, res)
+            cb({ ok = ok, sent = ok and res and res.sent })
+        end)
+        return
+    end
+
     print(('[MDT] Export Discord: %s'):format(exportType))
-    cb({ ok = true, sent = true })
+    cb({ ok = true, sent = false })
 end)
 
 --[[
   معالجة غرامة
 ]]
 RegisterNUICallback('processFine', function(data, cb)
-  -- TriggerServerEvent('mdt:server:processFine', data)
+    if ApiEnabled() then
+        MdtApiRequest('POST', '/api/fines', data, function(ok)
+            cb({ ok = ok })
+        end)
+        return
+    end
     print(('[MDT] Fine processed: $%s'):format(data.total or 0))
     cb({ ok = true })
 end)

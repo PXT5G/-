@@ -24,6 +24,7 @@ files {
 }
 
 client_scripts {
+    'client/api_bridge.lua',
     'client/main.lua',
 }
 

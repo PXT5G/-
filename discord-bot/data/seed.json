@@ -1,0 +1,124 @@
+{
+  "citizens": [
+    {
+      "id": "doss-001",
+      "nationalId": "LS-928471",
+      "firstName": "Marcus",
+      "lastName": "Webb",
+      "fullName": "Marcus Webb",
+      "dob": "1992-04-12",
+      "phone": "555-0201",
+      "email": "m.webb@mail.ls",
+      "address": "Grove St 14, Los Santos",
+      "photoSeed": "marcus",
+      "flags": ["مطلوب", "خطير", "سلاح"],
+      "licenses": ["قيادة (معلّق)"],
+      "bankBalance": 12450,
+      "finesOwed": 8500,
+      "warrants": 2,
+      "vehicles": [
+        { "id": "v1", "plate": "7KAB442", "model": "Sultan RS", "color": "أبيض", "registeredAt": "2024-03-10", "status": "مطلوب" }
+      ],
+      "properties": [
+        { "id": "p1", "label": "شقة Grove", "address": "Grove St 14", "type": "شقة", "value": 185000, "purchasedAt": "2021-06-15" }
+      ],
+      "transactions": [
+        { "id": "t1", "type": "غرامة", "amount": -2500, "date": "2026-06-20", "note": "قيادة متهورة" }
+      ],
+      "records": [
+        { "id": "r1", "type": "اعتقال", "description": "حيازة سلاح غير مرخص", "date": "2026-06-28", "officer": "Carter" }
+      ],
+      "notes": "اشتباه في عضوية عصابة."
+    },
+    {
+      "id": "doss-002",
+      "nationalId": "LS-441209",
+      "firstName": "Elena",
+      "lastName": "Voss",
+      "fullName": "Elena Voss",
+      "phone": "555-0188",
+      "photoSeed": "elena",
+      "flags": ["مذكرة توقيف"],
+      "bankBalance": 89200,
+      "warrants": 1,
+      "vehicles": [{ "id": "v3", "plate": "VWD8821", "model": "Comet S2", "color": "أحمر", "status": "مسجّل" }],
+      "properties": [{ "id": "p2", "label": "فيلا Vinewood", "value": 920000 }],
+      "transactions": [],
+      "records": []
+    },
+    {
+      "id": "doss-003",
+      "nationalId": "LS-102938",
+      "firstName": "Franklin",
+      "lastName": "Clinton",
+      "fullName": "Franklin Clinton",
+      "phone": "555-0101",
+      "photoSeed": "franklin",
+      "flags": [],
+      "bankBalance": 45600,
+      "warrants": 0,
+      "vehicles": [],
+      "properties": [],
+      "transactions": [],
+      "records": []
+    },
+    {
+      "id": "doss-004",
+      "nationalId": "LS-556677",
+      "firstName": "أحمد",
+      "lastName": "الراشد",
+      "fullName": "أحمد الراشد",
+      "phone": "555-0444",
+      "photoSeed": "ahmed",
+      "flags": [],
+      "bankBalance": 22100,
+      "warrants": 0,
+      "vehicles": [],
+      "properties": [],
+      "transactions": [],
+      "records": []
+    }
+  ],
+  "incidents": [
+    {
+      "id": "inc-1",
+      "callNumber": "24-07142",
+      "time": "14:32",
+      "location": "Legion Square",
+      "description": "إطلاق نار — مشتبه هرب شمالاً",
+      "priority": "high",
+      "status": "active",
+      "mapX": 46,
+      "mapY": 44
+    },
+    {
+      "id": "inc-2",
+      "callNumber": "24-07138",
+      "time": "14:18",
+      "location": "Pillbox Hill",
+      "description": "شغب في صالة الانتظار",
+      "priority": "medium",
+      "status": "pending",
+      "mapX": 52,
+      "mapY": 38
+    }
+  ],
+  "warrants": [
+    { "id": "w-1", "targetName": "Marcus Webb", "issueDate": "2026-06-28", "status": "active" },
+    { "id": "w-2", "targetName": "Elena Voss", "issueDate": "2026-07-01", "status": "active" }
+  ],
+  "bulletins": [
+    {
+      "id": "bb-1",
+      "title": "إحاطة الوردية",
+      "body": "تعزيز الدوريات في Vinewood.",
+      "author": "الإرسال",
+      "createdAt": "2026-07-02T07:00:00Z"
+    }
+  ],
+  "units": [
+    { "id": "u-1", "callsign": "1-A-10", "name": "Sarah Mitchell", "status": "available" },
+    { "id": "u-2", "callsign": "1-L-12", "name": "James Carter", "status": "on_scene" }
+  ],
+  "dutyLogs": []
+}
