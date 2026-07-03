@@ -1,59 +1,24 @@
-# نظام MDT المتقدم — نسخة ويب
+# نظام MDT المتقدم
 
-نسخة ويب من **Advanced MDT** (مثل kartik MDT لـ FiveM) مخصصة لمجتمعات RP على PlayStation حيث لا يتوفر سكربت سيرفر — الباكند عبر **Discord Bot API / Webhooks**.
+مستودع يحتوي على نسختين:
 
-## المميزات
-
-| الميزة | الوصف |
+| المجلد | الوصف |
 |--------|--------|
-| تسجيل دخول محمي | حساب + كلمة مرور لكل عسكري |
-| لوحة تحكم إدارية | إدارة الحسابات، الصلاحيات، الإعدادات، السجلات |
-| وزارة العدل (DOJ) | ملفات مواطنين — عقارات، مركبات، مالية، سجل جنائي |
-| إشعارات | Toast + جرس إشعارات في الهيدر |
-| وظائف متعددة | شرطة، إسعاف، قضاء، إطفاء |
-| كاميرات CCTV | شبكة كاميرات + حالة التسجيل |
-| Bodycam | بث مباشر + أرشيف التسجيلات |
-| سجل الخدمة | تتبع تلقائي On/Off Duty |
-| القانون الجنائي | تعديل التهم مباشرة |
-| تقارير FTO | تتبع تدريب المتدربين |
-| خزنة الأدلة | Evidence Locker |
-| الإرسال | Dispatch UI ثلاثي الأعمدة |
-| تحليلات | إحصائيات الأداء |
-| تصدير Discord | مذكرات التوقيف وسجل الخدمة |
+| `mdt/` | تطبيق ويب Next.js كامل (مصادقة، إدارة، DOJ) |
+| `fivem-mdt-nui/` | واجهة NUI لـ FiveM — Glassmorphism + Lua |
 
-## التشغيل
+## تشغيل الويب
 
 ```bash
-cd mdt
-npm install
-cp .env.example .env.local   # اختياري
-npm run dev
+cd mdt && npm install && npm run dev
 ```
 
-افتح `http://localhost:3000/login`
+## تثبيت FiveM NUI
 
-## حسابات تجريبية
-
-| المستخدم | كلمة المرور | الدور |
-|----------|-------------|-------|
-| `admin` | `Admin@2026!` | مدير النظام |
-| `doj_judge` | `Doj@1234` | قاضي DOJ |
-| `jcarter` | `Lspd@1234` | ضابط |
-| `tbradley` | `Command@1234` | مشرف |
-| `smitchell` | `Lspd@5678` | رقيب |
-
-## الربط مع Discord / FiveM
-
-ابحث عن `Discord Bot API` في الكود — كل تعليق يحدد نقطة الربط.
-
-```env
-DISCORD_EXPORT_WEBHOOK_URL=https://discord.com/api/webhooks/...
-MDT_JWT_SECRET=your-secret
+```bash
+# انسخ fivem-mdt-nui إلى resources ثم:
+ensure mdt-nui
 ```
 
-## هيكل الأمان
+راجع `fivem-mdt-nui/README.md` للتفاصيل.
 
-- JWT في cookie مشفّر (httpOnly)
-- Middleware يحمي كل المسارات
-- صلاحيات per-module لكل حساب
-- سجل تدقيق (Audit Log) لكل العمليات

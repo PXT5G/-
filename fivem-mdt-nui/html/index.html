@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced MDT</title>
+  <!-- Tailwind CDN — للإنتاج: ابنِ style.css محلياً عبر tailwind cli -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            mdt: { bg: '#0a0f1a', panel: 'rgba(15,23,42,0.65)' },
+            neon: { blue: '#38bdf8', green: '#22ff88', red: '#ff3b5c', amber: '#fbbf24' },
+          },
+          fontFamily: {
+            sans: ['Segoe UI', 'Tahoma', 'system-ui', 'sans-serif'],
+            mono: ['Consolas', 'monospace'],
+          },
+          animation: {
+            'fade-up': 'fadeUp 0.45s cubic-bezier(0.22,1,0.36,1) both',
+            'fade-in': 'fadeIn 0.35s ease both',
+            'scale-in': 'scaleIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both',
+            'slide-in': 'slideIn 0.4s ease both',
+            'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+            'ping-slow': 'ping 2s cubic-bezier(0,0,0.2,1) infinite',
+          },
+          keyframes: {
+            fadeUp: { from: { opacity: 0, transform: 'translateY(16px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+            fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+            scaleIn: { from: { opacity: 0, transform: 'scale(0.92)' }, to: { opacity: 1, transform: 'scale(1)' } },
+            slideIn: { from: { opacity: 0, transform: 'translateX(20px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+            glowPulse: { '0%,100%': { boxShadow: '0 0 12px rgba(56,189,248,0.2)' }, '50%': { boxShadow: '0 0 24px rgba(56,189,248,0.45)' } },
+          },
+        },
+      },
+    };
+  </script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-transparent overflow-hidden select-none">
+
+  <!--
+    الحاوية الرئيسية — مخفية حتى SendNUIMessage({ action: 'open' })
+    الربط: client/main.lua → OpenMDT() → SendNUIMessage
+  -->
+  <div id="mdt-root" class="mdt-hidden" aria-hidden="true">
+
+    <!-- خلفية زجاجية + ضباب -->
+  <div class="mdt-backdrop animate-fade-in" id="mdt-backdrop"></div>
+
+    <div class="mdt-shell animate-scale-in" id="mdt-shell" role="application" aria-label="Mobile Data Terminal">
+
+      <!-- ═══ SIDEBAR ═══ -->
+      <aside class="mdt-sidebar glass-panel" id="mdt-sidebar">
+        <div class="sidebar-brand">
+          <div class="brand-icon glow-blue animate-glow-pulse">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5 text-neon-blue">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="brand-title">نظام MDT</p>
+            <p class="brand-sub accent-text" id="job-label">الشرطة</p>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav" id="sidebar-nav" aria-label="التنقل"></nav>
+
+        <div class="sidebar-profile glass-card" id="officer-profile">
+          <div class="profile-avatar" id="profile-avatar">JC</div>
+          <div class="profile-info">
+            <p class="profile-name" id="profile-name">—</p>
+            <p class="profile-rank" id="profile-rank">—</p>
+            <span class="badge badge-green" id="duty-badge">في الخدمة</span>
+          </div>
+          <button type="button" class="btn-duty" id="btn-toggle-duty">تبديل الخدمة</button>
+        </div>
+      </aside>
+
+      <!-- ═══ MAIN ═══ -->
+      <main class="mdt-main">
+        <header class="mdt-header glass-panel">
+          <div class="search-bar" id="global-search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="global-search" placeholder="بحث سريع — مواطن، بلاغ، لوحة…" class="search-input" autocomplete="off" />
+            <kbd class="search-kbd">Ctrl+K</kbd>
+          </div>
+          <div class="header-actions">
+            <button type="button" class="icon-btn" id="btn-notifications" aria-label="إشعارات">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              <span class="notif-dot" id="notif-dot"></span>
+            </button>
+            <button type="button" class="btn-close" id="btn-close" title="إغلاق (ESC)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-4 h-4"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="mdt-content mdt-scroll" id="mdt-content">
+          <!-- المحتوى يُعرض ديناميكياً من main.js -->
+          <section id="view-dashboard" class="view-panel"></section>
+          <section id="view-dispatch" class="view-panel hidden"></section>
+          <section id="view-search" class="view-panel hidden"></section>
+          <section id="view-warrants" class="view-panel hidden"></section>
+          <section id="view-reports" class="view-panel hidden"></section>
+          <section id="view-citizen" class="view-panel hidden"></section>
+        </div>
+      </main>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+    <!-- Command palette -->
+    <div id="command-palette" class="command-palette mdt-hidden" role="dialog" aria-modal="true">
+      <div class="palette-backdrop"></div>
+      <div class="palette-box glass-panel animate-scale-in">
+        <input type="search" id="palette-input" class="palette-input" placeholder="ابحث عن صفحة أو مواطن…" />
+        <ul id="palette-results" class="palette-results mdt-scroll"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!--
+    ترتيب التحميل:
+    1. data.js  — البيانات الثابتة
+    2. main.js  — الجسر NUI + المنطق + العرض
+
+    ملاحظة Framer Motion:
+    FiveM CEF يعمل أفضل مع CSS animations + Web Animations API (مُطبّق في main.js).
+    للانتقال إلى Framer Motion: ابنِ React/Vite وصدّر إلى html/
+  -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
