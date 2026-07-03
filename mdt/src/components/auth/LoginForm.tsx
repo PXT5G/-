@@ -1,30 +1,40 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Lock, Shield, User } from "lucide-react";
 import { messages } from "@/lib/i18n/messages";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { cn } from "@/lib/utils/cn";
 
 export function LoginForm() {
   const { login } = useAuth();
+  const { toast } = useNotifications();
+  const searchParams = useSearchParams();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const redirectTo = searchParams.get("from") ?? "/";
+  const sessionExpired = searchParams.get("expired") === "1";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const result = await login(username, password);
-    if (!result.ok) setError(result.error ?? messages.common.error);
+    const result = await login(username, password, redirectTo);
+    if (!result.ok) {
+      setError(result.error ?? messages.common.error);
+    } else {
+      toast({ title: messages.auth.loginSuccess, variant: "success" });
+    }
     setLoading(false);
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-mdt-bg p-4">
-      {/* Background grid */}
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-mdt-bg p-4 page-enter">
       <div
         className="pointer-events-none absolute inset-0 opacity-20"
         style={{
@@ -55,12 +65,12 @@ export function LoginForm() {
           onSubmit={handleSubmit}
           className="mdt-panel rounded-2xl border border-mdt-panel-border p-6 shadow-2xl"
         >
-          {error && (
+          {(error || sessionExpired) && (
             <div
               role="alert"
               className="mb-4 rounded-lg border border-neon-red/40 bg-neon-red/10 px-4 py-3 text-sm text-neon-red"
             >
-              {error}
+              {error || messages.auth.sessionExpired}
             </div>
           )}
 

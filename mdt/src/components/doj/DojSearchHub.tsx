@@ -20,19 +20,19 @@ export function DojSearchHub() {
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
-    return searchDossiers(query);
-  }, [query]);
+    return searchDossiers(query, mode);
+  }, [query, mode]);
 
   const handleSearch = () => {
     if (!query.trim()) {
-      toast({ title: "أدخل معيار بحث", variant: "warning" });
+      toast({ title: messages.doj.enterQuery, variant: "warning" });
       return;
     }
     if (results.length === 0) {
-      toast({ title: "لا توجد نتائج", message: `لا يوجد سجل لـ "${query}"`, variant: "info" });
+      toast({ title: messages.doj.noResults, message: `لا يوجد سجل لـ "${query}"`, variant: "info" });
     } else {
       toast({
-        title: "تم العثور على نتائج",
+        title: messages.doj.resultsFound,
         message: `${results.length} ملف(ات)`,
         variant: "success",
       });

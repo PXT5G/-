@@ -5,19 +5,22 @@ import { Panel } from "@/components/ui/Panel";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { messages } from "@/lib/i18n/messages";
 import { activeWarrants } from "@/lib/data/mock";
+import { useNotifications } from "@/context/NotificationContext";
 
 export default function WarrantsPage() {
+  const { toast } = useNotifications();
+
   const exportWarrants = async () => {
     await fetch("/api/mdt/export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "warrants", data: activeWarrants }),
     });
-    alert("تم إرسال المذكرات إلى Discord DM");
+    toast({ title: messages.warrants.exportSuccess, variant: "success" });
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">{messages.warrants.title}</h1>
         <button

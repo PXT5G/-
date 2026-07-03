@@ -35,6 +35,8 @@ export const messages = {
     badge: "وصول محمي",
     logout: "تسجيل الخروج",
     sessionExpired: "انتهت الجلسة — يرجى تسجيل الدخول مجدداً",
+    loginSuccess: "تم تسجيل الدخول بنجاح",
+    logoutSuccess: "تم تسجيل الخروج",
     demoAccounts: "حسابات تجريبية",
   },
   profile: {
@@ -74,6 +76,16 @@ export const messages = {
     phone: "الهاتف",
     description: "الوصف",
     mapPing: "موقع الحادث النشط",
+    priorities: {
+      high: "عاجل",
+      medium: "متوسط",
+      low: "منخفض",
+    },
+    statuses: {
+      active: "نشط",
+      pending: "قيد الانتظار",
+      closed: "مغلق",
+    },
   },
   officers: {
     title: "إدارة الضباط",
@@ -105,6 +117,7 @@ export const messages = {
     submit: "تنفيذ الغرامة",
     chargeLabel: "تهمة",
     amount: "المبلغ",
+    success: "تم تنفيذ الغرامة بنجاح",
   },
   admin: {
     title: "لوحة التحكم الإدارية",
@@ -142,9 +155,36 @@ export const messages = {
     rankLogs: "سجل الترقيات والتنزيلات",
   },
   search: {
-    placeholder: "بحث متقدم — مواطن، تقرير، مركبة…",
+    placeholder: "بحث متقدم — مواطن، تقرير، صفحة…",
     citizens: "مواطنون",
     reports: "تقارير",
+    pages: "صفحة",
+    commandPalette: "لوحة الأوامر",
+    noResults: "لا توجد نتائج",
+    hintNavigate: "↑↓ للتنقل · Enter للفتح",
+    openPalette: "فتح البحث",
+  },
+  incidents: {
+    title: "الحوادث",
+    subtitle: "جميع البلاغات النشطة والمغلقة",
+    viewOnMap: "عرض على الخريطة",
+  },
+  vehicles: {
+    title: "سجل المركبات",
+    subtitle: "بحث باللوحة، الموديل، أو المالك",
+    searchPlaceholder: "لوحة، موديل، مالك…",
+    plate: "اللوحة",
+    model: "الموديل",
+    color: "اللون",
+    owner: "المالك",
+    viewOwner: "ملف المالك",
+  },
+  weapons: {
+    title: "سجل الأسلحة",
+    subtitle: "أسلحة مسجّلة ومضبوطة ومفقودة",
+    searchPlaceholder: "رقم تسلسلي، نوع، مالك…",
+    owner: "المالك",
+    viewOwner: "ملف المالك",
   },
   cameras: {
     title: "كاميرات المراقبة",
@@ -189,10 +229,12 @@ export const messages = {
     dutyLogs: "سجل الدخول/الخروج",
     autoTracked: "تتبع تلقائي — مثل FiveM MDT",
     exportDuty: "تصدير سجل الخدمة",
+    exportSuccess: "تم تصدير سجل الخدمة",
   },
   warrants: {
     title: "مذكرات التوقيف",
     export: "تصدير إلى Discord DM",
+    exportSuccess: "تم إرسال المذكرات إلى Discord",
   },
   doj: {
     title: "نظام العدل — DOJ",
@@ -203,6 +245,9 @@ export const messages = {
     searchById: "برقم الهوية",
     searchByPhone: "بالجوال",
     searchByPlate: "باللوحة",
+    enterQuery: "أدخل معيار بحث",
+    noResults: "لا توجد نتائج",
+    resultsFound: "تم العثور على نتائج",
     backToSearch: "العودة للبحث",
     exportDossier: "تصدير الملف",
     noData: "لا توجد بيانات",
@@ -237,6 +282,7 @@ export const messages = {
     delete: "حذف",
     success: "تم بنجاح",
     error: "حدث خطأ",
+    menu: "القائمة",
   },
 } as const;
 

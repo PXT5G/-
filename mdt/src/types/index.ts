@@ -61,6 +61,10 @@ export interface DispatchIncident {
   description: string;
   callerName: string;
   callerPhone: string;
+  priority: "high" | "medium" | "low";
+  status: "active" | "pending" | "closed";
+  mapX: number;
+  mapY: number;
 }
 
 export interface RadioChannel {

@@ -6,18 +6,22 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { messages } from "@/lib/i18n/messages";
 import { dutyLogs, rankChangeLogs } from "@/lib/data/extended-mock";
 
+import { useNotifications } from "@/context/NotificationContext";
+
 export default function RosterPage() {
+  const { toast } = useNotifications();
+
   const exportDuty = async () => {
     await fetch("/api/mdt/export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type: "duty", data: dutyLogs }),
     });
-    alert("تم إرسال سجل الخدمة إلى Discord");
+    toast({ title: messages.roster.exportSuccess, variant: "success" });
   };
 
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{messages.roster.title}</h1>

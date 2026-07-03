@@ -23,7 +23,7 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (username: string, password: string, redirectTo?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   can: (perm: Permission) => boolean;
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const login = useCallback(
-    async (username: string, password: string) => {
+    async (username: string, password: string, redirectTo = "/") => {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,7 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: false, error: errors[data.error] ?? "فشل تسجيل الدخول" };
       }
       setUser(data.user);
-      router.push("/");
+      const safePath = redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/";
+      router.push(safePath);
       router.refresh();
       return { ok: true };
     },

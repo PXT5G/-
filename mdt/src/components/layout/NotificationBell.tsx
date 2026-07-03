@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Bell, CheckCheck } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
+import { messages } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils/cn";
 
 export function NotificationBell() {
   const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -18,16 +21,24 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const handleClick = (id: string, href?: string) => {
+    markRead(id);
+    if (href) {
+      router.push(href);
+      setOpen(false);
+    }
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "relative flex h-10 w-10 items-center justify-center rounded-lg border border-mdt-panel-border transition-all hover:border-neon-blue/40 hover:bg-neon-blue/5",
-          open && "border-neon-blue/40 bg-neon-blue/10",
+          "relative flex h-10 w-10 items-center justify-center rounded-lg border border-mdt-panel-border transition-all hover:accent-border hover:accent-bg",
+          open && "accent-border accent-bg",
         )}
-        aria-label="الإشعارات"
+        aria-label={messages.notifications.title}
       >
         <Bell className="h-4 w-4 text-mdt-muted" />
         {unreadCount > 0 && (
@@ -40,14 +51,14 @@ export function NotificationBell() {
       {open && (
         <div className="dropdown-enter absolute end-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-mdt-panel-border bg-slate-950 shadow-2xl">
           <div className="flex items-center justify-between border-b border-mdt-panel-border px-4 py-3">
-            <span className="text-sm font-bold">الإشعارات</span>
+            <span className="text-sm font-bold">{messages.notifications.title}</span>
             <button
               type="button"
               onClick={markAllRead}
-              className="flex items-center gap-1 text-[10px] text-neon-blue hover:underline"
+              className="flex items-center gap-1 text-[10px] accent-text hover:underline"
             >
               <CheckCheck className="h-3 w-3" />
-              قراءة الكل
+              {messages.notifications.markAllRead}
             </button>
           </div>
           <ul className="mdt-scroll max-h-72 overflow-y-auto">
@@ -55,10 +66,10 @@ export function NotificationBell() {
               <li key={n.id}>
                 <button
                   type="button"
-                  onClick={() => markRead(n.id)}
+                  onClick={() => handleClick(n.id, n.href)}
                   className={cn(
                     "w-full border-b border-mdt-panel-border/50 px-4 py-3 text-start transition-colors hover:bg-slate-800/50",
-                    !n.read && "bg-neon-blue/5",
+                    !n.read && "accent-bg",
                   )}
                 >
                   <p className="text-sm font-medium">{n.title}</p>

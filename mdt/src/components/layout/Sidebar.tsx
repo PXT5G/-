@@ -20,6 +20,7 @@ import {
   Scale,
   Settings,
   ClipboardList,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { messages, t } from "@/lib/i18n/messages";
@@ -55,29 +56,57 @@ const navItems: NavEntry[] = [
   { key: "weapons", href: "/weapons", icon: Crosshair, perm: "weapons" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { can, isAdmin } = useAuth();
   const { job } = useMdt();
   const jobConfig = JOBS[job];
-
   const visibleNav = navItems.filter((item) => can(item.perm));
 
+  const accentActive =
+    jobConfig.accent === "amber"
+      ? "border-amber-400/30 bg-amber-400/10 text-amber-300 accent-glow"
+      : jobConfig.accent === "green"
+        ? "border-neon-green/30 bg-neon-green/10 text-neon-green mdt-glow-green"
+        : jobConfig.accent === "red"
+          ? "border-neon-red/30 bg-neon-red/10 text-neon-red mdt-glow-red"
+          : "border-neon-blue/30 bg-neon-blue/10 text-neon-blue mdt-glow-blue";
+
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-e border-mdt-panel-border bg-slate-950/80">
+    <aside
+      className={cn(
+        "fixed inset-y-0 start-0 z-50 flex h-full w-64 shrink-0 flex-col border-e border-mdt-panel-border bg-slate-950/95 backdrop-blur-md transition-transform duration-300 md:static md:translate-x-0 md:bg-slate-950/80",
+        mobileOpen ? "translate-x-0" : "-translate-x-full rtl:translate-x-full md:translate-x-0",
+      )}
+    >
       <div className="border-b border-mdt-panel-border px-4 py-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-neon-blue/30 bg-neon-blue/10 mdt-glow-blue">
-            <Shield className="h-5 w-5 text-neon-blue" aria-hidden />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg accent-border accent-bg accent-glow")}>
+              <Shield className="h-5 w-5 accent-text" aria-hidden />
+            </div>
+            <div>
+              <p className="text-sm font-bold tracking-wide text-mdt-foreground">
+                {messages.app.title}
+              </p>
+              <p className="text-[10px] uppercase tracking-widest accent-text">
+                {jobConfig.labelAr}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-bold tracking-wide text-mdt-foreground">
-              {messages.app.title}
-            </p>
-            <p className="text-[10px] uppercase tracking-widest text-neon-green">
-              {jobConfig.labelAr}
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="rounded-md p-1 text-mdt-muted md:hidden"
+            aria-label={messages.common.close}
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
       </div>
 
@@ -89,11 +118,10 @@ export function Sidebar() {
               <li key={key}>
                 <Link
                   href={href}
+                  onClick={onMobileClose}
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
-                    active
-                      ? "border border-neon-blue/30 bg-neon-blue/10 text-neon-blue mdt-glow-blue"
-                      : "text-mdt-muted hover:bg-slate-800/60 hover:text-mdt-foreground",
+                    active ? accentActive : "text-mdt-muted hover:bg-slate-800/60 hover:text-mdt-foreground",
                   )}
                   aria-current={active ? "page" : undefined}
                 >
@@ -107,6 +135,7 @@ export function Sidebar() {
             <li>
               <Link
                 href="/admin"
+                onClick={onMobileClose}
                 className={cn(
                   "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
                   pathname.startsWith("/admin")

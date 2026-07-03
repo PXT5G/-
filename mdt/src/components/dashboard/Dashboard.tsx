@@ -7,14 +7,14 @@ import { BOLOs } from "./BOLOs";
 
 export function Dashboard() {
   return (
-    <div className="space-y-6">
+    <div className="page-enter space-y-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-mdt-foreground">
           {messages.dashboard.title}
         </h1>
       </header>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="stagger-children grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
         <div className="lg:col-span-1">
           <BulletinBoard />
         </div>

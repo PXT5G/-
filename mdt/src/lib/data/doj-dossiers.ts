@@ -115,23 +115,29 @@ export const citizenDossiers: CitizenDossier[] = [
   },
 ];
 
-export function searchDossiers(query: string): CitizenDossier[] {
+export type SearchMode = "name" | "id" | "phone" | "plate";
+
+export function searchDossiers(query: string, mode: SearchMode = "name"): CitizenDossier[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
 
   return citizenDossiers.filter((d) => {
-    const haystack = [
-      d.firstName,
-      d.lastName,
-      d.fullName,
-      d.nationalId,
-      d.phone,
-      d.address,
-      ...d.vehicles.map((v) => v.plate),
-    ]
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(q) || d.firstName.toLowerCase().startsWith(q);
+    switch (mode) {
+      case "id":
+        return d.nationalId.toLowerCase().includes(q);
+      case "phone":
+        return d.phone.replace(/\D/g, "").includes(q.replace(/\D/g, "")) || d.phone.includes(q);
+      case "plate":
+        return d.vehicles.some((v) => v.plate.toLowerCase().includes(q));
+      case "name":
+      default:
+        return (
+          d.firstName.toLowerCase().includes(q) ||
+          d.lastName.toLowerCase().includes(q) ||
+          d.fullName.toLowerCase().includes(q) ||
+          d.firstName.toLowerCase().startsWith(q)
+        );
+    }
   });
 }
 

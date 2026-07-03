@@ -1,6 +1,5 @@
-import { PlaceholderModule } from "@/components/ui/PlaceholderModule";
-import { messages } from "@/lib/i18n/messages";
+import { IncidentsBoard } from "@/components/incidents/IncidentsBoard";
 
 export default function IncidentsPage() {
-  return <PlaceholderModule title={messages.nav.incidents} />;
+  return <IncidentsBoard />;
 }

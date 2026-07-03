@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useMdt } from "@/context/MdtContext";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationContext";
 import { messages } from "@/lib/i18n/messages";
 import { sampleCharges } from "@/lib/data/mock";
 
@@ -39,6 +40,7 @@ async function processFineToDiscord(payload: {
 export function ProcessFineModal() {
   const { fineModalOpen, closeFineModal } = useMdt();
   const { user } = useAuth();
+  const { toast } = useNotifications();
   const [fineAmount, setFineAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -61,6 +63,11 @@ export function ProcessFineModal() {
         charges: charges.map((c) => ({ label: c.label, amount: c.amount })),
         total: grandTotal,
         officerName: user?.officer.name ?? "Unknown",
+      });
+      toast({
+        title: messages.fineModal.success,
+        message: `$${grandTotal.toLocaleString()}`,
+        variant: "success",
       });
       closeFineModal();
       setFineAmount("");

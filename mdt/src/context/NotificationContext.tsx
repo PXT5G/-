@@ -24,6 +24,7 @@ export interface AppNotification {
   time: string;
   read: boolean;
   type: "system" | "warrant" | "dispatch" | "doj";
+  href?: string;
 }
 
 interface NotificationContextValue {
@@ -46,6 +47,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
     time: new Date().toISOString(),
     read: false,
     type: "warrant",
+    href: "/warrants",
   },
   {
     id: "n2",
@@ -54,6 +56,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
     time: new Date(Date.now() - 3600000).toISOString(),
     read: false,
     type: "dispatch",
+    href: "/dispatch",
   },
   {
     id: "n3",
@@ -62,6 +65,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
     time: new Date(Date.now() - 7200000).toISOString(),
     read: true,
     type: "doj",
+    href: "/doj/doss-002",
   },
 ];
 

@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils/cn";
 
-type BadgeVariant = "green" | "red" | "blue" | "neutral";
+type BadgeVariant = "green" | "red" | "blue" | "amber" | "neutral";
 
 const variantStyles: Record<BadgeVariant, string> = {
   green: "border-neon-green/40 bg-neon-green/10 text-neon-green mdt-glow-green",
   red: "border-neon-red/40 bg-neon-red/10 text-neon-red mdt-glow-red",
   blue: "border-neon-blue/40 bg-neon-blue/10 text-neon-blue mdt-glow-blue",
+  amber: "border-amber-400/40 bg-amber-400/10 text-amber-300",
   neutral: "border-slate-600/60 bg-slate-800/60 text-mdt-muted",
 };
 
