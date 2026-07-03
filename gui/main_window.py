@@ -290,33 +290,39 @@ class AnalyzerApp(ctk.CTk):
             return
         canvas.delete("all")
         width = max(canvas.winfo_width(), 600)
-        modules = [m.module for m in self.result.modules][:24]
+        height = max(canvas.winfo_height(), 400)
+        modules = [m.module or "(root)" for m in self.result.modules][:24]
         if not modules:
             return
         import math
-        cx, cy = width / 2, 300
-        radius = min(width, 620) / 2 - 80
+        cx, cy = width / 2, height / 2
         positions: dict[str, tuple[float, float]] = {}
         n = len(modules)
-        for i, m in enumerate(modules):
-            angle = 2 * math.pi * i / n
-            positions[m] = (cx + radius * math.cos(angle),
-                            cy + radius * math.sin(angle))
+        if n == 1:
+            positions[modules[0]] = (cx, cy)
+        else:
+            # Bound the circle to the visible canvas (leave room for labels).
+            radius = max(70.0, min(width, height) / 2 - 90)
+            for i, m in enumerate(modules):
+                angle = 2 * math.pi * i / n - math.pi / 2
+                positions[m] = (cx + radius * math.cos(angle),
+                                cy + radius * math.sin(angle))
 
         for dep in self.result.dependencies:
             if dep.external:
                 continue
-            src, dst = dep.source, dep.target
-            if src in positions and dst in positions:
+            src = dep.source or "(root)"
+            dst = dep.target or "(root)"
+            if src in positions and dst in positions and src != dst:
                 x1, y1 = positions[src]
                 x2, y2 = positions[dst]
-                canvas.create_line(x1, y1, x2, y2, fill="#334155", width=1)
+                canvas.create_line(x1, y1, x2, y2, fill="#475569", width=1)
 
         for m, (x, y) in positions.items():
-            canvas.create_oval(x - 6, y - 6, x + 6, y + 6, fill=COLORS["accent"],
-                               outline="")
-            canvas.create_text(x, y - 14, text=m or "(root)",
-                               fill=COLORS["text"], font=("TkDefaultFont", 9))
+            canvas.create_oval(x - 8, y - 8, x + 8, y + 8, fill=COLORS["accent"],
+                               outline=COLORS["text"], width=1)
+            canvas.create_text(x, y - 18, text=m,
+                               fill=COLORS["text"], font=("TkDefaultFont", 10))
         canvas.create_text(10, 10, anchor="nw",
                            text=f"{len(modules)} modules · internal imports only",
                            fill=COLORS["muted"], font=("TkDefaultFont", 10))

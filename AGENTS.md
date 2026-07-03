@@ -28,8 +28,12 @@ patterns used for demos and tests; expect the scanner to report findings on it.
 - Tests: `.venv/bin/python -m pytest` (pure-stdlib engine tests; no display needed).
 
 ### Caveats
-- `customtkinter` widgets do not respond to `xdotool` synthetic mouse events.
-  For GUI-driven interaction, drive the engine directly or call view methods
-  (e.g. `app._show(...)`) rather than simulating clicks.
+- The GUI is fully clickable from the computer-use desktop (launch it from that
+  desktop's terminal so it inherits the right `DISPLAY`; it will not appear on a
+  separately-started `Xvfb :99`). For fast headless verification you can also
+  drive the engine directly or call view methods (e.g. `app._show(...)`).
+- The Architecture view draws its node graph on a `CTkCanvas` after layout via
+  `after(...)`; it is only meaningful for multi-module scans (a single module
+  renders one centered node).
 - The SQLite DB (`analysis_results.db`) and its `-wal`/`-shm` sidecars are
   gitignored; they are created on first scan/save.
