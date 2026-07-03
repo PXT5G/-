@@ -1,21 +1,12 @@
-__pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-
 # Next.js MDT
 mdt/node_modules/
 mdt/.next/
 mdt/out/
 
-# Local secrets and user-provided data
-config.json
-cards.txt
-accounts.txt
-success_test_runs.txt
-proxies.txt
-results/*.csv
-results/*.txt
-results/*.json
-results/artifacts/
+# Local secrets and runtime data
+mdt/data/
+.env*
+*.pem
+
+# misc
+.DS_Store
