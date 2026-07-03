@@ -1,12 +1,11 @@
 """
-TitanRE Controller — MVC bridge with OOB heartbeat and Security Center telemetry.
+TitanRE Controller — Sovereign Core orchestration with shard quorum and topology trees.
 
 SKILL BREAKDOWN: Thread-Safe GUI / Async Integration
 ----------------------------------------------------
-Tkinter is not asyncio-aware. A dedicated event-loop thread plus
-``queue.Queue`` dispatch and ``after(0, ...)`` UI marshaling preserves
-responsiveness while OOB heartbeat coroutines emit out-of-band liveness
-ticks without blocking operator interactions.
+The Sovereign phase adds boot-time jurisdictional shard recovery and closed-loop
+stealth adaptation without blocking Tk: all recovery runs in ``__init__`` before
+threads start, while response feedback posts via the async loop only.
 """
 
 from __future__ import annotations
@@ -24,7 +23,15 @@ from core.fuzzer_engine import FuzzerEngine
 from core.network_engine import NetworkEngine
 from core.state_manager import DeadManConfig, StateManager
 from core.stealth_middleware import StealthMiddleware
-from models.task_model import ModuleMode, SecurityTelemetry, TaskState, TaskStatus, WipeValidation
+from models.task_model import (
+    ModuleMode,
+    SecurityTelemetry,
+    ShardIntegrityStatus,
+    TaskState,
+    TaskStatus,
+    TopologyNode,
+    WipeValidation,
+)
 
 
 LogCallback = Callable[[str, str], None]
@@ -33,9 +40,7 @@ WipeCallback = Callable[[WipeValidation], None]
 
 
 class TitanREController:
-    """
-    Orchestrates engines, async loop thread, heartbeat, and GUI-safe callbacks.
-    """
+    """Orchestrates Sovereign Core engines, shard recovery, and GUI callbacks."""
 
     def __init__(
         self,
@@ -75,9 +80,35 @@ class TitanREController:
         self._telemetry_thread: Optional[threading.Thread] = None
         self._telemetry_stop = threading.Event()
 
-        # Register demo API key fragmented at rest
         token = self._state_manager.mutation_token
-        self._state_manager.register_secret("lab_api_key", "titanre-edu-demo-key", mutation_token=token)
+        self._state_manager.register_secret("lab_api_key", "titanre-sovereign-demo-key", mutation_token=token)
+
+        self._apply_boot_shard_integrity()
+
+    def _apply_boot_shard_integrity(self) -> None:
+        """
+        Surface jurisdictional shard quorum result to Security Center V2.
+
+        SKILL BREAKDOWN: Boot-Time Shard Integrity Verification
+        ---------------------------------------------------------
+        Operators must know immediately whether distributed logs were tampered
+        with or incomplete before trusting session topology replay.
+        """
+        recovery = self._db.recovery_result
+        if recovery is None:
+            status = ShardIntegrityStatus(message="Shard engine not initialized.")
+        else:
+            status = ShardIntegrityStatus(
+                quorum_met=recovery.quorum_met,
+                shards_present=recovery.shards_present,
+                shards_required=3,
+                jurisdictions=list(recovery.jurisdictions),
+                recovered_records=recovery.recovered_records,
+                message=recovery.message,
+            )
+        with self._state_lock:
+            self._state.shard_integrity = status
+        self._log("INFO", f"Shard integrity: {status.message}")
 
     # ------------------------------------------------------------------
     # Public API
@@ -101,8 +132,8 @@ class TitanREController:
         )
         self._telemetry_thread.start()
         self._state_manager.arm_dead_man_switch()
-        self._log("INFO", "Controller online — async loop + OOB heartbeat started.")
-        self._publish_state(last_message="Security Center ready.")
+        self._log("INFO", "Sovereign Core online — PQC agility + shard quorum active.")
+        self._publish_state(last_message="Security Center V2 ready.")
 
     def stop(self) -> None:
         self._shutdown.set()
@@ -135,15 +166,6 @@ class TitanREController:
         self._publish_state()
 
     def emergency_wipe(self) -> None:
-        """
-        Multi-layer memory volatilization + SQLite transactional purge.
-
-        SKILL BREAKDOWN: Coordinated Anti-Forensics Response
-        ----------------------------------------------------
-        Wipe spans fragmented secrets, tracked buffers, network topology, and
-        persistent logs. Validation struct confirms each layer for GUI trust
-        indicators without leaking wiped plaintext.
-        """
         artifacts, fragments = self._state_manager.trigger_dead_man_switch(reason="operator")
         db_rows = self._db.purge()
         self._network.clear_topology()
@@ -153,11 +175,12 @@ class TitanREController:
             memory_artifacts_cleared=artifacts,
             fragments_destroyed=fragments,
             db_rows_purged=db_rows,
+            shard_fragments_purged=db_rows,
             passes_executed=5,
             success=True,
             message=(
-                f"Wipe OK — {artifacts} buffers, {fragments} fragments, "
-                f"{db_rows} DB rows purged."
+                f"Sovereign wipe OK — {artifacts} buffers, {fragments} memory fragments, "
+                f"{db_rows} shard/index rows purged."
             ),
         )
         self._log("WARN", validation.message)
@@ -168,6 +191,7 @@ class TitanREController:
             network_entropy=0.0,
             wipe_validation=validation,
             session_topology=[],
+            topology_tree=[],
         )
         if self._wipe_callback:
             self._wipe_callback(validation)
@@ -182,6 +206,23 @@ class TitanREController:
         with self._state_lock:
             return self._state.clone()
 
+    def toggle_topology_node(self, node_id: str) -> None:
+        """Toggle expand/collapse for interactive topology tree (GUI callback)."""
+        with self._state_lock:
+            self._toggle_node_recursive(self._state.topology_tree, node_id)
+            snapshot = self._state.clone()
+        if self._state_callback:
+            self._state_callback(snapshot)
+
+    def _toggle_node_recursive(self, nodes: List[TopologyNode], node_id: str) -> bool:
+        for node in nodes:
+            if node.node_id == node_id:
+                node.expanded = not node.expanded
+                return True
+            if self._toggle_node_recursive(node.children, node_id):
+                return True
+        return False
+
     # ------------------------------------------------------------------
     # Async jobs
     # ------------------------------------------------------------------
@@ -192,33 +233,40 @@ class TitanREController:
             try:
                 self._stealth.rotate_persona()
                 decoy = self._stealth.execution_delay_decoy()
-                self._log("DEBUG", f"Persona decoy: {decoy}")
+                self._log("DEBUG", f"Tracker poison + decoy: {decoy}")
 
                 fp = await self._network.fingerprint_probe(url)
                 self._log(
                     "INFO",
-                    f"TLS={fp['tls_profile']} pseudo_fp={fp['pseudo_fingerprint']} "
-                    f"chaff={fp.get('chaff_packets', 0)}",
+                    f"TLS={fp['tls_profile']} chaff={fp.get('chaff_packets', 0)} "
+                    f"poison={self._stealth.tracker_poison_samples}",
                 )
-                proto = fp.get("protocol_snapshot", {})
-                if proto:
-                    self._log("DEBUG", f"Protocol mimicry: {proto}")
 
                 response = await self._network.request("GET", url)
+                self._stealth.ingest_target_response(
+                    response.status,
+                    response.elapsed_ms,
+                    len(response.body_preview),
+                    anomaly_hint=response.entropy / 8.0,
+                )
                 self._fuzzer.parse_response_structure(response.body_preview)
 
-                topology = self._build_session_topology()
+                topology_lines = self._build_session_topology_lines()
+                topology_tree = self._build_topology_tree()
+                self._db.write_topology(topology_lines)
+
                 self._log(
                     "INFO",
                     f"GET {url} -> {response.status} ({response.elapsed_ms:.1f}ms) "
-                    f"entropy={response.entropy:.2f} jitter={response.jitter_delay_s:.3f}s",
+                    f"jitter_model={self._stealth.get_protocol_snapshot().get('jitter_model')}",
                 )
                 self._publish_state(
                     status=TaskStatus.SUCCESS,
                     network_entropy=response.entropy / 8.0,
                     memory_entropy=self._compute_memory_entropy(),
                     last_message=f"Probe complete: HTTP {response.status}",
-                    session_topology=topology,
+                    session_topology=topology_lines,
+                    topology_tree=topology_tree,
                 )
                 self._db.write("INFO", "network", f"Probe {url} status={response.status}")
             except Exception as exc:  # noqa: BLE001
@@ -242,6 +290,11 @@ class TitanREController:
                 async def _sender(payload: Any) -> Dict[str, Any]:
                     body = json_bytes(str(payload))
                     resp = await self._network.request("POST", url, data=body)
+                    self._stealth.ingest_target_response(
+                        resp.status,
+                        resp.elapsed_ms,
+                        len(resp.body_preview),
+                    )
                     return {
                         "status_code": resp.status,
                         "body": resp.body_preview,
@@ -255,17 +308,14 @@ class TitanREController:
                     "INFO",
                     f"Fuzz complete — {len(results)} cases, {len(anomalies)} anomalies.",
                 )
-                for hit in anomalies[:3]:
-                    self._log(
-                        "WARN",
-                        f"score={hit.anomaly_score:.2f} J={hit.jaccard_component:.2f} "
-                        f"L={hit.latency_component:.2f} H={hit.header_component:.2f} | {hit.notes}",
-                    )
-                topology = self._build_session_topology()
+                topology_lines = self._build_session_topology_lines()
+                topology_tree = self._build_topology_tree()
+                self._db.write_topology(topology_lines)
                 self._publish_state(
                     status=TaskStatus.SUCCESS,
                     last_message=f"Fuzzed {len(results)} cases ({len(anomalies)} anomalies)",
-                    session_topology=topology,
+                    session_topology=topology_lines,
+                    topology_tree=topology_tree,
                 )
             except Exception as exc:  # noqa: BLE001
                 self._log("ERROR", f"Fuzz job failed: {exc}")
@@ -275,13 +325,78 @@ class TitanREController:
 
         return _coro
 
-    def _build_session_topology(self) -> List[str]:
+    def _build_session_topology_lines(self) -> List[str]:
         lines: List[str] = ["=== Session Topology ==="]
         for endpoint in self._network.discovered_endpoints:
             lines.append(f"endpoint: {endpoint}")
         lines.append("--- API Dependency Graph ---")
         lines.extend(self._fuzzer.export_topology_lines())
         return lines
+
+    def _build_topology_tree(self) -> List[TopologyNode]:
+        """
+        Build multi-tier hierarchical topology for collapsible GUI rendering.
+
+        SKILL BREAKDOWN: Session Topology Graph Construction
+        ------------------------------------------------------
+        Tier-0 root → Tier-1 categories → Tier-2 endpoints/fields gives operators
+        a clear attack-surface hierarchy without external graph dependencies.
+        """
+        root = TopologyNode(node_id="root", label="Sovereign Session Root", tier=0, expanded=True)
+
+        endpoints_parent = TopologyNode(
+            node_id="tier1-endpoints",
+            label=f"Discovered Endpoints ({len(self._network.discovered_endpoints)})",
+            tier=1,
+            expanded=True,
+        )
+        for index, endpoint in enumerate(self._network.discovered_endpoints):
+            endpoints_parent.children.append(
+                TopologyNode(
+                    node_id=f"ep-{index}",
+                    label=endpoint,
+                    tier=2,
+                    expanded=False,
+                )
+            )
+        root.children.append(endpoints_parent)
+
+        graph_parent = TopologyNode(
+            node_id="tier1-api-graph",
+            label="API Dependency Graph",
+            tier=1,
+            expanded=True,
+        )
+        for index, (path, node) in enumerate(self._fuzzer.dependency_graph.items()):
+            graph_parent.children.append(
+                TopologyNode(
+                    node_id=f"dep-{index}",
+                    label=f"{path} ({node.value_type})",
+                    tier=2,
+                    expanded=False,
+                )
+            )
+        root.children.append(graph_parent)
+
+        stealth_parent = TopologyNode(
+            node_id="tier1-stealth",
+            label="Stealth Telemetry",
+            tier=1,
+            expanded=False,
+        )
+        snap = self._stealth.get_protocol_snapshot()
+        for key in ("jitter_model", "quic_cid", "poison_samples"):
+            if key in snap:
+                stealth_parent.children.append(
+                    TopologyNode(
+                        node_id=f"stealth-{key}",
+                        label=f"{key}: {snap[key]}",
+                        tier=2,
+                    )
+                )
+        root.children.append(stealth_parent)
+
+        return [root]
 
     # ------------------------------------------------------------------
     # Internals
@@ -295,20 +410,10 @@ class TitanREController:
         self._loop.run_forever()
 
     async def _oob_heartbeat_loop(self) -> None:
-        """
-        Out-of-band liveness telemetry independent of user jobs.
-
-        SKILL BREAKDOWN: OOB Heartbeat Telemetry
-        ----------------------------------------
-        Heartbeats prove the async loop is responsive even when no network
-        jobs queue — detecting event-loop stalls that would delay emergency
-        wipe or Dead-Man's Switch execution.
-        """
         while not self._shutdown.is_set():
             start = time.perf_counter()
             await asyncio.sleep(2.0)
-            elapsed_ms = (time.perf_counter() - start) * 1000.0
-            self._oob_last_ms = elapsed_ms
+            self._oob_last_ms = (time.perf_counter() - start) * 1000.0
             self._publish_telemetry_only()
 
     async def _dispatch_loop(self) -> None:
@@ -349,8 +454,9 @@ class TitanREController:
     def _compute_memory_entropy(self) -> float:
         keys = len(self._state_manager.volatile_keys)
         enc_ratio = self._state_manager.memory_encrypted_ratio
+        constancy = self._state_manager.memory_constancy
         rng = secrets.randbits(16) / 65535.0
-        return min(1.0, (keys * 0.08) + (enc_ratio * 0.4) + (rng * 0.2))
+        return min(1.0, (keys * 0.06) + (enc_ratio * 0.35) + (constancy * 0.25) + (rng * 0.1))
 
     def _build_telemetry(self) -> SecurityTelemetry:
         return SecurityTelemetry(
@@ -362,6 +468,10 @@ class TitanREController:
             active_workers=self._active_workers,
             fragmented_secrets=self._state_manager.fragmented_secret_count,
             chaff_packets=self._stealth.chaff_packet_count,
+            memory_constancy=self._state_manager.memory_constancy,
+            decoy_efficiency=self._state_manager.decoy_efficiency,
+            pqc_agility_active=self._state_manager.pqc_agility_active,
+            tracker_poison_samples=self._stealth.tracker_poison_samples,
         )
 
     def _publish_telemetry_only(self) -> None:
@@ -385,6 +495,7 @@ class TitanREController:
         memory_entropy: Optional[float] = None,
         network_entropy: Optional[float] = None,
         session_topology: Optional[List[str]] = None,
+        topology_tree: Optional[List[TopologyNode]] = None,
         wipe_validation: Optional[WipeValidation] = None,
     ) -> None:
         with self._state_lock:
@@ -398,6 +509,8 @@ class TitanREController:
                 self._state.network_entropy = network_entropy
             if session_topology is not None:
                 self._state.session_topology = session_topology
+            if topology_tree is not None:
+                self._state.topology_tree = topology_tree
             if wipe_validation is not None:
                 self._state.wipe_validation = wipe_validation
             self._state.telemetry = self._build_telemetry()

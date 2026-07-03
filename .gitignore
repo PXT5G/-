@@ -8,3 +8,4 @@ venv/
 *.sqlite
 *.sqlite3
 .titanre_tmp/
+.titanre_shards/

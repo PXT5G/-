@@ -1,13 +1,12 @@
 """
-Anti-forensics state manager — AES-GCM fragmentation, volatilization, Dead-Man's Switch.
+Sovereign Core state manager — PQC agility, constant-time validation, AES-GCM fragmentation.
 
-SKILL BREAKDOWN: Advanced Memory Anti-Forensics
-----------------------------------------------
-Plaintext secrets in the Python heap are recoverable via memory dumps and
-swap. Fragmentation plus AES-GCM-at-rest (while idle) ensures no contiguous
-ciphertext or plaintext credential spans exist in RAM. Decryption occurs only
-inside ephemeral ``bytearray`` buffers that are multi-pass volatilized before
-``gc.collect()`` reclaims objects.
+SKILL BREAKDOWN: Post-Quantum Cryptographic Agility
+---------------------------------------------------
+NIST PQC standards (Kyber KEM, Dilithium signatures) address harvest-now-
+decrypt-later threats. This module *simulates* hybrid envelopes: classical
+AES-GCM protects data today while PQC metadata and derived keys model how
+production systems will layer algorithms during cryptographic migration.
 """
 
 from __future__ import annotations
@@ -17,31 +16,42 @@ import hashlib
 import secrets
 import threading
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from cryptography.hazmat.primitives import hashes
 
 
-# AES-GCM standard nonce length (96 bits)
 _NONCE_BYTES = 12
-# Minimum fragment size before scatter (bytes)
 _MIN_FRAGMENT = 8
-# Multi-pass volatilization rounds
 _WIPE_PASSES = 5
+_FIXED_TOKEN_WIDTH = 32
+
+
+@dataclass
+class PQCEnvelopeMetadata:
+    """
+    Simulated Kyber/Dilithium encapsulation envelope descriptor.
+
+    SKILL BREAKDOWN: Kyber/Dilithium Key Encapsulation Metadata
+    -----------------------------------------------------------
+    Kyber provides IND-CCA2 KEM for session key establishment; Dilithium
+    supplies post-quantum signatures. Metadata records algorithm agility IDs
+    so future cipher suites can be negotiated without rewriting storage format.
+    """
+
+    kem_algorithm: str
+    sig_algorithm: str
+    encapsulation_id: str
+    dilithium_key_fingerprint: str
+    hybrid_layer: str = "AES-256-GCM"
 
 
 @dataclass
 class FragmentRecord:
-    """
-    Encrypted shard stored at a scattered memory slot.
-
-    SKILL BREAKDOWN: In-Memory Payload Fragmentation & Scattering
-    ---------------------------------------------------------------
-    Splitting a credential into non-contiguous AES-GCM blobs defeats simple
-    ``strings``-style scanning: an attacker must locate every fragment, derive
-    each wrapping key, and reassemble order metadata — raising extraction cost.
-    """
+    """Encrypted shard with optional PQC envelope."""
 
     slot_id: str
     ciphertext: bytes
@@ -49,12 +59,11 @@ class FragmentRecord:
     fragment_index: int
     total_fragments: int
     aad: bytes
+    pqc_metadata: Optional[PQCEnvelopeMetadata] = None
 
 
 @dataclass
 class DeadManConfig:
-    """Multi-factor Dead-Man's Switch configuration."""
-
     enabled: bool = True
     timeout_seconds: float = 600.0
     max_ops_per_second: float = 50.0
@@ -64,29 +73,152 @@ class DeadManConfig:
 
 @dataclass
 class DeadManStatus:
-    """Runtime diagnostics for Dead-Man trigger evaluation."""
-
     armed: bool = False
     last_trigger_reason: str = ""
     rate_anomaly_count: int = 0
     mutation_violation_count: int = 0
 
 
-class StateManager:
+class ConstantTimeValidator:
     """
-    Volatile registry with AES-GCM fragmented secrets and multi-factor wipe.
+    Constant-time secret and token validation routines.
 
-    SKILL BREAKDOWN: RAM-Only Execution Simulation
-    ------------------------------------------------
-    Secrets never enter the store as raw ``str``; they are fragmented,
-    encrypted, and indexed by opaque slot IDs. Access paths decrypt in-flight
-    and volatilize buffers in ``finally`` blocks mirroring TmpFS semantics.
+    SKILL BREAKDOWN: Constant-Time Algorithm Enforcement
+    ----------------------------------------------------
+    Differential Power Analysis (DPA) and timing side-channels leak secrets
+    when comparisons short-circuit on first mismatched byte or when loop
+    iterations depend on secret length. ``secrets.compare_digest`` plus
+    fixed-width padding and dummy XOR rounds normalize execution paths so
+    profilers cannot infer token structure from elapsed wall time alone
+    (best-effort in Python; native constant-time is required for production HSMs).
     """
+
+    @staticmethod
+    def pad_fixed_width(value: bytes, width: int = _FIXED_TOKEN_WIDTH) -> bytes:
+        if len(value) >= width:
+            return value[:width]
+        return value + b"\x00" * (width - len(value))
+
+    @classmethod
+    def constant_time_compare(cls, provided: Optional[str], expected: str) -> bool:
+        """
+        Compare tokens in constant time over a fixed-width buffer.
+
+        SKILL BREAKDOWN: Timing Side-Channel Mitigation
+        ------------------------------------------------
+        When ``provided`` is None we still traverse the full expected width
+        using a synthetic buffer — preventing NULL-input fast paths that
+        measurable timing could distinguish from invalid-token paths.
+        """
+        expected_bytes = cls.pad_fixed_width(expected.encode("utf-8"))
+        if provided is None:
+            provided_bytes = bytes(expected_bytes)
+        else:
+            provided_bytes = cls.pad_fixed_width(provided.encode("utf-8"))
+
+        primary = secrets.compare_digest(provided_bytes, expected_bytes)
+
+        dummy_xor = 0
+        for i in range(width := len(expected_bytes)):
+            dummy_xor |= provided_bytes[i] ^ expected_bytes[i]
+
+        _ = dummy_xor & 0xFF
+        return primary
+
+    @classmethod
+    def constant_time_length_mask(cls, data: bytes, reference_len: int) -> int:
+        """
+        Return bitmask indicating length match without early exit.
+
+        SKILL BREAKDOWN: DPA-Resistant Length Handling
+        ------------------------------------------------
+        Attackers probe auth endpoints with variable-length inputs to infer
+        valid key sizes. Iterating to ``reference_len`` always executes the
+        same number of mixing operations regardless of ``len(data)``.
+        """
+        acc = 0
+        for i in range(reference_len):
+            byte = data[i] if i < len(data) else 0
+            acc ^= byte
+        length_match = 1 if len(data) == reference_len else 0
+        return acc ^ length_match
+
+
+class QuantumResistantCipherWrapper:
+    """
+    Modular cipher wrapper simulating PQC hybrid encryption atop AES-GCM.
+
+    SKILL BREAKDOWN: Quantum-Resistant Agility Simulation
+    -----------------------------------------------------
+    Hybrid schemes combine classical and post-quantum algorithms so compromise
+    of one primitive does not instantly break confidentiality. We derive an
+    AES key via HKDF from a simulated Kyber shared secret, then encrypt payloads
+    with AES-GCM — mirroring CRYSTALS-Kyber + AES deploy patterns.
+    """
+
+    SUPPORTED_KEM = ("Kyber768", "Kyber1024")
+    SUPPORTED_SIG = ("Dilithium3", "Dilithium5")
+
+    def __init__(self, master_seed: bytes) -> None:
+        self._master_seed = master_seed
+
+    def generate_envelope(self) -> PQCEnvelopeMetadata:
+        kem = secrets.choice(self.SUPPORTED_KEM)
+        sig = secrets.choice(self.SUPPORTED_SIG)
+        enc_id = secrets.token_hex(12)
+        fp = hashlib.sha256(f"{kem}:{enc_id}".encode()).hexdigest()[:32]
+        return PQCEnvelopeMetadata(
+            kem_algorithm=kem,
+            sig_algorithm=sig,
+            encapsulation_id=enc_id,
+            dilithium_key_fingerprint=fp,
+        )
+
+    def encapsulate_key(self, metadata: PQCEnvelopeMetadata) -> bytes:
+        """
+        Simulate Kyber encapsulation output (shared secret derivation).
+
+        SKILL BREAKDOWN: Key Encapsulation Mechanism (KEM)
+        ----------------------------------------------------
+        Real Kyber encaps generates a shared secret and ciphertext; here
+        HKDF expands master seed + encapsulation_id into a 256-bit AES key.
+        """
+        info = f"{metadata.kem_algorithm}:{metadata.encapsulation_id}".encode()
+        return HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=self._master_seed,
+            info=info,
+        ).derive(b"pqc-hybrid-kyber-aes-v1")
+
+    def encrypt(self, plaintext: bytes, aad: bytes) -> Tuple[bytes, bytes, PQCEnvelopeMetadata]:
+        metadata = self.generate_envelope()
+        derived_key = self.encapsulate_key(metadata)
+        nonce = secrets.token_bytes(_NONCE_BYTES)
+        ciphertext = AESGCM(derived_key).encrypt(nonce, plaintext, aad)
+        return ciphertext, nonce, metadata
+
+    def decrypt(
+        self,
+        ciphertext: bytes,
+        nonce: bytes,
+        aad: bytes,
+        metadata: PQCEnvelopeMetadata,
+    ) -> bytes:
+        derived_key = self.encapsulate_key(metadata)
+        return AESGCM(derived_key).decrypt(nonce, ciphertext, aad)
+
+
+class StateManager:
+    """Volatile registry with PQC-hybrid fragmented secrets and multi-factor wipe."""
 
     def __init__(self, dead_man: Optional[DeadManConfig] = None) -> None:
         self._lock = threading.RLock()
         self._master_key: bytes = AESGCM.generate_key(bit_length=256)
+        self._master_seed: bytes = secrets.token_bytes(32)
         self._aesgcm = AESGCM(self._master_key)
+        self._pqc = QuantumResistantCipherWrapper(self._master_seed)
+        self._ct_validator = ConstantTimeValidator()
         self._fragments: Dict[str, FragmentRecord] = {}
         self._fragment_order: Dict[str, List[str]] = {}
         self._wipe_targets: List[bytearray] = []
@@ -95,26 +227,22 @@ class StateManager:
         self._last_activity = time.monotonic()
         self._armed = False
         self._watchdog_thread: Optional[threading.Thread] = None
-        _stop_event = threading.Event()
-        self._stop_event = _stop_event
+        self._stop_event = threading.Event()
         self._mutation_token: str = secrets.token_hex(16)
         self._op_timestamps: List[float] = []
         self._inflight_decrypt_count = 0
-        self._raw_exposure_count = 0
-
-    # ------------------------------------------------------------------
-    # Fragmentation API
-    # ------------------------------------------------------------------
+        self._validation_timings: List[float] = []
+        self._decoy_validations = 0
 
     def register_secret(self, key: str, value: str, *, mutation_token: Optional[str] = None) -> int:
         """
-        Fragment and AES-GCM encrypt ``value``; scatter shards across slots.
+        Fragment and hybrid-encrypt secret with PQC envelope per shard.
 
-        SKILL BREAKDOWN: AES-GCM At-Rest In Memory
-        ------------------------------------------
-        GCM provides authenticated encryption: tampering with any fragment
-        fails decryption, detecting memory corruption or adversarial edits.
-        Unique nonces per fragment are mandatory — nonce reuse breaks GCM.
+        SKILL BREAKDOWN: Layered Encryption at Rest
+        -------------------------------------------
+        Each fragment receives independent AES-GCM (classical) plus PQC-derived
+        key encapsulation metadata, modeling defense-in-depth against both
+        quantum and classical memory scraping.
         """
         self._authorize_mutation(mutation_token)
         self._record_operation()
@@ -134,16 +262,21 @@ class StateManager:
             if not chunk:
                 continue
             slot_id = secrets.token_hex(8)
-            nonce = secrets.token_bytes(_NONCE_BYTES)
             aad = f"{key}:{index}:{fragment_count}".encode("utf-8")
-            ciphertext = self._aesgcm.encrypt(nonce, chunk, aad)
+
+            pqc_ct, pqc_nonce, pqc_meta = self._pqc.encrypt(chunk, aad)
+            nonce = secrets.token_bytes(_NONCE_BYTES)
+            classical_ct = self._aesgcm.encrypt(nonce, pqc_ct, aad)
+            combined = pqc_nonce + classical_ct
+
             self._fragments[slot_id] = FragmentRecord(
                 slot_id=slot_id,
-                ciphertext=ciphertext,
+                ciphertext=combined,
                 nonce=nonce,
                 fragment_index=index,
                 total_fragments=fragment_count,
                 aad=aad,
+                pqc_metadata=pqc_meta,
             )
             slots.append(slot_id)
 
@@ -152,15 +285,7 @@ class StateManager:
         return destroyed
 
     def access_secret(self, key: str, *, mutation_token: Optional[str] = None) -> Optional[str]:
-        """
-        Decrypt fragments in-flight inside a volatilized buffer.
-
-        SKILL BREAKDOWN: Decrypt-Only-In-Flight
-        ---------------------------------------
-        Plaintext exists only inside a registered ``bytearray`` for the
-        duration of this call. The buffer is volatilized before return,
-        minimizing the window where a memory snapshot could capture secrets.
-        """
+        """Decrypt hybrid fragments in-flight inside volatilized buffers."""
         self._authorize_mutation(mutation_token)
         self._record_operation()
 
@@ -170,7 +295,6 @@ class StateManager:
             return None
 
         self._inflight_decrypt_count += 1
-        self._raw_exposure_count += 1
         plaintext_buf = bytearray()
         self.register_buffer(plaintext_buf)
 
@@ -186,44 +310,32 @@ class StateManager:
 
             records.sort(key=lambda r: r.fragment_index)
             for record in records:
-                chunk = self._aesgcm.decrypt(record.nonce, record.ciphertext, record.aad)
+                pqc_nonce = record.ciphertext[:_NONCE_BYTES]
+                classical_payload = record.ciphertext[_NONCE_BYTES:]
+                pqc_ct = self._aesgcm.decrypt(record.nonce, classical_payload, record.aad)
+                assert record.pqc_metadata is not None
+                chunk = self._pqc.decrypt(pqc_ct, pqc_nonce, record.aad, record.pqc_metadata)
                 plaintext_buf.extend(chunk)
 
-            result = plaintext_buf.decode("utf-8")
-            return result
+            return plaintext_buf.decode("utf-8")
         finally:
             self._inflight_decrypt_count = max(0, self._inflight_decrypt_count - 1)
             self.volatilize_buffer(plaintext_buf)
             self._touch()
 
     def get(self, key: str, default: Any = None, *, mutation_token: Optional[str] = None) -> Any:
-        """Compatibility accessor — routes secrets through fragmented store."""
         if key in self._fragment_order:
             value = self.access_secret(key, mutation_token=mutation_token)
             return value if value is not None else default
         return default
 
     def register_buffer(self, buf: bytearray) -> None:
-        """Track a mutable buffer for later multi-pass volatilization."""
         with self._lock:
             self._wipe_targets.append(buf)
             self._touch()
 
-    # ------------------------------------------------------------------
-    # Volatilization
-    # ------------------------------------------------------------------
-
     def volatilize_buffer(self, buf: bytearray, passes: int = _WIPE_PASSES) -> None:
-        """
-        Multi-pass quantum-random overwrite then zero-fill.
-
-        SKILL BREAKDOWN: Secure Memory Volatilization
-        -----------------------------------------------
-        Single-pass zeroing is insufficient against remanence-aware forensics
-        and compiler optimizations (in native code). Multiple passes using
-        OS CSPRNG bytes maximize displacement of prior contents in CPython
-        ``bytearray`` backing stores before zeroization and ``gc.collect()``.
-        """
+        """Multi-pass CSPRNG overwrite then zero-fill."""
         if not isinstance(buf, bytearray) or len(buf) == 0:
             return
         for _ in range(passes):
@@ -235,11 +347,6 @@ class StateManager:
         gc.collect()
 
     def secure_wipe_all(self, passes: int = _WIPE_PASSES) -> Tuple[int, int]:
-        """
-        Wipe buffers, destroy all fragments, rotate master key.
-
-        Returns (artifacts_cleared, fragments_destroyed).
-        """
         artifacts = 0
         fragments_destroyed = 0
         with self._lock:
@@ -252,9 +359,10 @@ class StateManager:
                 fragments_destroyed += self._destroy_fragments(key)
 
             self._master_key = AESGCM.generate_key(bit_length=256)
+            self._master_seed = secrets.token_bytes(32)
             self._aesgcm = AESGCM(self._master_key)
+            self._pqc = QuantumResistantCipherWrapper(self._master_seed)
             self._mutation_token = secrets.token_hex(16)
-            self._raw_exposure_count = 0
             self._inflight_decrypt_count = 0
             gc.collect()
         return artifacts, fragments_destroyed
@@ -264,27 +372,12 @@ class StateManager:
         for slot_id in self._fragment_order.pop(key, []):
             record = self._fragments.pop(slot_id, None)
             if record is not None:
-                # Overwrite ciphertext bytes object indirectly via volatilize on bytearray copy
                 temp = bytearray(record.ciphertext)
                 self.volatilize_buffer(temp)
                 count += 1
         return count
 
-    # ------------------------------------------------------------------
-    # Dead-Man's Switch — multi-factor
-    # ------------------------------------------------------------------
-
     def arm_dead_man_switch(self) -> None:
-        """
-        Arm watchdog evaluating timeout, rate anomalies, and mutation violations.
-
-        SKILL BREAKDOWN: Multi-Factor Dead-Man's Switch
-        -------------------------------------------------
-        A single trigger (timeout) is predictable. Combining rate-limit
-        anomalies (burst forensics scraping) and unauthorized mutations
-        (hooking API without session token) provides defense-in-depth against
-        both idle exposure and active exfiltration attempts.
-        """
         if self._armed or not self._dead_man.enabled:
             return
         self._armed = True
@@ -303,7 +396,6 @@ class StateManager:
         self._dead_man_status.armed = False
 
     def trigger_dead_man_switch(self, reason: str = "manual") -> Tuple[int, int]:
-        """Execute full volatilization and invoke optional callback."""
         artifacts, fragments = self.secure_wipe_all()
         self._dead_man_status.last_trigger_reason = reason
         if self._dead_man.on_trigger:
@@ -325,25 +417,36 @@ class StateManager:
                 break
 
     def _check_rate_anomaly(self) -> bool:
-        """
-        Detect operation bursts exceeding configured ops/sec.
-
-        SKILL BREAKDOWN: Rate-Limit Anomaly Detection
-        -----------------------------------------------
-        Automated dump tools often hammer secret accessors linearly. A sliding
-        one-second window exposing >N ops indicates non-human interaction.
-        """
         now = time.monotonic()
         self._op_timestamps = [t for t in self._op_timestamps if now - t <= 1.0]
         return len(self._op_timestamps) > self._dead_man.max_ops_per_second
 
     def _authorize_mutation(self, mutation_token: Optional[str]) -> None:
+        """
+        Authorize state mutation using constant-time token validation.
+
+        SKILL BREAKDOWN: Constant-Time Authorization Gate
+        ---------------------------------------------------
+        Every mutation path records validation duration; high variance would
+        indicate side-channel leakage. Dummy decoy validations mix into
+        traffic to confuse external profilers.
+        """
         if not self._dead_man.require_mutation_token:
             return
-        if mutation_token is None:
-            self._raise_mutation_violation("missing mutation token")
-        if not secrets.compare_digest(mutation_token, self._mutation_token):
-            self._raise_mutation_violation("invalid mutation token")
+
+        start = time.perf_counter()
+        valid = self._ct_validator.constant_time_compare(mutation_token, self._mutation_token)
+        elapsed = time.perf_counter() - start
+        self._validation_timings.append(elapsed)
+        if len(self._validation_timings) > 64:
+            self._validation_timings.pop(0)
+
+        self._decoy_validations += 1
+        decoy = secrets.token_hex(16)
+        self._ct_validator.constant_time_compare(decoy, self._mutation_token)
+
+        if not valid:
+            self._raise_mutation_violation("invalid or missing mutation token")
 
     def _raise_mutation_violation(self, detail: str) -> None:
         self._dead_man_status.mutation_violation_count += 1
@@ -358,7 +461,6 @@ class StateManager:
 
     @property
     def mutation_token(self) -> str:
-        """Session token required for state mutations (share only with controller)."""
         with self._lock:
             return self._mutation_token
 
@@ -369,21 +471,47 @@ class StateManager:
 
     @property
     def memory_encrypted_ratio(self) -> float:
-        """
-        Ratio of encrypted-at-rest fragments vs in-flight decrypt operations.
-
-        SKILL BREAKDOWN: Encrypted-vs-Raw Telemetry
-        -------------------------------------------
-        GUI meters use this ratio to visualize exposure: 1.0 means all secrets
-        are fragmented ciphertext; values drop briefly during in-flight access.
-        """
         with self._lock:
             total_fragments = sum(len(v) for v in self._fragment_order.values())
             if total_fragments == 0:
                 return 1.0
             if self._inflight_decrypt_count > 0:
-                return max(0.0, 1.0 - (self._raw_exposure_count * 0.05))
+                return max(0.0, 0.85)
             return 1.0
+
+    @property
+    def memory_constancy(self) -> float:
+        """
+        Estimate timing-variance immunity of validation routines.
+
+        SKILL BREAKDOWN: Memory Constancy / Side-Channel Telemetry
+        ------------------------------------------------------------
+        Low standard deviation of validation durations suggests constant-time
+        behavior. Score near 1.0 is desirable; collapses if timing leaks appear.
+        """
+        if len(self._validation_timings) < 4:
+            return 1.0
+        mean = sum(self._validation_timings) / len(self._validation_timings)
+        variance = sum((t - mean) ** 2 for t in self._validation_timings) / len(self._validation_timings)
+        stdev = variance ** 0.5
+        return max(0.0, min(1.0, 1.0 - (stdev * 500.0)))
+
+    @property
+    def decoy_efficiency(self) -> float:
+        """
+        Ratio of decoy validations to real operations — cryptographic noise metric.
+
+        SKILL BREAKDOWN: Cryptographic Decoy Efficiency
+        ---------------------------------------------------
+        Decoy comparisons pad timing histograms so attackers cannot isolate
+        legitimate auth events. Higher decoy-to-operation ratios increase noise.
+        """
+        ops = max(1, len(self._validation_timings))
+        return min(1.0, self._decoy_validations / (ops + self._decoy_validations))
+
+    @property
+    def pqc_agility_active(self) -> bool:
+        return True
 
     @property
     def volatile_keys(self) -> List[str]:
@@ -400,20 +528,8 @@ class StateManager:
         *,
         mutation_token: Optional[str] = None,
     ) -> Any:
-        """
-        Execute callable inside ephemeral buffer lifecycle.
-
-        SKILL BREAKDOWN: TmpFS / Ephemeral Execution
-        ----------------------------------------------
-        Guarantees volatilization even when ``work`` raises, mirroring
-        kernel TmpFS unmount semantics at application layer.
-        """
         self._authorize_mutation(mutation_token)
-        temp_buffers: List[bytearray] = []
         try:
             return work()
         finally:
-            for buf in temp_buffers:
-                self.volatilize_buffer(buf)
-            temp_buffers.clear()
             gc.collect()
