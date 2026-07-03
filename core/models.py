@@ -31,11 +31,11 @@ class Severity(IntEnum):
     def color(self) -> str:
         """Semantic color used for severity mapping in the GUI (HCI cue)."""
         return {
-            Severity.INFO: "#3B82F6",      # blue
-            Severity.LOW: "#22C55E",       # green
-            Severity.MEDIUM: "#EAB308",    # amber
-            Severity.HIGH: "#F97316",      # orange
-            Severity.CRITICAL: "#EF4444",  # red
+            Severity.INFO: "#60A5FA",      # blue-400
+            Severity.LOW: "#34D399",       # emerald-400
+            Severity.MEDIUM: "#FACC15",    # yellow-400
+            Severity.HIGH: "#FB923C",      # orange-400
+            Severity.CRITICAL: "#F43F5E",  # rose-500
         }[self]
 
     @classmethod

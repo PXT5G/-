@@ -1,16 +1,20 @@
-"""Main application window (CustomTkinter).
+"""Main application window (CustomTkinter) -- modern "cosmos" dark theme.
 
 Architecture (MVVM-ish separation of concerns):
 
 * The **engine** (``core``) does all analysis and knows nothing about the UI.
 * This module is the **view**: it renders state and forwards user intent.
 * Scans run on a **background thread**; results are handed back to the Tk main
-  loop through a :class:`queue.Queue` that is polled with ``after`` so the UI
-  never blocks (non-blocking micro-interaction feedback).
+  loop through a :class:`queue.Queue` polled with ``after`` so the UI never
+  blocks (non-blocking micro-interaction feedback).
+
+Visual language is centralised in :mod:`gui.theme` (palette, gradient helpers,
+icons) so the look stays consistent and easy to retune.
 """
 
 from __future__ import annotations
 
+import math
 import os
 import queue
 import threading
@@ -22,7 +26,7 @@ from core.disassembler import disassemble
 from core.models import ScanResult, Severity
 from core.scanner import scan_path
 from core.storage import ScanStore
-from gui.theme import COLORS
+from gui.theme import COLORS, NAV_ICONS, SEVERITY_ICONS, paint_horizontal_gradient
 
 
 class AnalyzerApp(ctk.CTk):
@@ -31,20 +35,30 @@ class AnalyzerApp(ctk.CTk):
     NAV_ITEMS = ("Dashboard", "Findings", "Attack Surface",
                  "Architecture", "Disassembler", "History")
 
+    VIEW_SUBTITLES = {
+        "Dashboard": "Security posture at a glance",
+        "Findings": "Detected weaknesses mapped to CWE",
+        "Attack Surface": "Where untrusted input enters",
+        "Architecture": "Modules and internal dependencies",
+        "Disassembler": "CPython bytecode (never executed)",
+        "History": "Previously saved scan runs",
+    }
+
     def __init__(self) -> None:
         super().__init__()
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
         self.title("Defensive Code Analysis Toolkit")
-        self.geometry("1180x760")
-        self.minsize(1000, 660)
+        self.geometry("1240x800")
+        self.minsize(1060, 700)
         self.configure(fg_color=COLORS["background"])
 
         self.store = ScanStore()
         self.result: ScanResult | None = None
         self._events: queue.Queue = queue.Queue()
         self._scanning = False
+        self._active = "Dashboard"
         self.scan_target = ctk.StringVar(value=os.path.abspath("sample_target"))
 
         self._build_layout()
@@ -54,105 +68,202 @@ class AnalyzerApp(ctk.CTk):
     # ------------------------------------------------------------------ layout
     def _build_layout(self) -> None:
         self.grid_columnconfigure(1, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
         self._build_sidebar()
-        self._build_topbar()
 
-        self.content = ctk.CTkFrame(self, fg_color=COLORS["surface"],
-                                    corner_radius=16, border_width=1,
+        main = ctk.CTkFrame(self, fg_color="transparent")
+        main.grid(row=0, column=1, sticky="nsew")
+        main.grid_columnconfigure(0, weight=1)
+        main.grid_rowconfigure(2, weight=1)
+
+        self._build_hero(main)
+        self._build_toolbar(main)
+
+        self.content = ctk.CTkFrame(main, fg_color=COLORS["surface"],
+                                    corner_radius=18, border_width=1,
                                     border_color=COLORS["border"])
-        self.content.grid(row=1, column=1, sticky="nsew", padx=(0, 20), pady=(0, 20))
+        self.content.grid(row=2, column=0, sticky="nsew", padx=24, pady=(6, 24))
         self.content.grid_columnconfigure(0, weight=1)
         self.content.grid_rowconfigure(0, weight=1)
 
     def _build_sidebar(self) -> None:
-        sidebar = ctk.CTkFrame(self, width=220, corner_radius=0,
-                               fg_color=COLORS["surface"])
-        sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
+        sidebar = ctk.CTkFrame(self, width=248, corner_radius=0,
+                               fg_color=COLORS["sidebar"])
+        sidebar.grid(row=0, column=0, sticky="nsew")
         sidebar.grid_propagate(False)
+        sidebar.grid_rowconfigure(99, weight=1)
 
-        ctk.CTkLabel(sidebar, text="DEFENSIVE\nANALYZER",
-                     font=ctk.CTkFont(size=18, weight="bold"),
-                     text_color=COLORS["text"], justify="left").grid(
-            row=0, column=0, padx=24, pady=(28, 8), sticky="w")
-        ctk.CTkLabel(sidebar, text="static • attack surface • architecture",
-                     font=ctk.CTkFont(size=11), text_color=COLORS["muted"]).grid(
-            row=1, column=0, padx=24, pady=(0, 24), sticky="w")
+        # Gradient brand header.
+        brand = ctk.CTkCanvas(sidebar, height=104, highlightthickness=0,
+                              bd=0, bg=COLORS["sidebar"])
+        brand.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
 
-        self.nav_buttons: dict[str, ctk.CTkButton] = {}
-        for i, item in enumerate(self.NAV_ITEMS, start=2):
+        def _paint_brand(_e=None) -> None:
+            w = brand.winfo_width() or 248
+            paint_horizontal_gradient(brand, w, 104, COLORS["grad_start"],
+                                      COLORS["grad_end"])
+            brand.delete("brandtext")
+            brand.create_text(24, 40, anchor="w", text="\u25C8  DEFENSIVE",
+                              fill="#FFFFFF", tags="brandtext",
+                              font=("TkDefaultFont", 17, "bold"))
+            brand.create_text(24, 66, anchor="w", text="ANALYZER",
+                              fill="#E9E5FF", tags="brandtext",
+                              font=("TkDefaultFont", 13, "bold"))
+        brand.bind("<Configure>", _paint_brand)
+        self.after(30, _paint_brand)
+
+        # Navigation.
+        self.nav_rows: dict[str, tuple[ctk.CTkFrame, ctk.CTkFrame, ctk.CTkButton]] = {}
+        for i, item in enumerate(self.NAV_ITEMS, start=1):
+            row = ctk.CTkFrame(sidebar, fg_color="transparent", height=48)
+            row.grid(row=i, column=0, sticky="ew", padx=12, pady=3)
+            row.grid_columnconfigure(1, weight=1)
+
+            indicator = ctk.CTkFrame(row, width=4, height=30, corner_radius=4,
+                                     fg_color="transparent")
+            indicator.grid(row=0, column=0, sticky="ns", padx=(0, 6))
+
             btn = ctk.CTkButton(
-                sidebar, text=item, height=42, corner_radius=10, anchor="w",
-                fg_color="transparent", hover_color=COLORS["surface_light"],
+                row, text=f"  {NAV_ICONS.get(item, '')}   {item}",
+                height=44, corner_radius=12, anchor="w",
+                fg_color="transparent", hover_color=COLORS["surface_2"],
+                text_color=COLORS["text_soft"],
                 font=ctk.CTkFont(size=14, weight="bold"),
                 command=lambda name=item: self._show(name))
-            btn.grid(row=i, column=0, padx=16, pady=5, sticky="ew")
-            self.nav_buttons[item] = btn
-        sidebar.grid_columnconfigure(0, weight=1)
+            btn.grid(row=0, column=1, sticky="ew")
+            self.nav_rows[item] = (row, indicator, btn)
 
-    def _build_topbar(self) -> None:
-        bar = ctk.CTkFrame(self, height=88, fg_color=COLORS["background"])
-        bar.grid(row=0, column=1, sticky="ew", padx=(0, 20), pady=(20, 12))
-        bar.grid_columnconfigure(0, weight=1)
-        bar.grid_propagate(False)
+        footer = ctk.CTkFrame(sidebar, fg_color="transparent")
+        footer.grid(row=100, column=0, sticky="ew", padx=22, pady=18)
+        ctk.CTkLabel(footer, text="v1.0.0  \u00b7  stdlib engine",
+                     text_color=COLORS["muted"],
+                     font=ctk.CTkFont(size=11)).pack(anchor="w")
+        ctk.CTkLabel(footer, text="defensive \u00b7 analytical only",
+                     text_color=COLORS["muted"],
+                     font=ctk.CTkFont(size=11)).pack(anchor="w")
 
-        entry = ctk.CTkEntry(bar, textvariable=self.scan_target, height=40,
-                             placeholder_text="Path to scan…",
-                             fg_color=COLORS["surface"], border_color=COLORS["border"])
-        entry.grid(row=0, column=0, sticky="ew", padx=(0, 10), pady=8)
+    def _build_hero(self, parent) -> None:
+        self.hero = ctk.CTkCanvas(parent, height=92, highlightthickness=0,
+                                  bd=0, bg=COLORS["background"])
+        self.hero.grid(row=0, column=0, sticky="ew", padx=24, pady=(20, 8))
+        self.hero.bind("<Configure>", lambda _e: self._paint_hero())
 
-        ctk.CTkButton(bar, text="Browse", width=90, height=40,
-                      fg_color=COLORS["surface_light"], hover_color=COLORS["border"],
-                      command=self._browse).grid(row=0, column=1, padx=6, pady=8)
+    def _paint_hero(self) -> None:
+        w = self.hero.winfo_width() or 900
+        h = 92
+        paint_horizontal_gradient(self.hero, w, h, COLORS["grad_start"],
+                                  COLORS["grad_end"])
+        # Decorative "orbit" circles echoing the network/cosmos motif.
+        self.hero.delete("herofx")
+        for r, col in ((150, COLORS["grad_cyan"]), (95, "#C4B5FD")):
+            self.hero.create_oval(w - r, h - r, w + r, h + r, outline=col,
+                                  width=1, tags="herofx")
+        self.hero.delete("herotext")
+        self.hero.create_text(26, 34, anchor="w", text=self._active,
+                              fill="#FFFFFF", tags="herotext",
+                              font=("TkDefaultFont", 22, "bold"))
+        self.hero.create_text(28, 64, anchor="w",
+                              text=self.VIEW_SUBTITLES.get(self._active, ""),
+                              fill="#E4DEFF", tags="herotext",
+                              font=("TkDefaultFont", 12))
+
+    def _build_toolbar(self, parent) -> None:
+        bar = ctk.CTkFrame(parent, fg_color=COLORS["surface"], corner_radius=14,
+                           border_width=1, border_color=COLORS["border"])
+        bar.grid(row=1, column=0, sticky="ew", padx=24, pady=(4, 6))
+        bar.grid_columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(bar, text="  \U0001F4C1", font=ctk.CTkFont(size=16),
+                     text_color=COLORS["muted"]).grid(row=0, column=0, padx=(10, 0),
+                                                       pady=12)
+        entry = ctk.CTkEntry(bar, textvariable=self.scan_target, height=42,
+                             placeholder_text="Path to scan\u2026", border_width=1,
+                             fg_color=COLORS["surface_2"],
+                             border_color=COLORS["border_light"])
+        entry.grid(row=0, column=1, sticky="ew", padx=10, pady=12)
+
+        ctk.CTkButton(bar, text="Browse", width=96, height=42,
+                      fg_color=COLORS["surface_3"], hover_color=COLORS["border_light"],
+                      corner_radius=10, command=self._browse).grid(
+            row=0, column=2, padx=6, pady=12)
         self.scan_button = ctk.CTkButton(
-            bar, text="Scan", width=120, height=40, fg_color=COLORS["accent"],
-            hover_color=COLORS["accent_hover"], font=ctk.CTkFont(weight="bold"),
+            bar, text="\u26A1  Scan", width=132, height=42,
+            fg_color=COLORS["accent"], hover_color=COLORS["accent_hover"],
+            corner_radius=10, font=ctk.CTkFont(size=14, weight="bold"),
             command=self._start_scan)
-        self.scan_button.grid(row=0, column=2, padx=(6, 0), pady=8)
+        self.scan_button.grid(row=0, column=3, padx=(6, 12), pady=12)
 
+        self.status_dot = ctk.CTkLabel(bar, text="\u25CF", text_color=COLORS["muted"],
+                                       font=ctk.CTkFont(size=13))
+        self.status_dot.grid(row=1, column=0, sticky="e", pady=(0, 10))
         self.status = ctk.CTkLabel(bar, text="Ready.", text_color=COLORS["muted"],
-                                   font=ctk.CTkFont(size=12))
-        self.status.grid(row=1, column=0, columnspan=3, sticky="w")
+                                   anchor="w", font=ctk.CTkFont(size=12))
+        self.status.grid(row=1, column=1, columnspan=3, sticky="w", pady=(0, 10))
 
     # ------------------------------------------------------------- navigation
     def _show(self, name: str) -> None:
-        for item, btn in self.nav_buttons.items():
-            btn.configure(fg_color=COLORS["accent"] if item == name else "transparent")
+        self._active = name
+        for item, (_row, indicator, btn) in self.nav_rows.items():
+            active = item == name
+            btn.configure(
+                fg_color=COLORS["accent_soft"] if active else "transparent",
+                text_color=COLORS["text"] if active else COLORS["text_soft"])
+            indicator.configure(fg_color=COLORS["accent"] if active else "transparent")
+        self._paint_hero()
         for child in self.content.winfo_children():
             child.destroy()
-        renderer = {
+        {
             "Dashboard": self._view_dashboard,
             "Findings": self._view_findings,
             "Attack Surface": self._view_attack_surface,
             "Architecture": self._view_architecture,
             "Disassembler": self._view_disassembler,
             "History": self._view_history,
-        }[name]
-        renderer()
+        }[name]()
 
+    # ---------------------------------------------------------------- helpers
     def _scroll_body(self) -> ctk.CTkScrollableFrame:
-        body = ctk.CTkScrollableFrame(self.content, fg_color="transparent")
-        body.grid(row=0, column=0, sticky="nsew", padx=18, pady=18)
+        body = ctk.CTkScrollableFrame(self.content, fg_color="transparent",
+                                      scrollbar_button_color=COLORS["surface_3"],
+                                      scrollbar_button_hover_color=COLORS["accent"])
+        body.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
         body.grid_columnconfigure(0, weight=1)
         return body
 
     @staticmethod
-    def _heading(parent, text: str) -> None:
-        ctk.CTkLabel(parent, text=text, font=ctk.CTkFont(size=20, weight="bold"),
-                     text_color=COLORS["text"]).grid(
-            row=parent.grid_size()[1], column=0, sticky="w", pady=(0, 14))
-
-    @staticmethod
     def _placeholder(parent, text: str) -> None:
-        ctk.CTkLabel(parent, text=text, text_color=COLORS["muted"],
-                     font=ctk.CTkFont(size=13)).grid(
-            row=parent.grid_size()[1], column=0, sticky="w", pady=8)
+        box = ctk.CTkFrame(parent, fg_color=COLORS["surface_2"], corner_radius=14)
+        box.grid(row=parent.grid_size()[1], column=0, sticky="ew", pady=8)
+        ctk.CTkLabel(box, text="\U0001F50D  " + text, text_color=COLORS["muted"],
+                     font=ctk.CTkFont(size=13)).pack(anchor="w", padx=20, pady=26)
+
+    def _attach_hover(self, card, base: str, hover: str) -> None:
+        """Lift a card's background while the pointer is over it or its children."""
+        def on_enter(_e=None) -> None:
+            card.configure(fg_color=hover)
+
+        def on_leave(_e=None) -> None:
+            x, y = card.winfo_pointerxy()
+            widget = card.winfo_containing(x, y)
+            node = widget
+            while node is not None:
+                if node == card:
+                    return
+                node = getattr(node, "master", None)
+            card.configure(fg_color=base)
+
+        def bind_recursive(widget) -> None:
+            widget.bind("<Enter>", on_enter, add="+")
+            widget.bind("<Leave>", on_leave, add="+")
+            for child in widget.winfo_children():
+                bind_recursive(child)
+
+        bind_recursive(card)
 
     # -------------------------------------------------------------- dashboard
     def _view_dashboard(self) -> None:
         body = self._scroll_body()
-        self._heading(body, "Dashboard")
         if self.result is None:
             self._placeholder(body, "No scan yet. Choose a path above and press "
                                     "Scan to analyze a codebase.")
@@ -160,7 +271,7 @@ class AnalyzerApp(ctk.CTk):
 
         counts = self.result.severity_counts()
         cards = ctk.CTkFrame(body, fg_color="transparent")
-        cards.grid(row=1, column=0, sticky="ew")
+        cards.grid(row=0, column=0, sticky="ew")
         for i in range(5):
             cards.grid_columnconfigure(i, weight=1, uniform="m")
         metrics = [("Critical", counts[Severity.CRITICAL], Severity.CRITICAL.color),
@@ -171,122 +282,149 @@ class AnalyzerApp(ctk.CTk):
         for col, (label, value, color) in enumerate(metrics):
             self._metric_card(cards, col, label, value, color)
 
-        summary = ctk.CTkFrame(body, fg_color=COLORS["surface_light"],
-                               corner_radius=12)
-        summary.grid(row=2, column=0, sticky="ew", pady=(18, 0))
-        summary.grid_columnconfigure((0, 1, 2), weight=1)
-        stats = [("Files scanned", self.result.files_scanned),
-                 ("Total findings", len(self.result.findings)),
-                 ("Attack surface", len(self.result.attack_surface)),
-                 ("Modules", len(self.result.modules)),
-                 ("Dependencies", len(self.result.dependencies)),
-                 ("Parse errors", len(self.result.errors))]
-        for i, (label, value) in enumerate(stats):
-            box = ctk.CTkFrame(summary, fg_color="transparent")
-            box.grid(row=i // 3, column=i % 3, sticky="ew", padx=18, pady=14)
-            ctk.CTkLabel(box, text=str(value), text_color=COLORS["text"],
-                         font=ctk.CTkFont(size=24, weight="bold")).pack(anchor="w")
+        # Secondary statistics panel.
+        panel = ctk.CTkFrame(body, fg_color=COLORS["surface_2"], corner_radius=16,
+                             border_width=1, border_color=COLORS["border"])
+        panel.grid(row=1, column=0, sticky="ew", pady=(18, 0))
+        panel.grid_columnconfigure((0, 1, 2), weight=1, uniform="s")
+        ctk.CTkLabel(panel, text="Scan overview", text_color=COLORS["text"],
+                     font=ctk.CTkFont(size=15, weight="bold")).grid(
+            row=0, column=0, columnspan=3, sticky="w", padx=20, pady=(16, 4))
+        stats = [("Files scanned", self.result.files_scanned, "\U0001F4C4"),
+                 ("Total findings", len(self.result.findings), "\U0001F9EA"),
+                 ("Attack surface", len(self.result.attack_surface), "\U0001F310"),
+                 ("Modules", len(self.result.modules), "\U0001F9E9"),
+                 ("Dependencies", len(self.result.dependencies), "\U0001F517"),
+                 ("Parse errors", len(self.result.errors), "\u26A0")]
+        for i, (label, value, icon) in enumerate(stats):
+            box = ctk.CTkFrame(panel, fg_color="transparent")
+            box.grid(row=1 + i // 3, column=i % 3, sticky="ew", padx=20, pady=12)
+            ctk.CTkLabel(box, text=f"{icon}  {value}", text_color=COLORS["text"],
+                         font=ctk.CTkFont(size=22, weight="bold")).pack(anchor="w")
             ctk.CTkLabel(box, text=label, text_color=COLORS["muted"],
                          font=ctk.CTkFont(size=12)).pack(anchor="w")
 
+        # Top findings preview.
+        top = self.result.sorted_findings()[:5]
+        if top:
+            ctk.CTkLabel(body, text="Top findings", text_color=COLORS["text"],
+                         font=ctk.CTkFont(size=15, weight="bold")).grid(
+                row=2, column=0, sticky="w", pady=(20, 6))
+            for f in top:
+                self._finding_row(body, f, compact=True)
+
     def _metric_card(self, parent, col, label, value, color) -> None:
-        card = ctk.CTkFrame(parent, fg_color=COLORS["surface_light"], corner_radius=12)
+        card = ctk.CTkFrame(parent, fg_color=COLORS["surface_2"], corner_radius=16,
+                            border_width=1, border_color=COLORS["border"])
         card.grid(row=0, column=col, padx=6, pady=6, sticky="nsew")
+        strip = ctk.CTkFrame(card, height=4, corner_radius=4, fg_color=color)
+        strip.pack(fill="x", padx=14, pady=(12, 0))
         ctk.CTkLabel(card, text=str(value), text_color=color,
-                     font=ctk.CTkFont(size=30, weight="bold")).pack(
-            anchor="w", padx=16, pady=(14, 0))
-        ctk.CTkLabel(card, text=label.upper(), text_color=COLORS["muted"],
+                     font=ctk.CTkFont(size=32, weight="bold")).pack(
+            anchor="w", padx=16, pady=(8, 0))
+        ctk.CTkLabel(card, text=f"{SEVERITY_ICONS.get(label, '')}  {label.upper()}",
+                     text_color=COLORS["muted"],
                      font=ctk.CTkFont(size=12, weight="bold")).pack(
-            anchor="w", padx=16, pady=(0, 14))
+            anchor="w", padx=16, pady=(0, 16))
+        self._attach_hover(card, COLORS["surface_2"], COLORS["surface_3"])
 
     # --------------------------------------------------------------- findings
     def _view_findings(self) -> None:
         body = self._scroll_body()
-        self._heading(body, "Findings")
         if not self.result or not self.result.findings:
             self._placeholder(body, "No findings to display. Run a scan first.")
             return
         for f in self.result.sorted_findings():
             self._finding_row(body, f)
 
-    def _finding_row(self, parent, f) -> None:
-        row = ctk.CTkFrame(parent, fg_color=COLORS["surface_light"], corner_radius=10)
+    def _finding_row(self, parent, f, compact: bool = False) -> None:
+        base = COLORS["surface_2"]
+        row = ctk.CTkFrame(parent, fg_color=base, corner_radius=12,
+                           border_width=1, border_color=COLORS["border"])
         row.grid(row=parent.grid_size()[1], column=0, sticky="ew", pady=5)
         row.grid_columnconfigure(1, weight=1)
 
         badge = ctk.CTkLabel(row, text=f" {f.severity.label.upper()} ",
-                             fg_color=f.severity.color, text_color="#0B1220",
-                             corner_radius=6, font=ctk.CTkFont(size=11, weight="bold"))
+                             fg_color=f.severity.color, text_color="#0A0A12",
+                             corner_radius=8, font=ctk.CTkFont(size=11, weight="bold"))
         badge.grid(row=0, column=0, padx=14, pady=14, sticky="nw")
 
         head = ctk.CTkFrame(row, fg_color="transparent")
-        head.grid(row=0, column=1, sticky="ew", padx=(0, 14), pady=(12, 12))
+        head.grid(row=0, column=1, sticky="ew", padx=(0, 14), pady=12)
         head.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(head, text=f.title, text_color=COLORS["text"], anchor="w",
                      font=ctk.CTkFont(size=14, weight="bold")).grid(
             row=0, column=0, sticky="w")
-        ctk.CTkLabel(head, text=f"{f.cwe} · {f.rule_id} · {f.category}",
-                     text_color=COLORS["muted"], anchor="w",
-                     font=ctk.CTkFont(size=11)).grid(row=1, column=0, sticky="w")
-        ctk.CTkLabel(head, text=f"{f.file}:{f.line}", text_color=COLORS["accent"],
-                     anchor="w", font=ctk.CTkFont(size=12)).grid(
-            row=2, column=0, sticky="w", pady=(2, 0))
-        if f.snippet:
-            ctk.CTkLabel(head, text=f.snippet, text_color=COLORS["muted"],
-                         anchor="w", font=ctk.CTkFont(family="TkFixedFont", size=11)).grid(
+
+        meta = ctk.CTkFrame(head, fg_color="transparent")
+        meta.grid(row=1, column=0, sticky="w", pady=(3, 0))
+        for text, color in ((f.cwe, COLORS["accent"]),
+                            (f.rule_id, COLORS["muted"]),
+                            (f.category, COLORS["muted"])):
+            ctk.CTkLabel(meta, text=f" {text} ", text_color=color,
+                         fg_color=COLORS["surface_3"], corner_radius=6,
+                         font=ctk.CTkFont(size=11)).pack(side="left", padx=(0, 6))
+
+        ctk.CTkLabel(head, text=f"\U0001F4CD {f.file}:{f.line}",
+                     text_color=COLORS["text_soft"], anchor="w",
+                     font=ctk.CTkFont(size=12)).grid(row=2, column=0, sticky="w",
+                                                     pady=(4, 0))
+        if not compact and f.snippet:
+            ctk.CTkLabel(head, text=f.snippet, text_color=COLORS["muted"], anchor="w",
+                         font=ctk.CTkFont(family="TkFixedFont", size=11)).grid(
                 row=3, column=0, sticky="w", pady=(4, 0))
-        if f.remediation:
-            ctk.CTkLabel(head, text=f"Fix: {f.remediation}", text_color="#86EFAC",
-                         anchor="w", wraplength=760, justify="left",
-                         font=ctk.CTkFont(size=12)).grid(
-                row=4, column=0, sticky="w", pady=(4, 0))
+        if not compact and f.remediation:
+            ctk.CTkLabel(head, text=f"\u2713 Fix: {f.remediation}",
+                         text_color=COLORS["success"], anchor="w", wraplength=780,
+                         justify="left", font=ctk.CTkFont(size=12)).grid(
+                row=4, column=0, sticky="w", pady=(6, 0))
+        self._attach_hover(row, base, COLORS["surface_3"])
 
     # --------------------------------------------------------- attack surface
     def _view_attack_surface(self) -> None:
         body = self._scroll_body()
-        self._heading(body, "Attack Surface")
         if not self.result or not self.result.attack_surface:
             self._placeholder(body, "No attack-surface entries. Run a scan first.")
             return
         for e in self.result.attack_surface:
-            row = ctk.CTkFrame(body, fg_color=COLORS["surface_light"], corner_radius=10)
+            base = COLORS["surface_2"]
+            row = ctk.CTkFrame(body, fg_color=base, corner_radius=12,
+                               border_width=1, border_color=COLORS["border"])
             row.grid(row=body.grid_size()[1], column=0, sticky="ew", pady=4)
             row.grid_columnconfigure(1, weight=1)
-            ctk.CTkLabel(row, text=f" {e.kind} ", fg_color=COLORS["accent"],
-                         text_color="#0B1220", corner_radius=6,
+            ctk.CTkLabel(row, text=f" {e.kind} ", fg_color=COLORS["accent_soft"],
+                         text_color=COLORS["accent"], corner_radius=8,
                          font=ctk.CTkFont(size=11, weight="bold")).grid(
                 row=0, column=0, padx=12, pady=12)
             info = ctk.CTkFrame(row, fg_color="transparent")
             info.grid(row=0, column=1, sticky="ew", pady=10)
             ctk.CTkLabel(info, text=e.name, text_color=COLORS["text"], anchor="w",
                          font=ctk.CTkFont(size=13, weight="bold")).pack(anchor="w")
-            ctk.CTkLabel(info, text=f"{e.detail}  ({e.file}:{e.line})",
+            ctk.CTkLabel(info, text=f"{e.detail}  \u00b7  {e.file}:{e.line}",
                          text_color=COLORS["muted"], anchor="w",
                          font=ctk.CTkFont(size=11)).pack(anchor="w")
+            self._attach_hover(row, base, COLORS["surface_3"])
 
     # ----------------------------------------------------------- architecture
     def _view_architecture(self) -> None:
-        self.content.grid_rowconfigure(0, weight=1)
         wrapper = ctk.CTkFrame(self.content, fg_color="transparent")
-        wrapper.grid(row=0, column=0, sticky="nsew", padx=18, pady=18)
+        wrapper.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
         wrapper.grid_columnconfigure(0, weight=1)
-        wrapper.grid_rowconfigure(1, weight=1)
-        ctk.CTkLabel(wrapper, text="Architecture", text_color=COLORS["text"],
-                     font=ctk.CTkFont(size=20, weight="bold")).grid(
-            row=0, column=0, sticky="w", pady=(0, 14))
+        wrapper.grid_rowconfigure(0, weight=1)
 
         if not self.result or not self.result.modules:
-            ctk.CTkLabel(wrapper, text="No architecture data. Run a scan first.",
-                         text_color=COLORS["muted"]).grid(row=1, column=0, sticky="nw")
+            self._placeholder(wrapper, "No architecture data. Run a scan first.")
             return
 
-        canvas = ctk.CTkCanvas(wrapper, bg=COLORS["code_bg"], highlightthickness=0)
-        canvas.grid(row=1, column=0, sticky="nsew")
+        canvas = ctk.CTkCanvas(wrapper, bg=COLORS["code_bg"], highlightthickness=1,
+                               highlightbackground=COLORS["border"], bd=0)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        canvas.bind("<Configure>", lambda _e: self._draw_graph(canvas))
         self.after(60, lambda: self._draw_graph(canvas))
 
     def _draw_graph(self, canvas) -> None:
-        """Render a simple internal-dependency node graph on a Tk canvas."""
-        if self.result is None:
+        """Render an internal-dependency node graph on a Tk canvas."""
+        if self.result is None or not canvas.winfo_exists():
             return
         canvas.delete("all")
         width = max(canvas.winfo_width(), 600)
@@ -294,15 +432,13 @@ class AnalyzerApp(ctk.CTk):
         modules = [m.module or "(root)" for m in self.result.modules][:24]
         if not modules:
             return
-        import math
         cx, cy = width / 2, height / 2
         positions: dict[str, tuple[float, float]] = {}
         n = len(modules)
         if n == 1:
             positions[modules[0]] = (cx, cy)
         else:
-            # Bound the circle to the visible canvas (leave room for labels).
-            radius = max(70.0, min(width, height) / 2 - 90)
+            radius = max(80.0, min(width, height) / 2 - 96)
             for i, m in enumerate(modules):
                 angle = 2 * math.pi * i / n - math.pi / 2
                 positions[m] = (cx + radius * math.cos(angle),
@@ -316,42 +452,49 @@ class AnalyzerApp(ctk.CTk):
             if src in positions and dst in positions and src != dst:
                 x1, y1 = positions[src]
                 x2, y2 = positions[dst]
-                canvas.create_line(x1, y1, x2, y2, fill="#475569", width=1)
+                canvas.create_line(x1, y1, x2, y2, fill="#3B3B5C", width=1,
+                                   smooth=True)
 
         for m, (x, y) in positions.items():
-            canvas.create_oval(x - 8, y - 8, x + 8, y + 8, fill=COLORS["accent"],
-                               outline=COLORS["text"], width=1)
-            canvas.create_text(x, y - 18, text=m,
-                               fill=COLORS["text"], font=("TkDefaultFont", 10))
-        canvas.create_text(10, 10, anchor="nw",
-                           text=f"{len(modules)} modules · internal imports only",
-                           fill=COLORS["muted"], font=("TkDefaultFont", 10))
+            canvas.create_oval(x - 13, y - 13, x + 13, y + 13,
+                               fill=COLORS["accent_soft"], outline=COLORS["accent"],
+                               width=2)
+            canvas.create_oval(x - 4, y - 4, x + 4, y + 4, fill=COLORS["accent"],
+                               outline="")
+            canvas.create_text(x, y - 22, text=m, fill=COLORS["text_soft"],
+                               font=("TkDefaultFont", 10, "bold"))
+        canvas.create_text(
+            16, 14, anchor="nw",
+            text=f"\U0001F5FA  {n} modules  \u00b7  internal imports only",
+            fill=COLORS["muted"], font=("TkDefaultFont", 11))
 
     # ------------------------------------------------------------ disassembler
     def _view_disassembler(self) -> None:
         wrapper = ctk.CTkFrame(self.content, fg_color="transparent")
-        wrapper.grid(row=0, column=0, sticky="nsew", padx=18, pady=18)
+        wrapper.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
         wrapper.grid_columnconfigure(0, weight=1)
-        wrapper.grid_rowconfigure(2, weight=1)
-        ctk.CTkLabel(wrapper, text="Bytecode Disassembler", text_color=COLORS["text"],
-                     font=ctk.CTkFont(size=20, weight="bold")).grid(
-            row=0, column=0, sticky="w", pady=(0, 6))
-        ctk.CTkLabel(wrapper, text="Compiles source to a code object and lists its "
-                                   "bytecode. The target is never executed.",
-                     text_color=COLORS["muted"], font=ctk.CTkFont(size=12)).grid(
-            row=1, column=0, sticky="w", pady=(0, 12))
+        wrapper.grid_rowconfigure(1, weight=1)
+
+        hint = ctk.CTkFrame(wrapper, fg_color=COLORS["surface_2"], corner_radius=12)
+        hint.grid(row=0, column=0, sticky="ew", pady=(0, 12))
+        ctk.CTkLabel(hint, text="\U0001F9EE  Compiles source to a code object and "
+                                "lists its bytecode. The target is never executed.",
+                     text_color=COLORS["muted"], font=ctk.CTkFont(size=12)).pack(
+            anchor="w", padx=16, pady=12)
 
         textbox = ctk.CTkTextbox(wrapper, fg_color=COLORS["code_bg"],
-                                 text_color="#D1FAE5", font=("TkFixedFont", 12),
+                                 text_color="#C4B5FD", font=("TkFixedFont", 12),
+                                 border_width=1, border_color=COLORS["border"],
                                  wrap="none")
-        textbox.grid(row=2, column=0, sticky="nsew")
+        textbox.grid(row=1, column=0, sticky="nsew")
 
         path = self.scan_target.get()
         target = path if os.path.isfile(path) else None
         if target is None:
             for p in self.result.modules if self.result else []:
-                if os.path.isfile(os.path.join(self.result.root, p.file)):
-                    target = os.path.join(self.result.root, p.file)
+                candidate = os.path.join(self.result.root, p.file)
+                if os.path.isfile(candidate):
+                    target = candidate
                     break
         if target is None:
             textbox.insert("end", "Select a .py file as the scan target to "
@@ -367,28 +510,30 @@ class AnalyzerApp(ctk.CTk):
     # ---------------------------------------------------------------- history
     def _view_history(self) -> None:
         body = self._scroll_body()
-        self._heading(body, "Scan History")
         rows = self.store.recent_scans()
         if not rows:
             self._placeholder(body, "No saved scans yet. Scans are stored "
                                     "automatically when you run them.")
             return
         for r in rows:
-            item = ctk.CTkFrame(body, fg_color=COLORS["surface_light"], corner_radius=10)
+            base = COLORS["surface_2"]
+            item = ctk.CTkFrame(body, fg_color=base, corner_radius=12,
+                                border_width=1, border_color=COLORS["border"])
             item.grid(row=body.grid_size()[1], column=0, sticky="ew", pady=4)
             item.grid_columnconfigure(0, weight=1)
-            ctk.CTkLabel(item, text=f"#{r['id']}  {r['root']}",
+            ctk.CTkLabel(item, text=f"\U0001F553  #{r['id']}   {r['root']}",
                          text_color=COLORS["text"], anchor="w",
                          font=ctk.CTkFont(size=13, weight="bold")).grid(
-                row=0, column=0, sticky="w", padx=14, pady=(12, 0))
+                row=0, column=0, sticky="w", padx=14, pady=(12, 2))
             ctk.CTkLabel(
                 item, anchor="w", text_color=COLORS["muted"],
                 font=ctk.CTkFont(size=11),
-                text=(f"{r['created_at']} · {r['files_scanned']} files · "
-                      f"{r['total']} findings "
-                      f"(C{r['critical']}/H{r['high']}/M{r['medium']}/"
-                      f"L{r['low']}/I{r['info']})")).grid(
+                text=(f"{r['created_at']}  \u00b7  {r['files_scanned']} files  \u00b7  "
+                      f"{r['total']} findings  "
+                      f"(C{r['critical']} H{r['high']} M{r['medium']} "
+                      f"L{r['low']} I{r['info']})")).grid(
                 row=1, column=0, sticky="w", padx=14, pady=(0, 12))
+            self._attach_hover(item, base, COLORS["surface_3"])
 
     # ------------------------------------------------------------- scan logic
     def _browse(self) -> None:
@@ -396,16 +541,20 @@ class AnalyzerApp(ctk.CTk):
         if path:
             self.scan_target.set(path)
 
+    def _set_status(self, text: str, color: str) -> None:
+        self.status.configure(text=text, text_color=color)
+        self.status_dot.configure(text_color=color)
+
     def _start_scan(self) -> None:
         if self._scanning:
             return
         target = self.scan_target.get().strip()
         if not target or not os.path.exists(target):
-            self.status.configure(text=f"Path not found: {target}", text_color="#F87171")
+            self._set_status(f"Path not found: {target}", COLORS["danger"])
             return
         self._scanning = True
-        self.scan_button.configure(state="disabled", text="Scanning…")
-        self.status.configure(text="Starting scan…", text_color=COLORS["muted"])
+        self.scan_button.configure(state="disabled", text="Scanning\u2026")
+        self._set_status("Starting scan\u2026", COLORS["warning"])
         threading.Thread(target=self._scan_worker, args=(target,), daemon=True).start()
 
     def _scan_worker(self, target: str) -> None:
@@ -429,23 +578,21 @@ class AnalyzerApp(ctk.CTk):
                 kind = event[0]
                 if kind == "progress":
                     _, pct, current = event
-                    self.status.configure(
-                        text=f"[{pct}%] {current}", text_color=COLORS["muted"])
+                    self._set_status(f"[{pct}%] {current}", COLORS["warning"])
                 elif kind == "warn":
-                    self.status.configure(text=event[1], text_color="#FBBF24")
+                    self._set_status(event[1], COLORS["warning"])
                 elif kind == "error":
                     self._scanning = False
-                    self.scan_button.configure(state="normal", text="Scan")
-                    self.status.configure(text=f"Scan failed: {event[1]}",
-                                          text_color="#F87171")
+                    self.scan_button.configure(state="normal", text="\u26A1  Scan")
+                    self._set_status(f"Scan failed: {event[1]}", COLORS["danger"])
                 elif kind == "done":
                     self.result = event[1]
                     self._scanning = False
-                    self.scan_button.configure(state="normal", text="Scan")
+                    self.scan_button.configure(state="normal", text="\u26A1  Scan")
                     total = len(self.result.findings)
-                    self.status.configure(
-                        text=f"Done: {self.result.files_scanned} files, "
-                             f"{total} findings.", text_color="#86EFAC")
+                    self._set_status(
+                        f"Done \u2713  {self.result.files_scanned} files \u00b7 "
+                        f"{total} findings", COLORS["success"])
                     self._show("Dashboard")
         except queue.Empty:
             pass
