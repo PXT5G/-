@@ -1,42 +1,59 @@
-# Police MDT — FiveM Roleplay Mobile Data Terminal
+# نظام MDT المتقدم — نسخة ويب
 
-Next.js frontend for a PlayStation GTA V RP community. Backend data is intended to flow through a **Discord Bot** (API / webhooks) — no in-game server scripts required.
+نسخة ويب من **Advanced MDT** (مثل kartik MDT لـ FiveM) مخصصة لمجتمعات RP على PlayStation حيث لا يتوفر سكربت سيرفر — الباكند عبر **Discord Bot API / Webhooks**.
 
-## Stack
+## المميزات (مطابقة FiveM MDT)
 
-- **Next.js** (App Router)
-- **Tailwind CSS** (tactical dark theme)
-- **Lucide React** icons
+| الميزة | الوصف |
+|--------|--------|
+| تسجيل دخول محمي | حساب + كلمة مرور لكل عسكري |
+| لوحة تحكم إدارية | إدارة الحسابات، الصلاحيات، الإعدادات، السجلات |
+| وظائف متعددة | شرطة، إسعاف، قضاء، إطفاء |
+| كاميرات CCTV | شبكة كاميرات + حالة التسجيل |
+| Bodycam | بث مباشر + أرشيف التسجيلات |
+| سجل الخدمة | تتبع تلقائي On/Off Duty |
+| ترقيات/تنزيلات | سجل تلقائي للرتب |
+| القانون الجنائي | تعديل التهم مباشرة (Live Charge Editing) |
+| تقارير FTO | تتبع تدريب المتدربين |
+| خزنة الأدلة | Evidence Locker |
+| الإرسال | Dispatch UI ثلاثي الأعمدة |
+| بحث متقدم | مواطنون، تقارير |
+| تحليلات | إحصائيات الأداء |
+| تصدير Discord | مذكرات التوقيف وسجل الخدمة → DM خاص |
 
-## Run locally
+## التشغيل
 
 ```bash
 cd mdt
 npm install
+cp .env.example .env.local   # اختياري
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+افتح `http://localhost:3000/login`
 
-## Modules
+## حسابات تجريبية
 
-| Route | Module |
-|-------|--------|
-| `/` | Dashboard — bulletin, reports, warrants, units, BOLOs |
-| `/dispatch` | Dispatch center — units/channels, map, incidents |
-| `/officers` | Officers management grid |
-| `/reports/[id]` | Reports & evidence locker (tabbed) |
+| المستخدم | كلمة المرور | الدور |
+|----------|-------------|-------|
+| `admin` | `Admin@2026!` | مدير النظام |
+| `jcarter` | `Lspd@1234` | ضابط |
+| `tbradley` | `Command@1234` | مشرف |
+| `smitchell` | `Lspd@5678` | رقيب |
 
-Other sidebar routes are scaffolded placeholders ready for Discord Bot API wiring.
+## الربط مع Discord / FiveM
 
-## Arabic / i18n
+ابحث عن `Discord Bot API` في الكود — كل تعليق يحدد نقطة الربط.
 
-All UI strings live in `src/lib/i18n/messages.ts`. To localize:
+للتصدير إلى Discord DM:
+```env
+DISCORD_EXPORT_WEBHOOK_URL=https://discord.com/api/webhooks/...
+MDT_JWT_SECRET=your-secret
+```
 
-1. Duplicate `messages` as `messagesAr` (or load from JSON).
-2. Set `<html lang="ar" dir="rtl">` in `src/app/layout.tsx`.
-3. Swap the `t()` resolver to use the Arabic catalog.
+## هيكل الأمان
 
-## Discord integration
-
-Search the codebase for `Discord Bot API` and `Discord Webhook` comments — they mark fetch/update points for inventory, logs, fines, and roster data.
+- JWT في cookie مشفّر (httpOnly)
+- Middleware يحمي كل المسارات
+- صلاحيات per-module لكل حساب
+- سجل تدقيق (Audit Log) لكل العمليات

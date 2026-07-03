@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useMdt } from "@/context/MdtContext";
+import { useAuth } from "@/context/AuthContext";
 import { messages } from "@/lib/i18n/messages";
 import { sampleCharges } from "@/lib/data/mock";
 
@@ -36,7 +37,8 @@ async function processFineToDiscord(payload: {
 }
 
 export function ProcessFineModal() {
-  const { fineModalOpen, closeFineModal, user } = useMdt();
+  const { fineModalOpen, closeFineModal } = useMdt();
+  const { user } = useAuth();
   const [fineAmount, setFineAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -58,7 +60,7 @@ export function ProcessFineModal() {
         fineAmount: parsedFine,
         charges: charges.map((c) => ({ label: c.label, amount: c.amount })),
         total: grandTotal,
-        officerName: user.name,
+        officerName: user?.officer.name ?? "Unknown",
       });
       closeFineModal();
       setFineAmount("");

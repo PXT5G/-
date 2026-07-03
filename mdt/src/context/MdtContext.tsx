@@ -2,12 +2,13 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { DutyStatus } from "@/types";
-import { currentUser as mockUser } from "@/lib/data/mock";
+import { useAuth } from "@/context/AuthContext";
+import { departmentToJob, type JobType } from "@/lib/config/jobs";
 
 interface MdtContextValue {
   dutyStatus: DutyStatus;
   toggleDuty: () => void;
-  user: typeof mockUser;
+  job: JobType;
   fineModalOpen: boolean;
   openFineModal: () => void;
   closeFineModal: () => void;
@@ -16,24 +17,35 @@ interface MdtContextValue {
 const MdtContext = createContext<MdtContextValue | null>(null);
 
 export function MdtProvider({ children }: { children: React.ReactNode }) {
-  const [dutyStatus, setDutyStatus] = useState<DutyStatus>(mockUser.dutyStatus);
+  const { user } = useAuth();
+  const [dutyStatus, setDutyStatus] = useState<DutyStatus>("off_duty");
   const [fineModalOpen, setFineModalOpen] = useState(false);
 
+  const job = user ? departmentToJob(user.officer.department) : "police";
+
   const toggleDuty = useCallback(() => {
-    setDutyStatus((prev) => (prev === "on_duty" ? "off_duty" : "on_duty"));
-    // Discord Bot API: PATCH /officers/{id}/duty — sync duty status to backend
+    setDutyStatus((prev) => {
+      const next = prev === "on_duty" ? "off_duty" : "on_duty";
+      // Discord Bot API: POST /duty-logs — auto duty log like FiveM MDT
+      fetch("/api/mdt/duty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: next }),
+      }).catch(() => {});
+      return next;
+    });
   }, []);
 
   const value = useMemo(
     () => ({
       dutyStatus,
       toggleDuty,
-      user: { ...mockUser, dutyStatus },
+      job,
       fineModalOpen,
       openFineModal: () => setFineModalOpen(true),
       closeFineModal: () => setFineModalOpen(false),
     }),
-    [dutyStatus, fineModalOpen, toggleDuty],
+    [dutyStatus, job, fineModalOpen, toggleDuty],
   );
 
   return <MdtContext.Provider value={value}>{children}</MdtContext.Provider>;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Police MDT — Mobile Data Terminal",
-  description: "FiveM Roleplay Police MDT — Discord Bot backend integration",
+  title: "نظام MDT — محطة البيانات المتنقلة",
+  description: "نظام MDT متقدم — شرطة، إسعاف، قضاء، إطفاء — متكامل مع Discord",
 };
 
 export default function RootLayout({
@@ -24,10 +25,13 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ar"
+      dir="rtl"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-mdt-bg text-mdt-foreground">{children}</body>
+      <body className="min-h-full bg-mdt-bg text-mdt-foreground">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

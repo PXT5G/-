@@ -17,37 +17,49 @@ import {
   Users,
   Video,
   Crosshair,
+  Settings,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { messages, t } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils/cn";
 import { UserProfile } from "./UserProfile";
+import { useAuth } from "@/context/AuthContext";
+import { useMdt } from "@/context/MdtContext";
+import { JOBS } from "@/lib/config/jobs";
+import type { Permission } from "@/lib/auth/types";
 
 interface NavEntry {
   key: keyof typeof messages.nav;
   href: string;
   icon: LucideIcon;
+  perm: Permission;
 }
 
 const navItems: NavEntry[] = [
-  { key: "dashboard", href: "/", icon: LayoutDashboard },
-  { key: "citizens", href: "/citizens", icon: Users },
-  { key: "incidents", href: "/incidents", icon: Siren },
-  { key: "reports", href: "/reports", icon: FileText },
-  { key: "ftoReports", href: "/fto-reports", icon: ScrollText },
-  { key: "roster", href: "/roster", icon: Users },
-  { key: "vehicles", href: "/vehicles", icon: Car },
-  { key: "criminalCode", href: "/criminal-code", icon: BookOpen },
-  { key: "warrant", href: "/warrants", icon: Gavel },
-  { key: "officersManagement", href: "/officers", icon: UserCog },
-  { key: "securityCameras", href: "/cameras", icon: Camera },
-  { key: "bodycam", href: "/bodycam", icon: Video },
-  { key: "dispatch", href: "/dispatch", icon: Radio },
-  { key: "weapons", href: "/weapons", icon: Crosshair },
+  { key: "dashboard", href: "/", icon: LayoutDashboard, perm: "dashboard" },
+  { key: "citizens", href: "/citizens", icon: Users, perm: "citizens" },
+  { key: "incidents", href: "/incidents", icon: Siren, perm: "incidents" },
+  { key: "reports", href: "/reports", icon: FileText, perm: "reports" },
+  { key: "ftoReports", href: "/fto-reports", icon: ScrollText, perm: "fto_reports" },
+  { key: "roster", href: "/roster", icon: ClipboardList, perm: "roster" },
+  { key: "vehicles", href: "/vehicles", icon: Car, perm: "vehicles" },
+  { key: "criminalCode", href: "/criminal-code", icon: BookOpen, perm: "criminal_code" },
+  { key: "warrant", href: "/warrants", icon: Gavel, perm: "warrants" },
+  { key: "officersManagement", href: "/officers", icon: UserCog, perm: "officers" },
+  { key: "securityCameras", href: "/cameras", icon: Camera, perm: "cameras" },
+  { key: "bodycam", href: "/bodycam", icon: Video, perm: "bodycam" },
+  { key: "dispatch", href: "/dispatch", icon: Radio, perm: "dispatch" },
+  { key: "weapons", href: "/weapons", icon: Crosshair, perm: "weapons" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { can, isAdmin } = useAuth();
+  const { job } = useMdt();
+  const jobConfig = JOBS[job];
+
+  const visibleNav = navItems.filter((item) => can(item.perm));
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col border-e border-mdt-panel-border bg-slate-950/80">
@@ -60,8 +72,8 @@ export function Sidebar() {
             <p className="text-sm font-bold tracking-wide text-mdt-foreground">
               {messages.app.title}
             </p>
-            <p className="text-[10px] uppercase tracking-widest text-mdt-muted">
-              {messages.app.subtitle}
+            <p className="text-[10px] uppercase tracking-widest text-neon-green">
+              {jobConfig.labelAr}
             </p>
           </div>
         </div>
@@ -69,7 +81,7 @@ export function Sidebar() {
 
       <nav className="mdt-scroll flex-1 overflow-y-auto px-2 py-3" aria-label="Main navigation">
         <ul className="space-y-0.5">
-          {navItems.map(({ key, href, icon: Icon }) => {
+          {visibleNav.map(({ key, href, icon: Icon }) => {
             const active = pathname === href || (href !== "/" && pathname.startsWith(href));
             return (
               <li key={key}>
@@ -89,6 +101,22 @@ export function Sidebar() {
               </li>
             );
           })}
+          {isAdmin && (
+            <li>
+              <Link
+                href="/admin"
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "border border-neon-red/30 bg-neon-red/10 text-neon-red"
+                    : "text-mdt-muted hover:bg-slate-800/60 hover:text-mdt-foreground",
+                )}
+              >
+                <Settings className="h-4 w-4" />
+                <span>{messages.nav.admin}</span>
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 
