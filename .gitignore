@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+.Python
+.venv/
+venv/
+.env
+*.db
+*.sqlite
+*.sqlite3
+.titanre_tmp/
