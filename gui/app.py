@@ -96,6 +96,8 @@ class DynamicMeter(ctk.CTkFrame):
             self.value_label.configure(text=f"{clamped:.1%}", text_color=color or COLORS["text"])
         elif self._unit == "Hz":
             self.value_label.configure(text=f"{value:.2f} Hz", text_color=color or COLORS["text"])
+        elif self._unit == "x":
+            self.value_label.configure(text=f"{value:.2f}x", text_color=color or COLORS["text"])
         else:
             self.value_label.configure(text=f"{value:.1f} ms", text_color=color or COLORS["text"])
 
@@ -465,6 +467,7 @@ class TitanREGui(ctk.CTk):
     def _build_security_center(self, parent: ctk.CTkFrame) -> ctk.CTkFrame:
         panel = ctk.CTkFrame(parent, fg_color=COLORS["panel"], corner_radius=12)
         panel.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="meters")
+        panel.grid_rowconfigure((1, 2), weight=1)
 
         ctk.CTkLabel(
             panel,
@@ -474,16 +477,28 @@ class TitanREGui(ctk.CTk):
         ).grid(row=0, column=0, columnspan=4, sticky="w", padx=14, pady=(10, 4))
 
         self.meter_memory = DynamicMeter(panel, "Memory Entropy (encrypted state)")
-        self.meter_memory.grid(row=1, column=0, sticky="nsew", padx=(12, 6), pady=(0, 10))
+        self.meter_memory.grid(row=1, column=0, sticky="nsew", padx=(12, 6), pady=(0, 6))
 
         self.meter_encrypted = DynamicMeter(panel, "Encrypted-at-Rest Ratio")
-        self.meter_encrypted.grid(row=1, column=1, sticky="nsew", padx=6, pady=(0, 10))
+        self.meter_encrypted.grid(row=1, column=1, sticky="nsew", padx=6, pady=(0, 6))
 
         self.meter_jitter = DynamicMeter(panel, "Network Jitter Frequency", unit="Hz")
-        self.meter_jitter.grid(row=1, column=2, sticky="nsew", padx=6, pady=(0, 10))
+        self.meter_jitter.grid(row=1, column=2, sticky="nsew", padx=6, pady=(0, 6))
 
         self.meter_oob = DynamicMeter(panel, "OOB Heartbeat", unit="ms")
-        self.meter_oob.grid(row=1, column=3, sticky="nsew", padx=(6, 12), pady=(0, 10))
+        self.meter_oob.grid(row=1, column=3, sticky="nsew", padx=(6, 12), pady=(0, 6))
+
+        self.meter_mutation_entropy = DynamicMeter(
+            panel, "Active Mutation Entropy Rate", unit="x"
+        )
+        self.meter_mutation_entropy.grid(row=2, column=0, columnspan=2, sticky="nsew", padx=(12, 6), pady=(0, 10))
+        self.meter_mutation_entropy.bar.configure(progress_color=COLORS["quantum"])
+
+        self.meter_reward_multiplier = DynamicMeter(
+            panel, "Payload Reward Multiplier", unit="x"
+        )
+        self.meter_reward_multiplier.grid(row=2, column=2, columnspan=2, sticky="nsew", padx=(6, 12), pady=(0, 10))
+        self.meter_reward_multiplier.bar.configure(progress_color=COLORS["warn"])
         return panel
 
     def _build_status_row(self, parent: ctk.CTkFrame) -> ctk.CTkFrame:
@@ -658,6 +673,23 @@ class TitanREGui(ctk.CTk):
         self.meter_oob.bar.set(min(1.0, tel.oob_heartbeat_ms / 3000.0))
         self.meter_oob.value_label.configure(text=f"{tel.oob_heartbeat_ms:.0f} ms", text_color=oob_color)
 
+        entropy_color = COLORS["quantum"] if tel.mutation_entropy_rate >= 0.35 else COLORS["muted"]
+        self.meter_mutation_entropy.set_normalized(
+            tel.mutation_entropy_rate, color=entropy_color, bar_color=COLORS["quantum"]
+        )
+        self.meter_mutation_entropy.value_label.configure(
+            text=f"{tel.mutation_entropy_rate:.2f}x", text_color=entropy_color
+        )
+
+        reward_norm = min(1.0, (tel.payload_reward_multiplier - 1.0) / 9.0)
+        reward_color = COLORS["danger"] if tel.payload_reward_multiplier >= 5.0 else COLORS["warn"]
+        self.meter_reward_multiplier.set_normalized(
+            reward_norm, color=reward_color, bar_color=COLORS["warn"]
+        )
+        self.meter_reward_multiplier.value_label.configure(
+            text=f"{tel.payload_reward_multiplier:.2f}x", text_color=reward_color
+        )
+
         self.ind_network.set_value(f"{state.network_entropy:.2%}")
         self.ind_threads.set_value(str(tel.active_workers))
         self.ind_fragments.set_value(str(tel.fragmented_secrets))
@@ -669,8 +701,19 @@ class TitanREGui(ctk.CTk):
 
         if state.vulnerability_flow:
             self.vuln_flow_matrix.render(state.vulnerability_flow)
+            trace = state.vulnerability_flow.trace_detail or ""
+            loop = state.vulnerability_flow.mutation_loop
+            if loop.iterations:
+                trace += (
+                    f"\n\n=== Schema Mutation Loop ===\n"
+                    f"Iterations: {loop.iterations} | High: {loop.high_reward_hits} | "
+                    f"Medium: {loop.medium_reward_hits}\n"
+                    f"Entropy Rate: {loop.mutation_entropy_rate:.3f}x | "
+                    f"Reward Multiplier: {loop.payload_reward_multiplier:.2f}x\n"
+                    f"Path: {loop.active_path_hierarchy or 'n/a'}"
+                )
             self.vuln_trace_text.delete("1.0", "end")
-            self.vuln_trace_text.insert("end", state.vulnerability_flow.trace_detail or "")
+            self.vuln_trace_text.insert("end", trace)
             self.vuln_trace_text.see("end")
 
     def _render_wipe_validation(self, validation: WipeValidation) -> None:

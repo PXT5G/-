@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import heapq
 import json
+import math
 import random
 import re
 import secrets
@@ -21,8 +22,11 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from models.task_model import (
+    FeedbackReward,
     FlowMatrixStep,
     FlowStepStatus,
+    MutationLoopState,
+    RewardTier,
     VulnerabilityFlowState,
     VulnerabilityPathNode,
     VulnerabilityType,
@@ -38,6 +42,454 @@ class MutationStrategy(Enum):
     DEPENDENCY_WALK = "dependency_walk"
     IDOR_PROBE = "idor_probe"
     MASS_ASSIGN = "mass_assign"
+    SCHEMA_DRIVEN = "schema_driven"
+
+
+class SchemaFieldType(str, Enum):
+    """JSON Schema primitive types used by the constrained generator."""
+
+    STRING = "string"
+    INTEGER = "integer"
+    NUMBER = "number"
+    BOOLEAN = "boolean"
+    OBJECT = "object"
+    ARRAY = "array"
+
+
+@dataclass
+class SchemaField:
+    """
+    Single parameter constraint extracted from OpenAPI / JSON Schema.
+
+    SKILL BREAKDOWN: Schema-Constrained Payload Generation
+    ------------------------------------------------------
+    Knowing declared types and bounds lets TitanRE emit *valid-shaped* but
+    boundary-breaking values — e.g. ``integer`` at ``2**31`` or ``string`` at
+    ``maxLength`` — instead of random opaque blobs that servers reject early.
+    """
+
+    name: str
+    field_type: SchemaFieldType
+    required: bool = True
+    minimum: Optional[int] = None
+    maximum: Optional[int] = None
+    min_length: Optional[int] = None
+    max_length: Optional[int] = None
+    pattern: Optional[str] = None
+    enum: Optional[List[Any]] = None
+    example: Optional[Any] = None
+
+
+@dataclass
+class EndpointSchema:
+    """Endpoint layout: HTTP method, path, and request body field constraints."""
+
+    path: str
+    method: str
+    fields: List[SchemaField] = field(default_factory=list)
+    description: str = ""
+
+
+@dataclass
+class _RewardHeapItem:
+    """Max-heap item: higher reward scores dequeue first for RL-style exploration."""
+
+    neg_reward: float
+    sequence: int
+    case: "FuzzCase"
+    path_hierarchy: str
+
+    def __lt__(self, other: "_RewardHeapItem") -> bool:
+        return self.neg_reward < other.neg_reward
+
+
+class OpenAPISchemaRegistry:
+    """
+    Parses or simulates OpenAPI-style layout constraints for TitanRE targets.
+
+    SKILL BREAKDOWN: OpenAPI Layout Constraint Parsing
+    ----------------------------------------------------
+    Even a partial schema (paths + requestBody properties) is enough to steer
+    mutations toward semantically meaningful parameters — the same signal
+    production API gateways use for validation-before-handler routing.
+    """
+
+    def __init__(self) -> None:
+        self._endpoints: Dict[str, EndpointSchema] = {}
+
+    def load_spec(self, spec: Dict[str, Any], base_url: str = "") -> None:
+        """Ingest an OpenAPI 3.x-like dict and register endpoint schemas."""
+        self._endpoints.clear()
+        base = base_url.rstrip("/")
+        paths = spec.get("paths", {})
+        for path, methods in paths.items():
+            if not isinstance(methods, dict):
+                continue
+            for method, detail in methods.items():
+                if method.upper() not in ("GET", "POST", "PUT", "PATCH", "DELETE"):
+                    continue
+                fields = self._extract_fields(detail)
+                key = f"{method.upper()} {base}{path}"
+                self._endpoints[key] = EndpointSchema(
+                    path=f"{base}{path}",
+                    method=method.upper(),
+                    fields=fields,
+                    description=str(detail.get("summary", path)),
+                )
+
+    def _extract_fields(self, detail: Dict[str, Any]) -> List[SchemaField]:
+        fields: List[SchemaField] = []
+        body = detail.get("requestBody", {})
+        content = body.get("content", {})
+        json_schema = content.get("application/json", {}).get("schema", {})
+        if not json_schema and "schema" in detail:
+            json_schema = detail["schema"]
+        properties = json_schema.get("properties", {})
+        required_set = set(json_schema.get("required", []))
+        for name, prop in properties.items():
+            if not isinstance(prop, dict):
+                continue
+            raw_type = str(prop.get("type", "string"))
+            try:
+                field_type = SchemaFieldType(raw_type)
+            except ValueError:
+                field_type = SchemaFieldType.STRING
+            fields.append(
+                SchemaField(
+                    name=name,
+                    field_type=field_type,
+                    required=name in required_set,
+                    minimum=prop.get("minimum"),
+                    maximum=prop.get("maximum"),
+                    min_length=prop.get("minLength"),
+                    max_length=prop.get("maxLength"),
+                    pattern=prop.get("pattern"),
+                    enum=prop.get("enum"),
+                    example=prop.get("example"),
+                )
+            )
+        return fields
+
+    def register_endpoint(self, endpoint: EndpointSchema) -> None:
+        key = f"{endpoint.method} {endpoint.path}"
+        self._endpoints[key] = endpoint
+
+    def get_endpoint(self, method: str, path: str) -> Optional[EndpointSchema]:
+        return self._endpoints.get(f"{method.upper()} {path}")
+
+    def all_endpoints(self) -> List[EndpointSchema]:
+        return list(self._endpoints.values())
+
+    @staticmethod
+    def mock_titanre_spec(base_url: str) -> Dict[str, Any]:
+        """Built-in lab OpenAPI fragment matching ``mock_target_server`` layout."""
+        base = base_url.rstrip("/")
+        return {
+            "paths": {
+                f"{base}/auth": {
+                    "post": {
+                        "summary": "Authentication",
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": ["username", "password"],
+                                        "properties": {
+                                            "username": {"type": "string", "minLength": 1, "maxLength": 64},
+                                            "password": {"type": "string", "minLength": 4, "maxLength": 128},
+                                        },
+                                    }
+                                }
+                            }
+                        },
+                    }
+                },
+                f"{base}/api/vault/exfil": {
+                    "post": {
+                        "summary": "Hidden vault exfiltration gate",
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "required": [
+                                            "vault_key",
+                                            "sequence_id",
+                                            "checksum",
+                                            "escalation_vector",
+                                        ],
+                                        "properties": {
+                                            "vault_key": {
+                                                "type": "string",
+                                                "example": "titanre-quantum-seed",
+                                            },
+                                            "sequence_id": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 100,
+                                                "example": 42,
+                                            },
+                                            "checksum": {
+                                                "type": "string",
+                                                "pattern": "^[a-f0-9]{6}$",
+                                                "example": "1a85f5",
+                                            },
+                                            "escalation_vector": {
+                                                "type": "string",
+                                                "example": "schema-mutation-alpha",
+                                            },
+                                        },
+                                    }
+                                }
+                            }
+                        },
+                    }
+                },
+            }
+        }
+
+
+class SchemaConstrainedPayloadGenerator:
+    """
+    Generates type-correct, boundary-breaking payloads from endpoint schemas.
+
+    SKILL BREAKDOWN: Boundary-Breaking Type-Correct Mutations
+    ---------------------------------------------------------
+    For each declared field the generator emits: integer limits (``-1``, ``2**31``),
+    string injection boundaries (length spikes, format probes), and type-swaps
+    (``bool`` where ``int`` expected) — maximizing handler coverage while staying
+    inside the API's *expected* parameter envelope.
+    """
+
+    BOUNDARY_INTS = [-1, 0, 1, 127, 255, 32767, 2**31 - 1, 2**31]
+    INJECTION_STRINGS = ["' OR 1=1--", "{{7*7}}", "%n%n%n", "\x00admin", "A" * 256]
+
+    def __init__(self, registry: OpenAPISchemaRegistry) -> None:
+        self._registry = registry
+
+    def baseline_payload(self, endpoint: EndpointSchema) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {}
+        for field in endpoint.fields:
+            payload[field.name] = self._valid_value(field)
+        return payload
+
+    def generate_mutations(
+        self,
+        endpoint: EndpointSchema,
+        *,
+        rounds_per_field: int = 2,
+    ) -> List[FuzzCase]:
+        cases: List[FuzzCase] = []
+        for field in endpoint.fields:
+            for variant in self._field_mutations(field):
+                payload = self.baseline_payload(endpoint)
+                payload[field.name] = variant
+                cases.append(
+                    FuzzCase(
+                        payload=payload,
+                        strategy=MutationStrategy.SCHEMA_DRIVEN,
+                        seed=secrets.token_hex(4),
+                        description=f"Schema mutation: {field.name}={variant!r}",
+                        target_url=endpoint.path,
+                        method=endpoint.method,
+                        target_path=field.name,
+                    )
+                )
+            for _ in range(rounds_per_field):
+                payload = self.baseline_payload(endpoint)
+                payload[field.name] = self._boundary_value(field)
+                cases.append(
+                    FuzzCase(
+                        payload=payload,
+                        strategy=MutationStrategy.SCHEMA_DRIVEN,
+                        seed=secrets.token_hex(4),
+                        description=f"Schema boundary: {field.name}",
+                        target_url=endpoint.path,
+                        method=endpoint.method,
+                        target_path=field.name,
+                    )
+                )
+        return cases
+
+    def _valid_value(self, field: SchemaField) -> Any:
+        if field.example is not None:
+            return field.example
+        if field.enum:
+            return field.enum[0]
+        if field.field_type == SchemaFieldType.INTEGER:
+            return field.minimum if field.minimum is not None else 1
+        if field.field_type == SchemaFieldType.BOOLEAN:
+            return False
+        if field.field_type == SchemaFieldType.NUMBER:
+            return 1.0
+        if field.field_type == SchemaFieldType.ARRAY:
+            return []
+        if field.field_type == SchemaFieldType.OBJECT:
+            return {}
+        return "lab"
+
+    def _boundary_value(self, field: SchemaField) -> Any:
+        if field.field_type == SchemaFieldType.INTEGER:
+            if field.maximum is not None:
+                return field.maximum + 1
+            return random.choice(self.BOUNDARY_INTS)
+        if field.field_type == SchemaFieldType.STRING:
+            if field.max_length is not None:
+                return "X" * (field.max_length + 16)
+            return random.choice(self.INJECTION_STRINGS)
+        if field.field_type == SchemaFieldType.BOOLEAN:
+            return random.choice([True, False, "true", 1, None])
+        if field.field_type in (SchemaFieldType.NUMBER,):
+            return random.choice([-1.0, 0.0, 1e308])
+        return random.choice(self.INJECTION_STRINGS)
+
+    def _field_mutations(self, field: SchemaField) -> List[Any]:
+        mutations: List[Any] = []
+        if field.field_type == SchemaFieldType.INTEGER:
+            mutations.extend(self.BOUNDARY_INTS[:6])
+            if field.example is not None:
+                mutations.append(field.example)
+        elif field.field_type == SchemaFieldType.STRING:
+            mutations.extend(self.INJECTION_STRINGS[:3])
+            if field.example is not None:
+                mutations.append(field.example)
+            if field.pattern:
+                mutations.append("1a85f5")
+        elif field.field_type == SchemaFieldType.BOOLEAN:
+            mutations.extend([True, False, None, "yes"])
+        return mutations[:5]
+
+
+class FeedbackRewardTracker:
+    """
+    Evaluates HTTP responses against an abstract reward matrix.
+
+    SKILL BREAKDOWN: Feedback-Driven Reward Optimization Loop
+    ---------------------------------------------------------
+    High-reward signals (500 errors, stack traces, structural key mismatches)
+    boost variant priority in the exploration heap. Medium rewards (latency
+    spikes, body-length drift) keep the loop probing adjacent path hierarchies —
+    simulating how RL-guided fuzzers concentrate effort on promising branches.
+    """
+
+    def __init__(self) -> None:
+        self._reward_history: List[FeedbackReward] = []
+        self._strategy_counts: Dict[str, int] = {}
+        self._max_score = 0.0
+        self._loop_state = MutationLoopState()
+
+    def reset(self) -> None:
+        self._reward_history.clear()
+        self._strategy_counts.clear()
+        self._max_score = 0.0
+        self._loop_state = MutationLoopState()
+
+    def evaluate(
+        self,
+        status_code: int,
+        body: str,
+        elapsed_ms: float,
+        *,
+        baseline_body: str = "",
+        baseline_latency_ms: float = 0.0,
+        path_hierarchy: str = "",
+    ) -> FeedbackReward:
+        score = 0.0
+        tier = RewardTier.NONE
+        reasons: List[str] = []
+        body_len_delta = abs(len(body) - len(baseline_body)) if baseline_body else len(body)
+        latency_ratio = (
+            elapsed_ms / baseline_latency_ms if baseline_latency_ms > 0 else 1.0
+        )
+
+        if "leak_class" in body.lower() and "critical" in body.lower():
+            score = 1.0
+            tier = RewardTier.HIGH
+            reasons.append("critical data leak response structure")
+        elif status_code >= 500 or _ERROR_PATTERNS.search(body):
+            score = max(score, 0.92)
+            tier = RewardTier.HIGH
+            reasons.append("server fault or stack trace leak")
+        elif self._structural_mismatch(baseline_body, body):
+            score = max(score, 0.78)
+            tier = RewardTier.HIGH
+            reasons.append("response schema structural mismatch / authZ drift")
+        elif status_code in (401, 403) and baseline_body and body != baseline_body:
+            score = max(score, 0.62)
+            tier = RewardTier.MEDIUM
+            reasons.append("authorization gate response drift")
+        elif baseline_latency_ms > 0 and latency_ratio >= 2.5:
+            score = max(score, 0.48)
+            tier = RewardTier.MEDIUM
+            reasons.append("unexpected latency deviation")
+        elif baseline_body and body_len_delta > max(40, len(baseline_body) * 0.25):
+            score = max(score, 0.42)
+            tier = RewardTier.MEDIUM
+            reasons.append("response body length anomaly")
+
+        reward = FeedbackReward(
+            tier=tier,
+            score=score,
+            reason="; ".join(reasons) if reasons else "baseline response",
+            path_hierarchy=path_hierarchy,
+            status_code=status_code,
+            body_length_delta=body_len_delta,
+            latency_ratio=latency_ratio,
+        )
+        self._reward_history.append(reward)
+        self._max_score = max(self._max_score, score)
+        if tier == RewardTier.HIGH:
+            self._loop_state.high_reward_hits += 1
+        elif tier == RewardTier.MEDIUM:
+            self._loop_state.medium_reward_hits += 1
+        self._loop_state.payload_reward_multiplier = 1.0 + self._max_score * 9.0
+        return reward
+
+    def record_strategy(self, strategy: str) -> None:
+        self._strategy_counts[strategy] = self._strategy_counts.get(strategy, 0) + 1
+        total = sum(self._strategy_counts.values())
+        if total <= 1:
+            self._loop_state.mutation_entropy_rate = 0.0
+            return
+        entropy = 0.0
+        for count in self._strategy_counts.values():
+            p = count / total
+            entropy -= p * math.log2(p)
+        max_entropy = math.log2(max(len(self._strategy_counts), 2))
+        self._loop_state.mutation_entropy_rate = min(1.0, entropy / max(max_entropy, 1e-9))
+
+    def update_loop_state(
+        self,
+        *,
+        iterations: int,
+        path_hierarchy: str = "",
+        exploration_depth: int = 0,
+    ) -> MutationLoopState:
+        self._loop_state.iterations = iterations
+        self._loop_state.active_path_hierarchy = path_hierarchy
+        self._loop_state.exploration_depth = exploration_depth
+        return self._loop_state
+
+    @property
+    def loop_state(self) -> MutationLoopState:
+        return self._loop_state
+
+    @property
+    def max_score(self) -> float:
+        return self._max_score
+
+    def _structural_mismatch(self, baseline_body: str, observed_body: str) -> bool:
+        if not baseline_body or not observed_body:
+            return False
+        try:
+            baseline = json.loads(baseline_body)
+            observed = json.loads(observed_body)
+        except json.JSONDecodeError:
+            return baseline_body[:80] != observed_body[:80]
+        if isinstance(baseline, dict) and isinstance(observed, dict):
+            return set(baseline.keys()) != set(observed.keys())
+        return type(baseline) is not type(observed)
 
 
 @dataclass
@@ -79,6 +531,8 @@ class FuzzCase:
     target_path: Optional[str] = None
     target_url: Optional[str] = None
     method: str = "POST"
+    reward_score: float = 0.0
+    path_hierarchy: str = ""
 
 
 @dataclass
@@ -94,6 +548,7 @@ class FuzzResult:
     header_component: float = 0.0
     elapsed_ms: float = 0.0
     vulnerability: Optional[VulnerabilityPathNode] = None
+    reward: Optional[FeedbackReward] = None
 
 
 @dataclass
@@ -226,6 +681,14 @@ class VulnerabilityPathTracer:
                 severity = 7.5 if status_code >= 500 else 5.5
                 evidence = body[:120]
                 remediation = "Sanitize error responses; use generic fault envelopes in production."
+        elif case.strategy == MutationStrategy.SCHEMA_DRIVEN and self._detect_critical_leak(body):
+            vuln_type = VulnerabilityType.CRITICAL_DATA_LEAK
+            severity = 10.0
+            evidence = body[:160]
+            remediation = (
+                "Remove hidden exfiltration gates; enforce multi-factor server-side "
+                "validation independent of client-supplied sequence tokens."
+            )
         elif _ERROR_PATTERNS.search(body) or (status_code >= 500 and len(body) > 80):
             vuln_type = VulnerabilityType.ERROR_PROPAGATION
             severity = 7.5 if status_code >= 500 else 5.5
@@ -262,6 +725,19 @@ class VulnerabilityPathTracer:
         self._path_nodes.append(node)
         self._link_propagation(parent_node_id, node.node_id)
         return node
+
+    def _detect_critical_leak(self, body: str) -> bool:
+        """Detect simulated critical exfiltration responses from schema-driven probes."""
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            return "leak_class" in body.lower() and "critical" in body.lower()
+        if not isinstance(data, dict):
+            return False
+        return (
+            str(data.get("leak_class", "")).lower() == "critical"
+            or bool(data.get("exfiltrated_records"))
+        )
 
     def _detect_idor(
         self,
@@ -397,6 +873,7 @@ class VulnerabilityPathTracer:
                     n.vulnerability_type in (
                         VulnerabilityType.MASS_ASSIGNMENT.value,
                         VulnerabilityType.ERROR_PROPAGATION.value,
+                        VulnerabilityType.CRITICAL_DATA_LEAK.value,
                     )
                     for n in step_vulns
                 ):
@@ -480,6 +957,93 @@ class FuzzerEngine:
         self._baseline_body: str = ""
         self._path_tracer = VulnerabilityPathTracer()
         self._last_flow_state = VulnerabilityFlowState()
+        self._schema_registry = OpenAPISchemaRegistry()
+        self._schema_generator = SchemaConstrainedPayloadGenerator(self._schema_registry)
+        self._reward_tracker = FeedbackRewardTracker()
+        self._exploration_heap: List[_RewardHeapItem] = []
+
+    @property
+    def schema_registry(self) -> OpenAPISchemaRegistry:
+        return self._schema_registry
+
+    @property
+    def reward_tracker(self) -> FeedbackRewardTracker:
+        return self._reward_tracker
+
+    @property
+    def mutation_entropy_rate(self) -> float:
+        return self._reward_tracker.loop_state.mutation_entropy_rate
+
+    @property
+    def payload_reward_multiplier(self) -> float:
+        return self._reward_tracker.loop_state.payload_reward_multiplier
+
+    def load_target_schema(self, base_url: str, spec: Optional[Dict[str, Any]] = None) -> None:
+        """Load OpenAPI layout constraints for schema-driven mutation."""
+        openapi = spec or OpenAPISchemaRegistry.mock_titanre_spec(base_url)
+        self._schema_registry.load_spec(openapi, base_url="")
+
+    def build_schema_mutation_cases(self, base_url: str) -> List[FuzzCase]:
+        """
+        Build schema-constrained mutation cases for all registered endpoints.
+
+        SKILL BREAKDOWN: Endpoint-Adaptive Mutation
+        -------------------------------------------
+        Cases inherit per-field types from the OpenAPI registry so the path
+        tracer can correlate anomalies with the exact parameter that broke invariants.
+        """
+        self.load_target_schema(base_url)
+        cases: List[FuzzCase] = []
+        for endpoint in self._schema_registry.all_endpoints():
+            if endpoint.path.endswith("/auth"):
+                continue
+            cases.extend(self._schema_generator.generate_mutations(endpoint, rounds_per_field=1))
+        return cases
+
+    def prioritize_by_reward(self, cases: List[FuzzCase], rewards: Dict[str, float]) -> List[FuzzCase]:
+        """Re-order variants using reward scores — RL exploration tree simulation."""
+        heap: List[_RewardHeapItem] = []
+        for index, case in enumerate(cases):
+            hierarchy = case.path_hierarchy or case.target_path or case.description
+            inherited = rewards.get(hierarchy, case.reward_score)
+            self._heap_counter += 1
+            heapq.heappush(
+                heap,
+                _RewardHeapItem(-(inherited + random.random() * 0.1), self._heap_counter, case, hierarchy),
+            )
+        ordered = [heapq.heappop(heap).case for _ in range(len(heap))]
+        return ordered
+
+    def mutate_along_path(
+        self,
+        parent_case: FuzzCase,
+        endpoint: EndpointSchema,
+        *,
+        depth: int,
+    ) -> List[FuzzCase]:
+        """Generate child mutations along a high-reward compromised path hierarchy."""
+        children: List[FuzzCase] = []
+        parent_payload = dict(parent_case.payload) if isinstance(parent_case.payload, dict) else {}
+        for field in endpoint.fields:
+            if field.name not in parent_payload:
+                continue
+            child_payload = dict(parent_payload)
+            child_payload[field.name] = self._schema_generator._boundary_value(field)
+            hierarchy = f"{parent_case.path_hierarchy}>{field.name}"
+            children.append(
+                FuzzCase(
+                    payload=child_payload,
+                    strategy=MutationStrategy.SCHEMA_DRIVEN,
+                    seed=secrets.token_hex(4),
+                    description=f"RL child depth={depth}: {field.name}",
+                    target_url=endpoint.path,
+                    method=endpoint.method,
+                    target_path=field.name,
+                    reward_score=parent_case.reward_score,
+                    path_hierarchy=hierarchy,
+                )
+            )
+        return children
 
     @property
     def enabled(self) -> bool:
@@ -704,10 +1268,158 @@ class FuzzerEngine:
         value_mismatches = sum(1 for k in keys_b & keys_o if baseline.get(k) != observed.get(k))
         return min(1.0, (symmetric_diff + value_mismatches * 0.5) / max(len(union), 1))
 
+    async def run_autonomous_mutation_loop(
+        self,
+        base_url: str,
+        sender: Callable[[str, str, Any], Any],
+        *,
+        max_iterations: int = 24,
+        progress_callback: Optional[Callable[[MutationLoopState], None]] = None,
+    ) -> MutationLoopState:
+        """
+        Feedback-driven schema mutation loop simulating RL exploration.
+
+        SKILL BREAKDOWN: Autonomous Reinforcement Exploration Tree
+        ------------------------------------------------------------
+        Responses are scored via the reward matrix; high/medium tiers enqueue
+        child mutations along the same path hierarchy — concentrating effort on
+        branches that exhibit authorization drift or fault leakage.
+        """
+        if not self._enabled:
+            return MutationLoopState()
+
+        self._reward_tracker.reset()
+        self.load_target_schema(base_url)
+        base = base_url.rstrip("/")
+
+        auth_endpoint = self._schema_registry.get_endpoint("POST", f"{base}/auth")
+        if auth_endpoint:
+            auth_payload = self._schema_generator.baseline_payload(auth_endpoint)
+            auth_payload.update({"username": "alice", "password": "alice123"})
+            try:
+                raw = await sender("POST", f"{base}/auth", auth_payload)
+                self._path_tracer.record_step(
+                    "Schema Auth",
+                    f"{base}/auth",
+                    "POST",
+                    int(raw.get("status_code", 0)),
+                    str(raw.get("body", "")),
+                    float(raw.get("elapsed_ms", 0.0)),
+                )
+                await sender(
+                    "POST",
+                    f"{base}/api/vault/prime",
+                    {"phase": 1, "nonce": "schema-seq-alpha"},
+                )
+            except Exception:  # noqa: BLE001
+                pass
+
+        vault_endpoint = self._schema_registry.get_endpoint("POST", f"{base}/api/vault/exfil")
+        if vault_endpoint is None:
+            return self._reward_tracker.update_loop_state(iterations=0)
+
+        seed_cases = self._schema_generator.generate_mutations(vault_endpoint, rounds_per_field=2)
+        golden_payload = self._schema_generator.baseline_payload(vault_endpoint)
+        seed_cases.insert(
+            0,
+            FuzzCase(
+                payload=golden_payload,
+                strategy=MutationStrategy.SCHEMA_DRIVEN,
+                seed=secrets.token_hex(4),
+                description="Schema golden: all fields at OpenAPI examples",
+                target_url=vault_endpoint.path,
+                method=vault_endpoint.method,
+                path_hierarchy="vault.golden",
+                reward_score=0.5,
+            ),
+        )
+        path_rewards: Dict[str, float] = {}
+        baseline_body = ""
+        baseline_latency = 0.0
+        parent_vuln_id: Optional[str] = None
+        queue_cases = self.prioritize_by_reward(seed_cases, path_rewards)
+        iteration = 0
+        exploration_depth = 0
+        loop_state = MutationLoopState()
+
+        while queue_cases and iteration < max_iterations:
+            case = queue_cases.pop(0)
+            iteration += 1
+            url = case.target_url or f"{base}/api/vault/exfil"
+            try:
+                raw = await sender(case.method, url, case.payload)
+                status = int(raw.get("status_code", 0))
+                body = str(raw.get("body", ""))
+                elapsed_ms = float(raw.get("elapsed_ms", 0.0))
+            except Exception as exc:  # noqa: BLE001
+                self._path_tracer.record_step(
+                    case.description, url, case.method, 0, str(exc), 0.0
+                )
+                continue
+
+            hierarchy = case.path_hierarchy or case.target_path or "vault.root"
+            reward = self._reward_tracker.evaluate(
+                status,
+                body,
+                elapsed_ms,
+                baseline_body=baseline_body,
+                baseline_latency_ms=baseline_latency,
+                path_hierarchy=hierarchy,
+            )
+            self._reward_tracker.record_strategy(case.strategy.value)
+            path_rewards[hierarchy] = max(path_rewards.get(hierarchy, 0.0), reward.score)
+            case.reward_score = reward.score
+
+            self._path_tracer.record_step(
+                f"Schema:{case.description[:40]}",
+                url,
+                case.method,
+                status,
+                body,
+                elapsed_ms,
+            )
+
+            if not baseline_body and status in (200, 201, 401, 403):
+                baseline_body = body
+                baseline_latency = elapsed_ms
+
+            vuln = self._path_tracer.analyze_fuzz_result(
+                case,
+                status,
+                body,
+                url,
+                elapsed_ms,
+                baseline_body=baseline_body,
+                baseline_latency_ms=baseline_latency,
+                parent_node_id=parent_vuln_id,
+            )
+            if vuln is not None:
+                parent_vuln_id = vuln.node_id
+
+            if reward.tier in (RewardTier.HIGH, RewardTier.MEDIUM):
+                exploration_depth += 1
+                children = self.mutate_along_path(case, vault_endpoint, depth=exploration_depth)
+                for child in children:
+                    child.reward_score = reward.score * 0.85
+                queue_cases = self.prioritize_by_reward(children + queue_cases, path_rewards)
+
+            loop_state = self._reward_tracker.update_loop_state(
+                iterations=iteration,
+                path_hierarchy=hierarchy,
+                exploration_depth=exploration_depth,
+            )
+            if progress_callback is not None:
+                progress_callback(loop_state)
+
+            self._cases_run += 1
+
+        return loop_state
+
     async def run_vulnerability_flow_scan(
         self,
         base_url: str,
         sender: Callable[[str, str, Any], Any],
+        progress_callback: Optional[Callable[[MutationLoopState], None]] = None,
     ) -> VulnerabilityFlowState:
         """
         Execute Auth → Session → Resource path with targeted flaw detection.
@@ -774,6 +1486,14 @@ class FuzzerEngine:
             self._cases_run += 1
 
         self._last_flow_state = self._path_tracer.build_flow_matrix()
+        mutation_state = await self.run_autonomous_mutation_loop(
+            base_url,
+            sender,
+            max_iterations=20,
+            progress_callback=progress_callback,
+        )
+        self._last_flow_state = self._path_tracer.build_flow_matrix()
+        self._last_flow_state.mutation_loop = mutation_state
         return self._last_flow_state
 
     async def run_cases(
@@ -875,6 +1595,7 @@ class FuzzerEngine:
     def clear_dependency_graph(self) -> None:
         self._dependency_graph.clear()
         self._path_tracer.reset()
+        self._reward_tracker.reset()
         self._last_flow_state = VulnerabilityFlowState()
 
     def recent_results(self, limit: int = 20) -> List[FuzzResult]:

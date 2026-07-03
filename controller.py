@@ -371,7 +371,12 @@ class TitanREController:
                         "elapsed_ms": resp.elapsed_ms,
                     }
 
-                flow_state = await self._fuzzer.run_vulnerability_flow_scan(base, _flow_sender)
+                def _on_mutation_progress(_loop_state) -> None:
+                    self._publish_telemetry_only()
+
+                flow_state = await self._fuzzer.run_vulnerability_flow_scan(
+                    base, _flow_sender, progress_callback=_on_mutation_progress
+                )
                 critical = [
                     n for n in flow_state.path_nodes if n.severity_score >= 7.0
                 ]
@@ -552,6 +557,8 @@ class TitanREController:
             tracker_poison_samples=self._stealth.tracker_poison_samples,
             vulnerability_count=len(vuln_nodes),
             max_severity=max_sev,
+            mutation_entropy_rate=self._fuzzer.mutation_entropy_rate,
+            payload_reward_multiplier=self._fuzzer.payload_reward_multiplier,
         )
 
     def _publish_telemetry_only(self) -> None:

@@ -27,6 +27,8 @@ USERS: Dict[int, Dict[str, Any]] = {
 }
 
 SESSIONS: Dict[str, int] = {}
+# Tracks multi-hop priming for hidden exfil gate (lab only)
+VAULT_PRIMED: Dict[str, bool] = {}
 
 
 @app.route("/auth", methods=["POST"])
@@ -79,6 +81,75 @@ def update_profile() -> Any:
     user.update(data)
     USERS[user_id] = user
     return jsonify({"status": "updated", "user": user})
+
+
+@app.route("/api/vault/prime", methods=["POST"])
+def vault_prime() -> Any:
+    """
+    Optional priming hop for multi-parameter sequence validation.
+
+    SKILL BREAKDOWN: Multi-Hop Sequence Ground Truth
+    ------------------------------------------------
+    Hidden flaws may require prior state (session + prime nonce) before the
+    exfiltration gate accepts a structured payload — mimicking real chained APIs.
+    """
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "")
+    if token not in SESSIONS:
+        return jsonify({"error": "unauthorized"}), 401
+    data = request.get_json(silent=True) or {}
+    if data.get("phase") == 1 and data.get("nonce"):
+        VAULT_PRIMED[token] = True
+        return jsonify({"status": "primed", "phase": 1})
+    return jsonify({"error": "invalid prime sequence"}), 403
+
+
+@app.route("/api/vault/exfil", methods=["POST"])
+def vault_exfil() -> Any:
+    """
+    Hidden critical data leak — requires auth + exact multi-parameter payload.
+
+    SKILL BREAKDOWN: Schema-Driven Critical Exfiltration Gate
+    ---------------------------------------------------------
+    Only a specifically structured JSON body (vault_key, sequence_id, checksum,
+    escalation_vector) combined with a valid session token triggers the simulated
+  leak — validating TitanRE's schema-constrained reward loop end-to-end.
+    """
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "")
+    if token not in SESSIONS:
+        return jsonify({"error": "unauthorized", "gate": "auth"}), 401
+
+    data = request.get_json(silent=True) or {}
+    required = {
+        "vault_key": "titanre-quantum-seed",
+        "sequence_id": 42,
+        "checksum": "1a85f5",
+        "escalation_vector": "schema-mutation-alpha",
+    }
+    mismatches = [k for k, v in required.items() if data.get(k) != v]
+    if mismatches:
+        return jsonify(
+            {
+                "error": "forbidden",
+                "gate": "payload",
+                "mismatched_fields": mismatches,
+            }
+        ), 403
+
+    if not VAULT_PRIMED.get(token):
+        return jsonify({"error": "vault not primed", "hint": "POST /api/vault/prime"}), 403
+
+    return jsonify(
+        {
+            "leak_class": "critical",
+            "severity": "critical",
+            "exfiltrated_records": [
+                {"id": 9001, "secret": "quantum_shard_alpha", "classification": "TOP_LAB"},
+                {"id": 9002, "secret": "jurisdiction_xor_key", "classification": "TOP_LAB"},
+            ],
+            "checksum_verified": data.get("checksum"),
+            "message": "CRITICAL: PATH LEAK DETECTED — simulated vault exfiltration",
+        }
+    ), 200
 
 
 @app.route("/api/debug", methods=["POST"])

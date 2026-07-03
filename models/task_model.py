@@ -38,6 +38,23 @@ class VulnerabilityType(str, Enum):
     BOLA_IDOR = "BOLA/IDOR"
     MASS_ASSIGNMENT = "MASS_ASSIGNMENT"
     ERROR_PROPAGATION = "ERROR_PROPAGATION"
+    CRITICAL_DATA_LEAK = "CRITICAL_DATA_LEAK"
+
+
+class RewardTier(str, Enum):
+    """
+    Abstract reward bands for feedback-driven mutation prioritization.
+
+    SKILL BREAKDOWN: Reinforcement Learning Reward Simulation
+    ---------------------------------------------------------
+    Tiered rewards let TitanRE simulate how autonomous fuzzers bias exploration
+  toward responses that signal authorization drift, fault leakage, or timing
+    anomalies — without requiring a full RL training pipeline in the lab.
+    """
+
+    NONE = "none"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 class FlowStepStatus(str, Enum):
@@ -110,6 +127,62 @@ class FlowMatrixStep:
 
 
 @dataclass
+class FeedbackReward:
+    """
+    Single evaluation outcome from the feedback reward matrix.
+
+    SKILL BREAKDOWN: Feedback Reward Optimization
+    ---------------------------------------------
+    Mapping HTTP responses to scalar rewards teaches how production-grade fuzzers
+    rank variants: 500/trace leaks score highest; latency/body-length drift scores
+    medium — guiding the next mutation generation along compromised path hierarchies.
+    """
+
+    tier: RewardTier
+    score: float
+    reason: str
+    path_hierarchy: str = ""
+    status_code: int = 0
+    body_length_delta: int = 0
+    latency_ratio: float = 1.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tier": self.tier.value,
+            "score": round(self.score, 4),
+            "reason": self.reason,
+            "path_hierarchy": self.path_hierarchy,
+            "status_code": self.status_code,
+            "body_length_delta": self.body_length_delta,
+            "latency_ratio": round(self.latency_ratio, 3),
+        }
+
+
+@dataclass
+class MutationLoopState:
+    """Live state for schema-driven autonomous mutation loop telemetry."""
+
+    iterations: int = 0
+    high_reward_hits: int = 0
+    medium_reward_hits: int = 0
+    mutation_entropy_rate: float = 0.0
+    payload_reward_multiplier: float = 1.0
+    active_path_hierarchy: str = ""
+    exploration_depth: int = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "iterations": self.iterations,
+            "high_reward_hits": self.high_reward_hits,
+            "medium_reward_hits": self.medium_reward_hits,
+            "mutation_entropy_rate": round(self.mutation_entropy_rate, 4),
+            "payload_reward_multiplier": round(self.payload_reward_multiplier, 3),
+            "active_path_hierarchy": self.active_path_hierarchy,
+            "exploration_depth": self.exploration_depth,
+        }
+
+
+@dataclass
 class VulnerabilityFlowState:
     """Aggregated vulnerability flow output for GUI rendering."""
 
@@ -117,6 +190,7 @@ class VulnerabilityFlowState:
     path_nodes: List[VulnerabilityPathNode] = field(default_factory=list)
     trace_detail: str = ""
     matrix_line: str = ""
+    mutation_loop: MutationLoopState = field(default_factory=MutationLoopState)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -124,6 +198,7 @@ class VulnerabilityFlowState:
             "path_nodes": [n.to_dict() for n in self.path_nodes],
             "trace_detail": self.trace_detail,
             "matrix_line": self.matrix_line,
+            "mutation_loop": self.mutation_loop.to_dict(),
         }
 
 
@@ -163,6 +238,8 @@ class SecurityTelemetry:
     tracker_poison_samples: int = 0
     vulnerability_count: int = 0
     max_severity: float = 0.0
+    mutation_entropy_rate: float = 0.0
+    payload_reward_multiplier: float = 1.0
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -180,6 +257,8 @@ class SecurityTelemetry:
             "tracker_poison_samples": self.tracker_poison_samples,
             "vulnerability_count": self.vulnerability_count,
             "max_severity": round(self.max_severity, 2),
+            "mutation_entropy_rate": round(self.mutation_entropy_rate, 4),
+            "payload_reward_multiplier": round(self.payload_reward_multiplier, 3),
         }
 
 
@@ -314,6 +393,8 @@ class TaskState:
                 tracker_poison_samples=self.telemetry.tracker_poison_samples,
                 vulnerability_count=self.telemetry.vulnerability_count,
                 max_severity=self.telemetry.max_severity,
+                mutation_entropy_rate=self.telemetry.mutation_entropy_rate,
+                payload_reward_multiplier=self.telemetry.payload_reward_multiplier,
             ),
             session_topology=list(self.session_topology),
             topology_tree=_clone_nodes(self.topology_tree),
@@ -322,6 +403,15 @@ class TaskState:
                 path_nodes=_clone_vuln_nodes(vf.path_nodes),
                 trace_detail=vf.trace_detail,
                 matrix_line=vf.matrix_line,
+                mutation_loop=MutationLoopState(
+                    iterations=vf.mutation_loop.iterations,
+                    high_reward_hits=vf.mutation_loop.high_reward_hits,
+                    medium_reward_hits=vf.mutation_loop.medium_reward_hits,
+                    mutation_entropy_rate=vf.mutation_loop.mutation_entropy_rate,
+                    payload_reward_multiplier=vf.mutation_loop.payload_reward_multiplier,
+                    active_path_hierarchy=vf.mutation_loop.active_path_hierarchy,
+                    exploration_depth=vf.mutation_loop.exploration_depth,
+                ),
             ),
             wipe_validation=WipeValidation(
                 memory_artifacts_cleared=self.wipe_validation.memory_artifacts_cleared,
