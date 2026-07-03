@@ -18,6 +18,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "dispatch",
     "weapons",
     "admin_panel",
+    "doj_dossier",
   ],
   admin: [
     "dashboard",
@@ -35,6 +36,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "dispatch",
     "weapons",
     "admin_panel",
+    "doj_dossier",
   ],
   supervisor: [
     "dashboard",
@@ -47,6 +49,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "officers",
     "dispatch",
     "bodycam",
+    "doj_dossier",
   ],
   officer: [
     "dashboard",
@@ -91,6 +94,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   dispatch: "الإرسال",
   weapons: "الأسلحة",
   admin_panel: "لوحة التحكم الإدارية",
+  doj_dossier: "ملفات DOJ",
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {

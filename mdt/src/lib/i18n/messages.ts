@@ -22,6 +22,7 @@ export const messages = {
     dispatch: "الإرسال",
     weapons: "الأسلحة",
     admin: "لوحة التحكم الإدارية",
+    dojDossier: "ملفات العدل DOJ",
   },
   auth: {
     loginTitle: "تسجيل الدخول الآمن",
@@ -192,6 +193,30 @@ export const messages = {
   warrants: {
     title: "مذكرات التوقيف",
     export: "تصدير إلى Discord DM",
+  },
+  doj: {
+    title: "نظام العدل — DOJ",
+    subtitle: "بحث شامل: عقارات، مركبات، أموال، سجلات — بالاسم أو الهوية",
+    search: "بحث",
+    searchPlaceholder: "الاسم الأول، رقم الهوية، الجوال، لوحة المركبة…",
+    searchByName: "بالاسم",
+    searchById: "برقم الهوية",
+    searchByPhone: "بالجوال",
+    searchByPlate: "باللوحة",
+    backToSearch: "العودة للبحث",
+    exportDossier: "تصدير الملف",
+    noData: "لا توجد بيانات",
+    tabs: {
+      overview: "نظرة عامة",
+      vehicles: "المركبات",
+      properties: "العقارات",
+      finances: "الأموال والمعاملات",
+      records: "السجل الجنائي",
+    },
+  },
+  notifications: {
+    title: "الإشعارات",
+    markAllRead: "قراءة الكل",
   },
   status: {
     available: "متاح",

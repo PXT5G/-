@@ -15,7 +15,8 @@ export type Permission =
   | "bodycam"
   | "dispatch"
   | "weapons"
-  | "admin_panel";
+  | "admin_panel"
+  | "doj_dossier";
 
 export interface OfficerProfile {
   id: string;

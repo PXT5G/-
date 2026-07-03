@@ -97,6 +97,20 @@ function seedUsers(): AuthAccount[] {
       },
       "supervisor",
     ),
+    mk(
+      "doj_judge",
+      "Doj@1234",
+      {
+        id: "off-doj",
+        name: "نورة القاضي",
+        rank: "قاضية",
+        department: "DOJ",
+        callsign: "DOJ-01",
+        badges: ["Command"],
+        hours: 890,
+      },
+      "supervisor",
+    ),
   ];
 }
 

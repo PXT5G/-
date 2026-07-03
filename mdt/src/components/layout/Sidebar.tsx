@@ -17,6 +17,7 @@ import {
   Users,
   Video,
   Crosshair,
+  Scale,
   Settings,
   ClipboardList,
 } from "lucide-react";
@@ -38,6 +39,7 @@ interface NavEntry {
 
 const navItems: NavEntry[] = [
   { key: "dashboard", href: "/", icon: LayoutDashboard, perm: "dashboard" },
+  { key: "dojDossier", href: "/doj", icon: Scale, perm: "doj_dossier" },
   { key: "citizens", href: "/citizens", icon: Users, perm: "citizens" },
   { key: "incidents", href: "/incidents", icon: Siren, perm: "incidents" },
   { key: "reports", href: "/reports", icon: FileText, perm: "reports" },
