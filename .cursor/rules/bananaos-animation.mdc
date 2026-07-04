@@ -1,0 +1,63 @@
+---
+description: BananaOS animations — Framer Motion, springs, haptics, 120fps UX
+globs: "{apps/web/src/{animations,components,apps}/**/*.tsx,apps/web/src/hooks/useSound.ts}"
+alwaysApply: false
+---
+
+# BananaOS Animation Rule
+
+Every interaction should feel like a real mobile OS — smooth, spring-based, no abrupt cuts.
+
+## Shared Transitions
+
+Import from `@/animations/transitions`:
+
+```typescript
+import { springTransition, staggerContainer, staggerItem, slideUp } from '@/animations/transitions';
+
+// Standard spring
+transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+
+// Screen enter
+<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} />
+```
+
+## Tab Bar Active Indicator
+
+```tsx
+<motion.div layoutId="app-tab" className="absolute -bottom-0.5 w-3 h-0.5 rounded-full bg-banana-gold"
+  transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
+<motion.span animate={{ scale: active ? 1.15 : 1 }} transition={{ type: 'spring', stiffness: 400, damping: 20 }} />
+```
+
+## Haptics & Sound
+
+Use `useHaptic()` and `useSound()` on tab changes, app launches, and confirmations:
+
+```typescript
+const { tap } = useHaptic();
+onClick={() => { tap(); setTab('home'); }}
+```
+
+## Loading & Feedback
+
+- Spinner: `border-2 border-banana-gold border-t-transparent rounded-full animate-spin`
+- Modals: `AnimatePresence` + slide from bottom (`initial={{ y: 300 }}`)
+- Lists: `staggerContainer` / `staggerItem` on grid items
+
+## Realtime UI
+
+Pair socket events with query invalidation — never poll when a socket event exists.
+
+## Performance
+
+- Prefer `transform` and `opacity` (GPU-friendly)
+- Use `layoutId` sparingly (one per tab group)
+- Avoid animating `width`/`height` on large lists; use `scale` instead
+- Target 120fps feel: short durations, high stiffness springs
+
+## Don't
+
+- Use CSS `transition: all` on complex layouts
+- Block render with animation-only state
+- Skip `exit` animations when using `AnimatePresence`
