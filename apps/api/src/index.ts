@@ -17,6 +17,7 @@ import storeRoutes from './api/routes/store';
 import identityRoutes from './api/routes/identity';
 import bankRoutes from './api/routes/bank';
 import simRoutes from './api/routes/sim';
+import contactsRoutes from './api/routes/contacts';
 
 const app = express();
 const httpServer = createServer(app);
@@ -47,6 +48,7 @@ app.use('/api/store', storeRoutes);
 app.use('/api/identity', identityRoutes);
 app.use('/api/bank', bankRoutes);
 app.use('/api/sim', simRoutes);
+app.use('/api/contacts', contactsRoutes);
 
 app.use(errorHandler);
 

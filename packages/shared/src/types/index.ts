@@ -225,7 +225,17 @@ export type SocketEvent =
   | 'sim:replaced'
   | 'sim:number:changed'
   | 'sim:signal:updated'
-  | 'sim:notification';
+  | 'sim:notification'
+  | 'contacts:created'
+  | 'contacts:updated'
+  | 'contacts:deleted'
+  | 'contacts:imported'
+  | 'contacts:exported'
+  | 'contacts:favorite:changed'
+  | 'contacts:blocked'
+  | 'contacts:unblocked'
+  | 'contacts:group:created'
+  | 'contacts:notification';
 
 export interface SocketPayload {
   event: SocketEvent;

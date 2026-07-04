@@ -10,6 +10,8 @@ import { BankApp } from '@/apps/bank';
 import { bankManifest } from '@/apps/bank/manifest';
 import { SimApp } from '@/apps/sim';
 import { simManifest } from '@/apps/sim/manifest';
+import { ContactsApp } from '@/apps/contacts';
+import { contactsManifest } from '@/apps/contacts/manifest';
 
 registerApp(
   {
@@ -32,3 +34,4 @@ registerApp(bananaAppManifest, BananaApp);
 registerApp(identityManifest, IdentityApp);
 registerApp(bankManifest, BankApp);
 registerApp(simManifest, SimApp);
+registerApp(contactsManifest, ContactsApp);

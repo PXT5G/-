@@ -50,6 +50,16 @@ class RealtimeService {
       'sim:number:changed',
       'sim:signal:updated',
       'sim:notification',
+      'contacts:created',
+      'contacts:updated',
+      'contacts:deleted',
+      'contacts:imported',
+      'contacts:exported',
+      'contacts:favorite:changed',
+      'contacts:blocked',
+      'contacts:unblocked',
+      'contacts:group:created',
+      'contacts:notification',
     ];
 
     events.forEach((event) => {
