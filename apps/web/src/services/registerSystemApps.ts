@@ -42,6 +42,8 @@ import { RealEstateApp } from '@/apps/real-estate';
 import { realEstateManifest } from '@/apps/real-estate/manifest';
 import { VehiclesApp } from '@/apps/vehicles';
 import { vehiclesManifest } from '@/apps/vehicles/manifest';
+import { AviationApp } from '@/apps/aviation';
+import { aviationManifest } from '@/apps/aviation/manifest';
 
 registerApp(
   {
@@ -88,3 +90,4 @@ registerApp(emsManifest, EmsApp);
 registerApp(businessManifest, BusinessApp);
 registerApp(realEstateManifest, RealEstateApp);
 registerApp(vehiclesManifest, VehiclesApp);
+registerApp(aviationManifest, AviationApp);
