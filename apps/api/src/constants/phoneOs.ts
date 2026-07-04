@@ -59,6 +59,9 @@ export const SEARCH_CATEGORIES = [
   'police',
   'justice',
   'ems',
+  'browser_history',
+  'downloads',
+  'calls',
 ] as const;
 export type SearchCategory = (typeof SEARCH_CATEGORIES)[number];
 

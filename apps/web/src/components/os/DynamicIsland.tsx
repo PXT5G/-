@@ -1,75 +1,131 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { useDynamicIslandStore } from '@/stores/dynamicIslandStore';
+import { usePhoneOsStore } from '@/stores/phoneOsStore';
+import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
 import { islandExpand } from '@/animations/transitions';
 import { cn } from '@/utils/cn';
 
 export function DynamicIsland() {
   const { mode, title, subtitle, icon, progress } = useDynamicIslandStore();
+  const liveActivities = usePhoneOsStore((s) => s.liveActivities);
+  const profile = usePremiumExperienceStore((s) => s.profile);
+  const maxActivities = profile?.dynamicIslandMaxActivities ?? 3;
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  const dimensions = islandExpand[mode === 'idle' ? 'compact' : mode];
+  const activeLive = liveActivities.filter(
+    (a) => a.state === 'active' && a.dynamicIsland
+  ).slice(0, maxActivities);
+
+  const hasStoreActivity = mode !== 'idle';
+  const hasLiveActivities = activeLive.length > 0;
+  const displayMode = hasStoreActivity ? mode : hasLiveActivities ? 'compact' : 'idle';
+
+  const currentLive = activeLive[activeIndex];
+  const displayTitle = hasStoreActivity ? title : currentLive?.title;
+  const displaySubtitle = hasStoreActivity ? subtitle : currentLive?.subtitle;
+  const displayIcon = hasStoreActivity ? icon : currentLive?.icon;
+  const displayProgress = hasStoreActivity ? progress : currentLive?.progress;
+
+  const dimensions = islandExpand[displayMode === 'idle' ? 'compact' : displayMode];
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[60]">
       <AnimatePresence mode="wait">
         <motion.div
-          key={mode}
+          key={`${displayMode}-${activeIndex}`}
           className={cn(
             'bg-black rounded-full flex items-center justify-center overflow-hidden',
             'shadow-lg shadow-black/50 border border-white/5',
-            mode === 'idle' && 'cursor-pointer'
+            displayMode === 'idle' && 'cursor-pointer'
           )}
           initial={false}
           animate={dimensions}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           onClick={() => {
-            if (mode === 'compact') useDynamicIslandStore.getState().expand();
-            else if (mode === 'expanded') useDynamicIslandStore.getState().collapse();
+            if (displayMode === 'compact') {
+              if (hasLiveActivities && activeLive.length > 1) {
+                setActiveIndex((i) => (i + 1) % activeLive.length);
+              } else {
+                useDynamicIslandStore.getState().expand();
+              }
+            } else if (displayMode === 'expanded') {
+              useDynamicIslandStore.getState().collapse();
+            }
           }}
           role="status"
-          aria-label={title ?? 'Dynamic Island'}
+          aria-label={displayTitle ?? 'Dynamic Island'}
           aria-live="polite"
         >
-          {mode === 'idle' && (
+          {displayMode === 'idle' && (
             <div className="w-3 h-3 rounded-full bg-black" />
           )}
 
-          {mode === 'compact' && (
+          {displayMode === 'compact' && (
             <div className="flex items-center gap-2 px-4 w-full">
-              {icon && <span className="text-sm">{icon}</span>}
-              <span className="text-xs text-white font-medium truncate">{title}</span>
+              {displayIcon && <span className="text-sm">{displayIcon}</span>}
+              <span className="text-xs text-white font-medium truncate">{displayTitle}</span>
+              {activeLive.length > 1 && (
+                <span className="text-[9px] text-white/40">{activeIndex + 1}/{activeLive.length}</span>
+              )}
             </div>
           )}
 
-          {mode === 'activity' && (
+          {displayMode === 'activity' && (
             <div className="flex items-center gap-2 px-4 w-full">
-              {icon && <span className="text-sm">{icon}</span>}
+              {displayIcon && <span className="text-sm">{displayIcon}</span>}
               <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gulf-gold rounded-full"
-                  animate={{ width: `${progress ?? 0}%` }}
+                  animate={{ width: `${displayProgress ?? 0}%` }}
                 />
               </div>
             </div>
           )}
 
-          {mode === 'expanded' && (
+          {displayMode === 'expanded' && (
             <div className="p-4 w-full">
-              <div className="flex items-center gap-3 mb-2">
-                {icon && <span className="text-2xl">{icon}</span>}
-                <div>
-                  <p className="text-sm font-semibold text-white">{title}</p>
-                  {subtitle && <p className="text-xs text-white/60">{subtitle}</p>}
+              {activeLive.length > 1 && !hasStoreActivity ? (
+                <div className="space-y-2">
+                  {activeLive.map((activity, i) => (
+                    <div
+                      key={activity.id}
+                      className={cn(
+                        'flex items-center gap-2 p-2 rounded-lg',
+                        i === activeIndex ? 'bg-white/10' : 'opacity-60'
+                      )}
+                      onClick={(e) => { e.stopPropagation(); setActiveIndex(i); }}
+                    >
+                      <span>{activity.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-white truncate">{activity.title}</p>
+                        {activity.subtitle && (
+                          <p className="text-[10px] text-white/60 truncate">{activity.subtitle}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-              {progress !== undefined && (
-                <div className="h-1 bg-white/20 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gulf-gold rounded-full"
-                    animate={{ width: `${progress}%` }}
-                  />
-                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 mb-2">
+                    {displayIcon && <span className="text-2xl">{displayIcon}</span>}
+                    <div>
+                      <p className="text-sm font-semibold text-white">{displayTitle}</p>
+                      {displaySubtitle && <p className="text-xs text-white/60">{displaySubtitle}</p>}
+                    </div>
+                  </div>
+                  {displayProgress !== undefined && (
+                    <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gulf-gold rounded-full"
+                        animate={{ width: `${displayProgress}%` }}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

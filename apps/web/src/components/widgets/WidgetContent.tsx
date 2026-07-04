@@ -1,0 +1,247 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { useWidgetData } from '@/hooks/usePremiumExperience';
+import { formatTime, formatShortDate } from '@/utils/date';
+import { useState, useEffect } from 'react';
+import { cn } from '@/utils/cn';
+
+interface WidgetContentProps {
+  type: string;
+  size?: 'small' | 'medium' | 'large';
+  interactive?: boolean;
+}
+
+export function WidgetContent({ type, size = 'medium', interactive = false }: WidgetContentProps) {
+  const { data, isLoading } = useWidgetData(type);
+
+  if (isLoading || !data) {
+    return <WidgetSkeleton size={size} />;
+  }
+
+  return (
+    <motion.div
+      className={cn('h-full', interactive && 'cursor-pointer')}
+      initial={{ opacity: 0.6 }}
+      animate={{ opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+    >
+      <WidgetBody type={type} data={data} size={size} />
+    </motion.div>
+  );
+}
+
+function WidgetSkeleton({ size }: { size: string }) {
+  return (
+    <div className={cn('animate-pulse space-y-2', size === 'small' ? 'p-2' : 'p-3')}>
+      <div className="h-3 bg-white/10 rounded w-1/2" />
+      <div className="h-5 bg-white/10 rounded w-3/4" />
+    </div>
+  );
+}
+
+function WidgetBody({
+  type,
+  data,
+  size,
+}: {
+  type: string;
+  data: Record<string, unknown>;
+  size: string;
+}) {
+  switch (type) {
+    case 'weather':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Weather</p>
+          <p className={cn('font-light text-white', size === 'small' ? 'text-2xl' : 'text-3xl')}>
+            {String(data.temperature ?? '—')}°
+          </p>
+          <p className="text-xs text-white/60">{String(data.label ?? '')}</p>
+          {size !== 'small' && (
+            <p className="text-[10px] text-white/40 mt-1">
+              Humidity {String(data.humidity ?? '—')}% · Wind {String(data.windKph ?? '—')} km/h
+            </p>
+          )}
+        </div>
+      );
+    case 'calendar':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Calendar</p>
+          <p className="text-sm font-medium text-white mt-1">
+            {Array.isArray(data.events) && data.events.length > 0
+              ? String((data.events as { title: string }[])[0]?.title)
+              : 'No upcoming events'}
+          </p>
+          {Array.isArray(data.events) && data.events.length > 1 && (
+            <p className="text-[10px] text-white/40 mt-1">
+              +{(data.events as unknown[]).length - 1} more
+            </p>
+          )}
+        </div>
+      );
+    case 'battery':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Battery</p>
+          <p className="text-2xl font-light text-white">{Math.round(Number(data.level ?? 0))}%</p>
+          <p className="text-[10px] text-white/40">
+            {data.isCharging ? 'Charging' : 'Discharging'} · Health {Math.round(Number(data.health ?? 0))}%
+          </p>
+        </div>
+      );
+    case 'stocks':
+    case 'exchange':
+      return (
+        <div>
+          <p className="text-xs text-white/50">{type === 'exchange' ? 'Portfolio' : 'Stocks'}</p>
+          <p className="text-xl font-semibold text-white">
+            ${Number(data.portfolioValue ?? data.totalValue ?? 0).toLocaleString()}
+          </p>
+          {Array.isArray(data.watchlist) && (
+            <p className="text-[10px] text-white/40 mt-1">
+              {(data.watchlist as { ticker: string; change: number }[])
+                .slice(0, 3)
+                .map((s) => `${s.ticker} ${s.change >= 0 ? '+' : ''}${s.change}%`)
+                .join(' · ')}
+            </p>
+          )}
+        </div>
+      );
+    case 'clock':
+      return <ClockWidget size={size} />;
+    case 'business':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Business</p>
+          <p className="text-lg font-semibold text-white">
+            ${Number(data.revenue ?? 0).toLocaleString()}
+          </p>
+          <p className="text-[10px] text-white/40">{String(data.period ?? 'This month')}</p>
+        </div>
+      );
+    case 'ems':
+      return (
+        <div>
+          <p className="text-xs text-white/50">EMS</p>
+          <p className="text-sm font-medium text-white">{String(data.activeCount ?? 0)} active</p>
+          {Array.isArray(data.dispatches) && (data.dispatches as { title: string }[])[0] && (
+            <p className="text-[10px] text-white/40 truncate">
+              {(data.dispatches as { title: string }[])[0].title}
+            </p>
+          )}
+        </div>
+      );
+    case 'police':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Police</p>
+          <p className="text-sm font-medium text-white">{String(data.activeCases ?? 0)} cases</p>
+        </div>
+      );
+    case 'justice':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Justice</p>
+          <p className="text-sm font-medium text-white">{String(data.upcomingHearings ?? 0)} hearings</p>
+        </div>
+      );
+    case 'notes':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Notes</p>
+          {Array.isArray(data.notes) && (data.notes as { title: string }[]).length > 0 ? (
+            (data.notes as { title: string }[]).slice(0, 2).map((n, i) => (
+              <p key={i} className="text-xs text-white/80 truncate">{n.title}</p>
+            ))
+          ) : (
+            <p className="text-xs text-white/40">No pinned notes</p>
+          )}
+        </div>
+      );
+    case 'files':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Files</p>
+          {Array.isArray(data.recent) && (data.recent as { name: string }[]).length > 0 ? (
+            (data.recent as { name: string }[]).slice(0, 2).map((f, i) => (
+              <p key={i} className="text-xs text-white/80 truncate">{f.name}</p>
+            ))
+          ) : (
+            <p className="text-xs text-white/40">No recent files</p>
+          )}
+        </div>
+      );
+    case 'photos':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Photos</p>
+          <p className="text-sm text-white">{String(data.count ?? 0)} recent</p>
+        </div>
+      );
+    case 'browser':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Browser</p>
+          {Array.isArray(data.bookmarks) && (data.bookmarks as { title: string }[])[0] ? (
+            <p className="text-xs text-white/80 truncate">
+              {(data.bookmarks as { title: string }[])[0].title}
+            </p>
+          ) : (
+            <p className="text-xs text-white/40">No bookmarks</p>
+          )}
+        </div>
+      );
+    case 'bank':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Bank</p>
+          <p className="text-lg font-semibold text-white">
+            ${Number(data.balance ?? 0).toLocaleString()}
+          </p>
+          <p className="text-[10px] text-white/40">{String(data.accountName ?? 'Primary')}</p>
+        </div>
+      );
+    case 'music':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Now Playing</p>
+          <p className="text-sm font-medium text-white truncate">{String(data.title ?? 'Not playing')}</p>
+          <p className="text-[10px] text-white/40 truncate">{String(data.artist ?? '')}</p>
+        </div>
+      );
+    case 'maps':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Maps</p>
+          <p className="text-sm text-white">{String(data.location ?? 'Current location')}</p>
+        </div>
+      );
+    default:
+      return (
+        <div>
+          <p className="text-xs text-white/50 capitalize">{type}</p>
+          <p className="text-sm text-white">{String(data.title ?? data.subtitle ?? '—')}</p>
+        </div>
+      );
+  }
+}
+
+function ClockWidget({ size }: { size: string }) {
+  const [time, setTime] = useState(new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div>
+      <p className={cn('font-extralight text-white tabular-nums', size === 'small' ? 'text-3xl' : 'text-4xl')}>
+        {formatTime(time)}
+      </p>
+      <p className="text-xs text-white/50 mt-1">{formatShortDate(time)}</p>
+    </div>
+  );
+}

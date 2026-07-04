@@ -22,6 +22,7 @@ import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { Search } from '@/components/os/Search';
 import { WindowManager } from '@/components/os/WindowManager';
 import { PermissionDialog } from '@/components/os/PermissionDialog';
+import { AppLibrary } from '@/components/os/AppLibrary';
 import { PhoneFrame } from '@/layouts/PhoneFrame';
 
 export function OSLayout() {
@@ -77,6 +78,7 @@ export function OSLayout() {
 
         <ControlCenter />
         <NotificationCenter />
+        <AppLibrary />
         <Search />
         <WindowManager />
         <PermissionDialog />

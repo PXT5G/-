@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useWindowManagerStore } from '@/stores/windowManagerStore';
 import { useSound, useHaptic } from '@/hooks/useSound';
 import { deviceStorageService } from '@/services/deviceStorageService';
+import { premiumExperienceService } from '@/services/premiumExperienceService';
 import { useDynamicIslandStore } from '@/stores/dynamicIslandStore';
 import type { WindowState } from '@/types';
 
@@ -53,6 +54,7 @@ export function useAppLaunch() {
     };
     openWindow(windowData);
     setMemoryError(null);
+    premiumExperienceService.trackAppUsage(app.bundleId).catch(() => {});
     return true;
   }, [openWindow, playTap, tap, islandShow, islandHide]);
 

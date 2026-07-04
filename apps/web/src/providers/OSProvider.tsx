@@ -11,7 +11,8 @@ import { useDeviceEcosystemInit } from '@/hooks/useDeviceEcosystem';
 import { useSystemAppsInit } from '@/hooks/useSystemApps';
 import { usePoliceInit } from '@/hooks/usePolice';
 import { useSettingsInit } from '@/hooks/useSettings';
-import { usePhoneOsInit, usePhoneOsRealtime } from '@/hooks/usePhoneOs';
+import { usePhoneOsInit, usePhoneOsRealtime, useLiveActivitiesHydration } from '@/hooks/usePhoneOs';
+import { usePremiumExperienceInit, usePremiumExperienceRealtime } from '@/hooks/usePremiumExperience';
 import '@/services/registerSystemApps';
 
 function OSInitializer() {
@@ -27,6 +28,9 @@ function OSInitializer() {
   usePoliceInit();
   usePhoneOsInit();
   usePhoneOsRealtime();
+  usePremiumExperienceInit();
+  usePremiumExperienceRealtime();
+  useLiveActivitiesHydration();
   return null;
 }
 

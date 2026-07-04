@@ -1,71 +1,62 @@
 'use client';
 
 import { useWidgetStore } from '@/stores/widgetStore';
-import { formatTime, formatShortDate } from '@/utils/date';
-import { useState, useEffect } from 'react';
+import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
+import { WidgetContent } from '@/components/widgets/WidgetContent';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { cn } from '@/utils/cn';
-import { useWeather } from '@/hooks/useSystemApps';
 
 interface WidgetRendererProps {
   pageIndex: number;
 }
 
+const DEFAULT_WIDGETS = [
+  { type: 'clock', size: 'small' as const },
+  { type: 'weather', size: 'small' as const },
+];
+
 export function WidgetRenderer({ pageIndex }: WidgetRendererProps) {
   const instances = useWidgetStore((s) => s.getInstancesForPage(pageIndex));
+  const profile = usePremiumExperienceStore((s) => s.profile);
 
-  if (instances.length === 0) {
-    return <DefaultWidgets />;
+  if (instances.length === 0 && pageIndex === 0) {
+    return (
+      <div className="px-6 pb-4 grid grid-cols-2 gap-3">
+        {DEFAULT_WIDGETS.map((w) => (
+          <GlassPanel key={w.type} className="col-span-1 p-4" intensity="low">
+            <WidgetContent type={w.type} size={w.size} interactive />
+          </GlassPanel>
+        ))}
+      </div>
+    );
   }
 
-  return (
-    <div className="px-6 pb-4 grid grid-cols-2 gap-3">
-      {instances.map((instance) => (
-        <WidgetCard key={instance.id} widgetId={instance.widgetId} size={instance.size} />
-      ))}
-    </div>
-  );
-}
-
-function DefaultWidgets() {
-  const [time, setTime] = useState(new Date());
-  const { data: weather } = useWeather();
-
-  useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const current = weather?.current as Record<string, unknown> | undefined;
-  const temp = current ? Number(current.tempC) : 24;
-  const label = current ? String(current.label) : 'Sunny';
+  if (instances.length === 0) return null;
 
   return (
-    <div className="px-6 pb-4 grid grid-cols-2 gap-3">
-      <GlassPanel className="col-span-1 p-4" intensity="low">
-        <p className="text-3xl font-extralight text-white tabular-nums">{formatTime(time)}</p>
-        <p className="text-xs text-white/50 mt-1">{formatShortDate(time)}</p>
-      </GlassPanel>
-      <GlassPanel className="col-span-1 p-4" intensity="low">
-        <p className="text-xs text-white/50">Weather</p>
-        <p className="text-2xl font-light text-white mt-1">{temp}°</p>
-        <p className="text-xs text-white/60">{label}</p>
-      </GlassPanel>
-    </div>
-  );
-}
-
-function WidgetCard({ widgetId, size }: { widgetId: string; size: string }) {
-  const definitions = useWidgetStore((s) => s.definitions);
-  const widget = definitions.find((d) => d.id === widgetId);
-
-  return (
-    <GlassPanel
-      className={cn('p-4', size === 'large' && 'col-span-2')}
-      intensity="low"
+    <div
+      className="px-6 pb-4 grid grid-cols-2 gap-3"
+      style={{ filter: profile?.homeBlurIntensity ? `blur(${profile.homeBlurIntensity * 0.1}px)` : undefined }}
     >
-      <p className="text-sm font-medium text-white">{widget?.name ?? 'Widget'}</p>
-      <p className="text-xs text-white/50 mt-2">Widget content</p>
-    </GlassPanel>
+      {instances.map((instance) => {
+        const definitions = useWidgetStore.getState().definitions;
+        const widget = definitions.find((d) => d.id === instance.widgetId);
+        const type = widget?.appId?.replace('com.gulfos.', '') ?? instance.widgetId.replace('widget.', '');
+
+        return (
+          <GlassPanel
+            key={instance.id}
+            className={cn('p-4', instance.size === 'large' && 'col-span-2')}
+            intensity="low"
+          >
+            <WidgetContent
+              type={type}
+              size={instance.size as 'small' | 'medium' | 'large'}
+              interactive
+            />
+          </GlassPanel>
+        );
+      })}
+    </div>
   );
 }

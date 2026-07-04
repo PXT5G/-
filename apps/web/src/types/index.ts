@@ -67,6 +67,9 @@ export type {
   LockScreenConfigSnapshot,
   StatusBarConfigSnapshot,
   GlobalSearchResult,
+  PremiumExperienceSnapshot,
+  WidgetRegistrySnapshot,
+  NotificationHistorySnapshot,
 } from '@gulfos/shared';
 
 export interface AppFolder {

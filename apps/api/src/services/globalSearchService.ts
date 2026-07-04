@@ -15,6 +15,11 @@ import { PoliceCase } from '../database/models/PoliceCase';
 import { JusticeCase } from '../database/models/JusticeCase';
 import { EmsDispatch } from '../database/models/EmsDispatch';
 import { UserSettings } from '../database/models/UserSettings';
+import { FileNode } from '../database/models/FileNode';
+import { GalleryItem } from '../database/models/GalleryItem';
+import { BrowserHistoryEntry } from '../database/models/BrowserHistoryEntry';
+import { BrowserDownload } from '../database/models/BrowserDownload';
+import { ChatProfile } from '../database/models/ChatProfile';
 
 export interface SearchResult {
   id: string;
@@ -296,14 +301,103 @@ async function searchSettings(userId: string, regex: RegExp): Promise<SearchResu
   return entries;
 }
 
+async function searchFiles(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const files = await FileNode.find({
+    userId: new Types.ObjectId(userId),
+    type: 'file',
+    deletedAt: null,
+    name: regex,
+  })
+    .limit(15)
+    .lean();
+
+  return files.map((f) => ({
+    id: f._id.toString(),
+    category: 'files' as const,
+    title: f.name,
+    subtitle: f.mimeType,
+    route: 'com.gulfos.files',
+  }));
+}
+
+async function searchPhotos(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const items = await GalleryItem.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    trashed: false,
+    name: regex,
+  })
+    .limit(15)
+    .lean();
+
+  return items.map((i) => ({
+    id: i.itemId,
+    category: 'photos' as const,
+    title: i.name,
+    subtitle: i.type,
+    route: 'com.gulfos.gallery',
+  }));
+}
+
+async function searchBrowserHistory(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const entries = await BrowserHistoryEntry.find({
+    userId: new Types.ObjectId(userId),
+    $or: [{ title: regex }, { url: regex }],
+  })
+    .limit(15)
+    .lean();
+
+  return entries.map((e) => ({
+    id: e.historyId,
+    category: 'browser_history' as const,
+    title: e.title ?? e.url,
+    subtitle: e.url,
+    route: 'com.gulfos.browser',
+  }));
+}
+
+async function searchDownloads(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const downloads = await BrowserDownload.find({
+    userId: new Types.ObjectId(userId),
+    $or: [{ filename: regex }, { url: regex }],
+  })
+    .limit(15)
+    .lean();
+
+  return downloads.map((d) => ({
+    id: d.downloadId,
+    category: 'downloads' as const,
+    title: d.filename,
+    subtitle: d.status,
+    route: 'com.gulfos.browser',
+  }));
+}
+
+async function searchContacts(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const profiles = await ChatProfile.find({
+    deletedAt: null,
+    $or: [{ displayName: regex }, { about: regex }],
+  })
+    .limit(15)
+    .lean();
+
+  return profiles.map((p) => ({
+    id: p.userId.toString(),
+    category: 'contacts' as const,
+    title: p.displayName ?? 'Contact',
+    subtitle: p.about,
+    route: 'com.gulfos.contacts',
+  }));
+}
+
 const CATEGORY_SEARCHERS: Record<
   SearchCategory,
   (userId: string, regex: RegExp) => Promise<SearchResult[]>
 > = {
   apps: searchApps,
-  contacts: async () => [],
-  files: async () => [],
-  photos: async () => [],
+  contacts: searchContacts,
+  files: searchFiles,
+  photos: searchPhotos,
   messages: searchMessages,
   settings: searchSettings,
   businesses: searchBusinesses,
@@ -319,6 +413,9 @@ const CATEGORY_SEARCHERS: Record<
   police: async (_u, r) => searchPolice(r),
   justice: async (_u, r) => searchJustice(r),
   ems: async (_u, r) => searchEms(r),
+  browser_history: searchBrowserHistory,
+  downloads: searchDownloads,
+  calls: async () => [],
 };
 
 export async function globalSearch(

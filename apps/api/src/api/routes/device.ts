@@ -2,12 +2,14 @@ import { Router } from 'express';
 import * as deviceController from '../controllers/deviceController';
 import deviceEcosystemRoutes from './deviceEcosystem';
 import phoneOsRoutes from './phoneOs';
+import premiumExperienceRoutes from './premiumExperience';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
 router.use('/ecosystem', deviceEcosystemRoutes);
 router.use('/phone', phoneOsRoutes);
+router.use('/premium', premiumExperienceRoutes);
 
 router.get('/storage', authenticate, deviceController.getStorage);
 router.post('/storage/recalculate', authenticate, deviceController.recalcStorage);
