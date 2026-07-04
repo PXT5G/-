@@ -21,6 +21,7 @@ import communicationRoutes from './api/routes/communication';
 import systemAppsRoutes from './api/routes/systemApps';
 import policeRoutes from './api/routes/police';
 import poetryRoutes from './api/routes/poetry';
+import browserRoutes from './api/routes/browser';
 
 const app = express();
 const httpServer = createServer(app);
@@ -55,6 +56,7 @@ app.use('/api/communication', communicationRoutes);
 app.use('/api/system-apps', systemAppsRoutes);
 app.use('/api/police', policeRoutes);
 app.use('/api/poetry', poetryRoutes);
+app.use('/api/browser', browserRoutes);
 
 app.use(errorHandler);
 

@@ -387,7 +387,16 @@ export type SocketEvent =
   | 'poetry:competition:update'
   | 'poetry:challenge:update'
   | 'poetry:moderation'
-  | 'poetry:trending:update';
+  | 'poetry:trending:update'
+  | 'browser:initialized'
+  | 'browser:tab:update'
+  | 'browser:tab:sync'
+  | 'browser:download:progress'
+  | 'browser:download:complete'
+  | 'browser:history:update'
+  | 'browser:bookmark:update'
+  | 'browser:notification'
+  | 'browser:session:sync';
 
 export interface SocketPayload {
   event: SocketEvent;
