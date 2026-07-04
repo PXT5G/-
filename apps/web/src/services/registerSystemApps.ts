@@ -48,6 +48,16 @@ import { MarineApp } from '@/apps/marine';
 import { marineManifest } from '@/apps/marine/manifest';
 import { ExchangeApp } from '@/apps/exchange';
 import { exchangeManifest } from '@/apps/exchange/manifest';
+import { PhoneApp } from '@/apps/phone';
+import { phoneManifest } from '@/apps/phone/manifest';
+import { ContactsApp } from '@/apps/contacts';
+import { contactsManifest } from '@/apps/contacts/manifest';
+import { MessagesApp } from '@/apps/messages';
+import { messagesManifest } from '@/apps/messages/manifest';
+import { MailApp } from '@/apps/mail';
+import { mailManifest } from '@/apps/mail/manifest';
+import { SimApp } from '@/apps/sim';
+import { simManifest } from '@/apps/sim/manifest';
 
 registerApp(
   {
@@ -97,3 +107,8 @@ registerApp(vehiclesManifest, VehiclesApp);
 registerApp(aviationManifest, AviationApp);
 registerApp(marineManifest, MarineApp);
 registerApp(exchangeManifest, ExchangeApp);
+registerApp(phoneManifest, PhoneApp);
+registerApp(contactsManifest, ContactsApp);
+registerApp(messagesManifest, MessagesApp);
+registerApp(mailManifest, MailApp);
+registerApp(simManifest, SimApp);

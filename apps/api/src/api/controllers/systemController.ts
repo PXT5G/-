@@ -359,9 +359,31 @@ export async function initializeSystemServices(userId: string): Promise<void> {
   await initializePhoneOs(userId, userId);
   const { initializePremiumExperience } = await import('../../services/premiumExperienceService');
   await initializePremiumExperience(userId, userId);
+  const { initializePhone } = await import('../../services/phoneService');
+  const { initializeContacts } = await import('../../services/contactsService');
+  const { initializeMessages } = await import('../../services/messagesAppService');
+  const { initializeMail } = await import('../../services/mailService');
+  const { initializeSim } = await import('../../services/simService');
+  await Promise.all([
+    initializePhone(userId, userId),
+    initializeContacts(userId, userId),
+    initializeMessages(userId, userId),
+    initializeMail(userId, userId),
+    initializeSim(userId, userId),
+  ]);
   const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone'] as const;
-  for (const permission of commPerms) {
-    await grantPermission(userId, 'com.gulfos.communication', permission, userId);
+  const coreApps = [
+    'com.gulfos.communication',
+    'com.gulfos.phone',
+    'com.gulfos.contacts',
+    'com.gulfos.messages',
+    'com.gulfos.mail',
+    'com.gulfos.sim',
+  ] as const;
+  for (const appId of coreApps) {
+    for (const permission of commPerms) {
+      await grantPermission(userId, appId, permission, userId);
+    }
   }
   emitToUser(userId, 'system:ready', {
     services: getRegisteredTasks(),

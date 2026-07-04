@@ -36,6 +36,10 @@ const WIDGET_SEED: Array<{
   { widgetId: 'widget.photos', type: 'photos', appId: 'com.gulfos.gallery', name: 'Photos', description: 'Recent photos', sizes: ['medium', 'large'], defaultSize: 'medium', interactive: true, icon: '🖼️' },
   { widgetId: 'widget.camera', type: 'camera', appId: 'com.gulfos.camera', name: 'Camera', description: 'Quick capture', sizes: ['small'], defaultSize: 'small', interactive: true, icon: '📷' },
   { widgetId: 'widget.browser', type: 'browser', appId: 'com.gulfos.browser', name: 'Browser', description: 'Bookmarks and tabs', sizes: ['medium'], defaultSize: 'medium', interactive: true, icon: '🌐' },
+  { widgetId: 'widget.phone', type: 'phone', appId: 'com.gulfos.phone', name: 'Phone', description: 'Recent calls', sizes: ['small', 'medium'], defaultSize: 'small', interactive: true, icon: '📞' },
+  { widgetId: 'widget.contacts', type: 'contacts', appId: 'com.gulfos.contacts', name: 'Contacts', description: 'Favorite contacts', sizes: ['medium'], defaultSize: 'medium', interactive: true, icon: '👤' },
+  { widgetId: 'widget.messages', type: 'messages', appId: 'com.gulfos.messages', name: 'Messages', description: 'Recent SMS', sizes: ['medium'], defaultSize: 'medium', interactive: true, icon: '💬' },
+  { widgetId: 'widget.mail', type: 'mail', appId: 'com.gulfos.mail', name: 'Mail', description: 'Unread mail', sizes: ['medium'], defaultSize: 'medium', interactive: true, icon: '📧' },
 ];
 
 export async function seedWidgetRegistry() {
@@ -97,6 +101,14 @@ export async function getWidgetData(userId: string, type: string, config?: Recor
       return getFilesWidgetData(userId);
     case 'browser':
       return getBrowserWidgetData(userId);
+    case 'phone':
+      return getPhoneWidgetData(userId);
+    case 'contacts':
+      return getContactsWidgetData(userId);
+    case 'messages':
+      return getMessagesWidgetData(userId);
+    case 'mail':
+      return getMailWidgetData(userId);
     default:
       return { type, title: type, subtitle: 'Widget data', updatedAt: new Date().toISOString(), config };
   }
@@ -279,6 +291,58 @@ async function getBrowserWidgetData(userId: string) {
   return {
     type: 'browser',
     tabs: tabs.map((t) => ({ id: t.tabId, title: t.title, url: t.url })),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getPhoneWidgetData(userId: string) {
+  const { PhoneCall } = await import('../database/models/PhoneCall');
+  const calls = await PhoneCall.find({ userId: new Types.ObjectId(userId), deletedAt: null })
+    .sort({ createdAt: -1 })
+    .limit(3)
+    .lean();
+  const stats = await import('./callEngineService').then((m) => m.getCallStatistics(userId));
+  return {
+    type: 'phone',
+    recent: calls.map((c) => ({ callId: c.callId, name: c.contactName ?? c.toNumber, status: c.status, direction: c.direction })),
+    missed: stats.missed,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getContactsWidgetData(userId: string) {
+  const { Contact } = await import('../database/models/Contact');
+  const favorites = await Contact.find({ userId: new Types.ObjectId(userId), favorite: true, deletedAt: null })
+    .limit(5)
+    .lean();
+  return {
+    type: 'contacts',
+    favorites: favorites.map((c) => ({ contactId: c.contactId, name: c.displayName, phone: c.phones?.[0]?.number })),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getMessagesWidgetData(userId: string) {
+  const { getUserConversations } = await import('./conversationService');
+  const conversations = await getUserConversations(userId, 5);
+  return {
+    type: 'messages',
+    conversations: conversations.slice(0, 3).map((c) => ({ id: c.conversationId, title: c.title, preview: c.lastMessagePreview })),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getMailWidgetData(userId: string) {
+  const { MailAccount } = await import('../database/models/MailAccount');
+  const { MailMessage } = await import('../database/models/MailMessage');
+  const account = await MailAccount.findOne({ userId: new Types.ObjectId(userId), isDefault: true, deletedAt: null });
+  const unread = account
+    ? await MailMessage.countDocuments({ userId: new Types.ObjectId(userId), folder: 'inbox', isRead: false, deletedAt: null })
+    : 0;
+  return {
+    type: 'mail',
+    unread,
+    account: account?.email,
     updatedAt: new Date().toISOString(),
   };
 }

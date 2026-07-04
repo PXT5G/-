@@ -32,6 +32,11 @@ import aviationRoutes from './api/routes/aviation';
 import marineRoutes from './api/routes/marine';
 import economyRoutes from './api/routes/economy';
 import exchangeRoutes from './api/routes/exchange';
+import phoneRoutes from './api/routes/phone';
+import contactsRoutes from './api/routes/contacts';
+import messagesRoutes from './api/routes/messages';
+import mailRoutes from './api/routes/mail';
+import simRoutes from './api/routes/sim';
 
 const app = express();
 const httpServer = createServer(app);
@@ -77,6 +82,11 @@ app.use('/api/aviation', aviationRoutes);
 app.use('/api/marine', marineRoutes);
 app.use('/api/economy', economyRoutes);
 app.use('/api/exchange', exchangeRoutes);
+app.use('/api/phone', phoneRoutes);
+app.use('/api/contacts', contactsRoutes);
+app.use('/api/messages', messagesRoutes);
+app.use('/api/mail', mailRoutes);
+app.use('/api/sim', simRoutes);
 
 app.use(errorHandler);
 

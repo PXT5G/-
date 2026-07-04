@@ -33,6 +33,8 @@ const RUNTIME_APPS = new Set([
   'com.gulfos.exchange',
   'com.gulfos.control-panel',
   'com.gulfos.phone',
+  'com.gulfos.messages',
+  'com.gulfos.mail',
   'com.gulfos.maps',
   'com.gulfos.camera',
   'com.gulfos.gallery',
