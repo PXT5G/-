@@ -88,7 +88,10 @@ export type PermissionType =
   | 'nearby_devices'
   | 'media_library'
   | 'vpn'
-  | 'health';
+  | 'health'
+  | 'bank'
+  | 'identity'
+  | 'mail';
 
 export type SystemPermissionType = PermissionType;
 
@@ -561,7 +564,21 @@ export type SocketEvent =
   | 'mail:updated'
   | 'mail:sync'
   | 'sim:status'
-  | 'sim:updated';
+  | 'sim:updated'
+  | 'bank:update'
+  | 'bank:transfer'
+  | 'bank:transaction'
+  | 'bank:card:update'
+  | 'bank:balance'
+  | 'bank:fraud:alert'
+  | 'bank:payment:completed'
+  | 'bank:initialized'
+  | 'identity:update'
+  | 'identity:verified'
+  | 'identity:document:added'
+  | 'identity:verification:completed'
+  | 'identity:initialized'
+  | 'identity:revoked';
 
 export interface SocketPayload {
   event: SocketEvent;

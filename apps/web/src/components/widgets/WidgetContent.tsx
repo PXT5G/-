@@ -230,7 +230,7 @@ function WidgetBody({
         <div>
           <p className="text-xs text-white/50">Bank</p>
           <p className="text-lg font-semibold text-white">
-            ${Number(data.balance ?? 0).toLocaleString()}
+            {Number(data.totalBalance ?? data.balance ?? 0).toLocaleString()} {String(data.currency ?? 'GULF')}
           </p>
           <p className="text-[10px] text-white/40">{String(data.accountName ?? 'Primary')}</p>
         </div>

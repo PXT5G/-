@@ -14,6 +14,8 @@ import { useSettingsInit } from '@/hooks/useSettings';
 import { usePhoneOsInit, usePhoneOsRealtime, useLiveActivitiesHydration } from '@/hooks/usePhoneOs';
 import { usePremiumExperienceInit, usePremiumExperienceRealtime } from '@/hooks/usePremiumExperience';
 import { usePhoneRealtime } from '@/hooks/usePhone';
+import { useBankSocketSync } from '@/hooks/useBank';
+import { useIdentitySocketSync } from '@/hooks/useIdentity';
 import '@/services/registerSystemApps';
 
 function OSInitializer() {
@@ -32,6 +34,8 @@ function OSInitializer() {
   usePremiumExperienceInit();
   usePremiumExperienceRealtime();
   usePhoneRealtime();
+  useBankSocketSync();
+  useIdentitySocketSync();
   useLiveActivitiesHydration();
   return null;
 }

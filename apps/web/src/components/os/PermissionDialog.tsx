@@ -30,6 +30,9 @@ const PERMISSION_LABELS: Record<PermissionType, { title: string; description: st
   media_library: { title: 'Media Library', description: 'Access your media library' },
   vpn: { title: 'VPN', description: 'Configure VPN connections' },
   health: { title: 'Health', description: 'Access health and fitness data' },
+  bank: { title: 'Bank', description: 'Access your banking accounts and transactions' },
+  identity: { title: 'Identity', description: 'Access your digital identity and documents' },
+  mail: { title: 'Mail', description: 'Access your email accounts' },
 };
 
 export function PermissionDialog() {

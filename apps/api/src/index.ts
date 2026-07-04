@@ -37,6 +37,8 @@ import contactsRoutes from './api/routes/contacts';
 import messagesRoutes from './api/routes/messages';
 import mailRoutes from './api/routes/mail';
 import simRoutes from './api/routes/sim';
+import bankRoutes from './api/routes/bank';
+import identityRoutes from './api/routes/identity';
 
 const app = express();
 const httpServer = createServer(app);
@@ -87,6 +89,8 @@ app.use('/api/contacts', contactsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/mail', mailRoutes);
 app.use('/api/sim', simRoutes);
+app.use('/api/bank', bankRoutes);
+app.use('/api/identity', identityRoutes);
 
 app.use(errorHandler);
 

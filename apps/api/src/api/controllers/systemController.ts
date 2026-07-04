@@ -364,14 +364,18 @@ export async function initializeSystemServices(userId: string): Promise<void> {
   const { initializeMessages } = await import('../../services/messagesAppService');
   const { initializeMail } = await import('../../services/mailService');
   const { initializeSim } = await import('../../services/simService');
+  const { initializeBank } = await import('../../services/bankService');
+  const { initializeIdentity } = await import('../../services/identityService');
   await Promise.all([
     initializePhone(userId, userId),
     initializeContacts(userId, userId),
     initializeMessages(userId, userId),
     initializeMail(userId, userId),
     initializeSim(userId, userId),
+    initializeBank(userId, userId),
+    initializeIdentity(userId, userId),
   ]);
-  const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone'] as const;
+  const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone', 'bank', 'identity', 'biometrics'] as const;
   const coreApps = [
     'com.gulfos.communication',
     'com.gulfos.phone',
@@ -379,6 +383,8 @@ export async function initializeSystemServices(userId: string): Promise<void> {
     'com.gulfos.messages',
     'com.gulfos.mail',
     'com.gulfos.sim',
+    'com.gulfos.bank',
+    'com.gulfos.identity',
   ] as const;
   for (const appId of coreApps) {
     for (const permission of commPerms) {

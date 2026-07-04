@@ -411,6 +411,54 @@ async function searchCalls(userId: string, regex: RegExp): Promise<SearchResult[
   }));
 }
 
+async function searchBankAccounts(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { BankAccount } = await import('../database/models/BankAccount');
+  const accounts = await BankAccount.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ name: regex }, { accountNumber: regex }, { iban: regex }],
+  }).limit(10).lean();
+  return accounts.map((a) => ({
+    id: a.accountId,
+    category: 'bank_accounts' as const,
+    title: a.name,
+    subtitle: `${a.accountType} · ${a.availableBalance.toLocaleString()} ${a.currency}`,
+    route: 'com.gulfos.bank',
+  }));
+}
+
+async function searchIdentity(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { CitizenIdentity } = await import('../database/models/CitizenIdentity');
+  const { IdentityDocument } = await import('../database/models/IdentityDocument');
+  const [identities, documents] = await Promise.all([
+    CitizenIdentity.find({
+      userId: new Types.ObjectId(userId),
+      deletedAt: null,
+      $or: [{ fullName: regex }, { nationalId: regex }],
+    }).limit(5).lean(),
+    IdentityDocument.find({
+      userId: new Types.ObjectId(userId),
+      deletedAt: null,
+      $or: [{ title: regex }, { documentNumber: regex }],
+    }).limit(10).lean(),
+  ]);
+  const identityResults = identities.map((i) => ({
+    id: i.identityId,
+    category: 'identity' as const,
+    title: i.fullName,
+    subtitle: `National ID: ${i.nationalId}`,
+    route: 'com.gulfos.identity',
+  }));
+  const docResults = documents.map((d) => ({
+    id: d.documentId,
+    category: 'identity' as const,
+    title: d.title,
+    subtitle: d.documentType,
+    route: 'com.gulfos.identity',
+  }));
+  return [...identityResults, ...docResults];
+}
+
 const CATEGORY_SEARCHERS: Record<
   SearchCategory,
   (userId: string, regex: RegExp) => Promise<SearchResult[]>
@@ -427,7 +475,8 @@ const CATEGORY_SEARCHERS: Record<
   aircraft: async (_u, r) => searchAircraft(r),
   marine: async (_u, r) => searchMarine(r),
   stocks: async (_u, r) => searchStocks(r),
-  bank_accounts: async () => [],
+  bank_accounts: searchBankAccounts,
+  identity: searchIdentity,
   notes: searchNotes,
   calendar: searchCalendar,
   weather: async () => [],

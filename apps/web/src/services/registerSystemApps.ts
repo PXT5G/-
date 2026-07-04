@@ -58,6 +58,10 @@ import { MailApp } from '@/apps/mail';
 import { mailManifest } from '@/apps/mail/manifest';
 import { SimApp } from '@/apps/sim';
 import { simManifest } from '@/apps/sim/manifest';
+import { BankApp } from '@/apps/bank';
+import { bankManifest } from '@/apps/bank/manifest';
+import { IdentityApp } from '@/apps/identity';
+import { identityManifest } from '@/apps/identity/manifest';
 
 registerApp(
   {
@@ -112,3 +116,5 @@ registerApp(contactsManifest, ContactsApp);
 registerApp(messagesManifest, MessagesApp);
 registerApp(mailManifest, MailApp);
 registerApp(simManifest, SimApp);
+registerApp(bankManifest, BankApp);
+registerApp(identityManifest, IdentityApp);

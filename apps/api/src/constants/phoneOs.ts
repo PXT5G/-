@@ -53,6 +53,7 @@ export const SEARCH_CATEGORIES = [
   'marine',
   'stocks',
   'bank_accounts',
+  'identity',
   'notes',
   'calendar',
   'weather',
