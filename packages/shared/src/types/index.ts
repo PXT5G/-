@@ -546,7 +546,22 @@ export type SocketEvent =
   | 'premium:ready'
   | 'premium:update'
   | 'notification:history'
-  | 'widget:data:update';
+  | 'widget:data:update'
+  | 'phone:incoming'
+  | 'phone:connected'
+  | 'phone:ended'
+  | 'phone:status'
+  | 'phone:voicemail'
+  | 'contacts:updated'
+  | 'contacts:merged'
+  | 'messages:new'
+  | 'messages:typing'
+  | 'messages:updated'
+  | 'mail:new'
+  | 'mail:updated'
+  | 'mail:sync'
+  | 'sim:status'
+  | 'sim:updated';
 
 export interface SocketPayload {
   event: SocketEvent;

@@ -184,13 +184,45 @@ function WidgetBody({
       return (
         <div>
           <p className="text-xs text-white/50">Browser</p>
-          {Array.isArray(data.bookmarks) && (data.bookmarks as { title: string }[])[0] ? (
-            <p className="text-xs text-white/80 truncate">
-              {(data.bookmarks as { title: string }[])[0].title}
-            </p>
+          {Array.isArray(data.tabs) && (data.tabs as { title: string }[])[0] ? (
+            <p className="text-xs text-white/80 truncate">{(data.tabs as { title: string }[])[0].title}</p>
           ) : (
-            <p className="text-xs text-white/40">No bookmarks</p>
+            <p className="text-xs text-white/40">No tabs</p>
           )}
+        </div>
+      );
+    case 'phone':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Phone</p>
+          <p className="text-sm text-white">{String(data.missed ?? 0)} missed</p>
+        </div>
+      );
+    case 'contacts':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Contacts</p>
+          {Array.isArray(data.favorites) && (data.favorites as { name: string }[]).slice(0, 2).map((c, i) => (
+            <p key={i} className="text-xs text-white/80 truncate">{c.name}</p>
+          ))}
+        </div>
+      );
+    case 'messages':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Messages</p>
+          {Array.isArray(data.conversations) && (data.conversations as { title: string }[])[0] ? (
+            <p className="text-xs text-white/80 truncate">{(data.conversations as { title: string }[])[0].title}</p>
+          ) : (
+            <p className="text-xs text-white/40">No messages</p>
+          )}
+        </div>
+      );
+    case 'mail':
+      return (
+        <div>
+          <p className="text-xs text-white/50">Mail</p>
+          <p className="text-lg font-semibold text-white">{String(data.unread ?? 0)} unread</p>
         </div>
       );
     case 'bank':

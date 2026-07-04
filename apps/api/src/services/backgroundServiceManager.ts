@@ -120,6 +120,16 @@ export function startBackgroundServiceManager(): void {
     await processPendingNotifications();
   });
 
+  registerBackgroundTask('telephony-cleanup', 60 * 1000, async () => {
+    const { cleanupStaleCalls } = await import('./callEngineService');
+    await cleanupStaleCalls();
+  });
+
+  registerBackgroundTask('sim-status-refresh', 30 * 1000, async () => {
+    const { refreshAllSimStatus } = await import('./simService');
+    await refreshAllSimStatus();
+  });
+
   registerBackgroundTask('economy-tick', 60 * 60 * 1000, async () => {
     const { tickEconomy } = await import('./economyEngineService');
     await tickEconomy('system');

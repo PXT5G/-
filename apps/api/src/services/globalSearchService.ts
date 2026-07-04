@@ -374,19 +374,40 @@ async function searchDownloads(userId: string, regex: RegExp): Promise<SearchRes
 }
 
 async function searchContacts(userId: string, regex: RegExp): Promise<SearchResult[]> {
-  const profiles = await ChatProfile.find({
+  const { Contact } = await import('../database/models/Contact');
+  const contacts = await Contact.find({
+    userId: new Types.ObjectId(userId),
     deletedAt: null,
-    $or: [{ displayName: regex }, { about: regex }],
+    $or: [{ displayName: regex }, { firstName: regex }, { lastName: regex }, { company: regex }],
   })
     .limit(15)
     .lean();
 
-  return profiles.map((p) => ({
-    id: p.userId.toString(),
+  return contacts.map((c) => ({
+    id: c.contactId,
     category: 'contacts' as const,
-    title: p.displayName ?? 'Contact',
-    subtitle: p.about,
+    title: c.displayName,
+    subtitle: c.phones?.[0]?.number ?? c.category,
     route: 'com.gulfos.contacts',
+  }));
+}
+
+async function searchCalls(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { PhoneCall } = await import('../database/models/PhoneCall');
+  const calls = await PhoneCall.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ contactName: regex }, { toNumber: regex }, { fromNumber: regex }],
+  })
+    .limit(15)
+    .lean();
+
+  return calls.map((c) => ({
+    id: c.callId,
+    category: 'calls' as const,
+    title: c.contactName ?? c.toNumber ?? c.fromNumber,
+    subtitle: `${c.direction} · ${c.status}`,
+    route: 'com.gulfos.phone',
   }));
 }
 
@@ -415,7 +436,7 @@ const CATEGORY_SEARCHERS: Record<
   ems: async (_u, r) => searchEms(r),
   browser_history: searchBrowserHistory,
   downloads: searchDownloads,
-  calls: async () => [],
+  calls: searchCalls,
 };
 
 export async function globalSearch(
