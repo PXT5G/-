@@ -3,6 +3,7 @@ import { CorePermission } from '../../database/models/platform/CorePermission';
 import { PolicePermission } from '../../database/models/PolicePermission';
 import { SIMPermission } from '../../database/models/SIMPermission';
 import { ContactPermission } from '../../database/models/ContactPermission';
+import { PhonePermission } from '../../database/models/PhonePermission';
 import { IdentityPermission } from '../../database/models/IdentityPermission';
 import { BANANAOS_APP_IDS, type PermissionCheckResult } from '../types';
 import { auditService } from './auditService';
@@ -17,6 +18,8 @@ async function checkLegacyPermission(appId: string, userId: string, permission: 
       return !!(await SIMPermission.findOne({ userId, permission, granted: true }));
     case BANANAOS_APP_IDS.CONTACTS:
       return !!(await ContactPermission.findOne({ userId, permission, granted: true }));
+    case BANANAOS_APP_IDS.PHONE:
+      return !!(await PhonePermission.findOne({ userId, permission, granted: true }));
     case BANANAOS_APP_IDS.IDENTITY:
       return !!(await IdentityPermission.findOne({ userId, permission, granted: true }));
     case BANANAOS_APP_IDS.JUSTICE:
@@ -42,6 +45,9 @@ async function grantLegacyPermission(
       break;
     case BANANAOS_APP_IDS.CONTACTS:
       await ContactPermission.findOneAndUpdate({ userId, permission }, update, { upsert: true });
+      break;
+    case BANANAOS_APP_IDS.PHONE:
+      await PhonePermission.findOneAndUpdate({ userId, permission }, update, { upsert: true });
       break;
     case BANANAOS_APP_IDS.IDENTITY:
       await IdentityPermission.findOneAndUpdate(
@@ -143,6 +149,9 @@ export async function revokePermission(
     case BANANAOS_APP_IDS.CONTACTS:
       await ContactPermission.findOneAndUpdate({ userId, permission }, { granted: false, revokedAt: new Date() });
       break;
+    case BANANAOS_APP_IDS.PHONE:
+      await PhonePermission.findOneAndUpdate({ userId, permission }, { granted: false, revokedAt: new Date() });
+      break;
     default:
       break;
   }
@@ -168,6 +177,8 @@ export async function listPermissions(appId: string, userId: string): Promise<st
           return SIMPermission.find({ userId, granted: true }).lean();
         case BANANAOS_APP_IDS.CONTACTS:
           return ContactPermission.find({ userId, granted: true }).lean();
+        case BANANAOS_APP_IDS.PHONE:
+          return PhonePermission.find({ userId, granted: true }).lean();
         default:
           return [];
       }

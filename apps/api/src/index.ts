@@ -22,6 +22,7 @@ import policeRoutes from './api/routes/police';
 import platformRoutes from './api/routes/platform';
 import justiceRoutes from './api/routes/justice';
 import controlPanelRoutes from './api/routes/controlPanel';
+import phoneRoutes from './api/routes/phone';
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,6 +58,7 @@ app.use('/api/police', policeRoutes);
 app.use('/api/platform', platformRoutes);
 app.use('/api/justice', justiceRoutes);
 app.use('/api/control-panel', controlPanelRoutes);
+app.use('/api/phone', phoneRoutes);
 
 app.use(errorHandler);
 

@@ -10,6 +10,7 @@ const APP_ICONS: Record<string, string> = {
   [BANANAOS_APP_IDS.BANK]: '🏦',
   [BANANAOS_APP_IDS.SIM]: '📶',
   [BANANAOS_APP_IDS.CONTACTS]: '👤',
+  [BANANAOS_APP_IDS.PHONE]: '📞',
   [BANANAOS_APP_IDS.POLICE]: '🚔',
   [BANANAOS_APP_IDS.JUSTICE]: '⚖️',
 };
@@ -18,6 +19,7 @@ const APP_DOMAIN_NOTIFICATION_EVENTS: Partial<Record<string, SocketEvent>> = {
   [BANANAOS_APP_IDS.BANK]: 'bank:notification',
   [BANANAOS_APP_IDS.SIM]: 'sim:notification',
   [BANANAOS_APP_IDS.CONTACTS]: 'contacts:notification',
+  [BANANAOS_APP_IDS.PHONE]: 'phone:notification',
   [BANANAOS_APP_IDS.POLICE]: 'police:notification',
 };
 

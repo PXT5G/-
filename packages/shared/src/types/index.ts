@@ -247,6 +247,16 @@ export type SocketEvent =
   | 'police:rank:changed'
   | 'police:officer:provisioned'
   | 'police:notification'
+  | 'phone:ringing'
+  | 'phone:accepted'
+  | 'phone:ended'
+  | 'phone:missed'
+  | 'phone:hold'
+  | 'phone:resume'
+  | 'phone:mute'
+  | 'phone:speaker'
+  | 'phone:voicemail'
+  | 'phone:notification'
   | 'control:event'
   | 'control:subscribed';
 

@@ -6,6 +6,7 @@ describe('BananaOS Core Platform App IDs', () => {
     expect(BANANAOS_APP_IDS.POLICE).toBe('com.bananaos.police');
     expect(BANANAOS_APP_IDS.BANK).toBe('com.bananaos.bank');
     expect(BANANAOS_APP_IDS.SIM).toBe('com.bananaos.sim');
+    expect(BANANAOS_APP_IDS.PHONE).toBe('com.bananaos.phone');
     expect(BANANAOS_APP_IDS.CONTACTS).toBe('com.bananaos.contacts');
     expect(BANANAOS_APP_IDS.JUSTICE).toBe('com.bananaos.justice');
     expect(BANANAOS_APP_IDS.IDENTITY).toBe('com.bananaos.identity');
