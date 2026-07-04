@@ -1,0 +1,45 @@
+import { Router } from 'express';
+import { authenticate } from '../middleware/auth';
+import * as poetryController from '../controllers/poetryController';
+
+const router = Router();
+
+router.post('/initialize', authenticate, poetryController.initialize);
+router.get('/home', authenticate, poetryController.home);
+router.get('/random', authenticate, poetryController.random);
+router.get('/search', authenticate, poetryController.search);
+router.get('/analytics', authenticate, poetryController.analytics);
+router.get('/rbac', authenticate, poetryController.rbac);
+router.patch('/rbac', authenticate, poetryController.updateRbac);
+router.get('/verified-poets', authenticate, poetryController.verifiedPoets);
+router.get('/bookmarks', authenticate, poetryController.bookmarks);
+router.get('/favorites', authenticate, poetryController.favorites);
+router.get('/history', authenticate, poetryController.history);
+router.get('/collections', authenticate, poetryController.collections);
+router.post('/collections', authenticate, poetryController.createCollection);
+router.get('/events', authenticate, poetryController.events);
+router.post('/events', authenticate, poetryController.createEvent);
+router.get('/competitions', authenticate, poetryController.competitions);
+router.get('/challenges', authenticate, poetryController.challenges);
+router.get('/moderation/logs', authenticate, poetryController.moderationLogs);
+router.post('/announcements', authenticate, poetryController.announcement);
+router.get('/profile/:userId', authenticate, poetryController.profile);
+router.patch('/profile', authenticate, poetryController.updateProfile);
+router.post('/follow/:userId', authenticate, poetryController.follow);
+router.get('/poems', authenticate, poetryController.listPoems);
+router.post('/poems', authenticate, poetryController.createPoem);
+router.get('/poems/:poemId', authenticate, poetryController.getPoem);
+router.patch('/poems/:poemId', authenticate, poetryController.updatePoem);
+router.delete('/poems/:poemId', authenticate, poetryController.deletePoem);
+router.get('/poems/:poemId/versions', authenticate, poetryController.poemVersions);
+router.get('/poems/:poemId/export', authenticate, poetryController.exportPdf);
+router.post('/poems/:poemId/like', authenticate, poetryController.like);
+router.get('/poems/:poemId/comments', authenticate, poetryController.comments);
+router.post('/poems/:poemId/comments', authenticate, poetryController.addComment);
+router.post('/poems/:poemId/bookmark', authenticate, poetryController.bookmark);
+router.post('/poems/:poemId/favorite', authenticate, poetryController.favorite);
+router.post('/poems/:poemId/share', authenticate, poetryController.share);
+router.post('/poems/:poemId/moderate', authenticate, poetryController.moderate);
+router.post('/poems/:poemId/daily', authenticate, poetryController.dailyPoem);
+
+export default router;
