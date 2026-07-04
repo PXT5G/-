@@ -23,6 +23,7 @@ import { BackgroundJobsScreen } from './BackgroundJobsScreen';
 import { PermissionsSettingsScreen } from './PermissionsSettingsScreen';
 import { BatterySettingsScreen } from './BatterySettingsScreen';
 import { DeveloperSettingsScreen } from './DeveloperSettingsScreen';
+import { EconomyAdminScreen } from './EconomyAdminScreen';
 import { DeviceSecuritySettingsScreen } from './DeviceSecuritySettingsScreen';
 import { DeviceBackupSettingsScreen } from './DeviceBackupSettingsScreen';
 import { DeviceSyncSettingsScreen } from './DeviceSyncSettingsScreen';
@@ -35,6 +36,7 @@ import { SignalSettingsScreen } from './SignalSettingsScreen';
 import { CellTowersSettingsScreen } from './CellTowersSettingsScreen';
 import { Toggle } from '@/components/ui/Toggle';
 import { useHaptic } from '@/hooks/useSound';
+import { useAuthStore } from '@/stores/authStore';
 
 const WALLPAPERS = [
   { id: 'gulf-gradient', name: 'Gulf Gradient', type: 'animated' as const },
@@ -48,6 +50,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
   const update = useUpdateSettings();
   const { t } = useTranslation();
   const { tap } = useHaptic();
+  const user = useAuthStore((s) => s.user);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   const patch = (partial: Parameters<typeof update.mutate>[0]) => {
@@ -73,6 +76,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
     permissions: <PermissionsSettingsScreen onBack={() => setActiveSection(null)} />,
     battery: <BatterySettingsScreen onBack={() => setActiveSection(null)} />,
     developer: <DeveloperSettingsScreen onBack={() => setActiveSection(null)} />,
+    economy: <EconomyAdminScreen onBack={() => setActiveSection(null)} />,
     'device-security': <DeviceSecuritySettingsScreen onBack={() => setActiveSection(null)} />,
     'device-backup': <DeviceBackupSettingsScreen onBack={() => setActiveSection(null)} />,
     'device-sync': <DeviceSyncSettingsScreen onBack={() => setActiveSection(null)} />,
@@ -188,6 +192,9 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
         </SettingsSection>
 
         <SettingsSection title={t('settings.system')}>
+          {user?.role === 'admin' && (
+            <SettingsRow label="Economy Engine" chevron onClick={() => setActiveSection('economy')} />
+          )}
           <SettingsRow label="Background Jobs" chevron onClick={() => setActiveSection('background-jobs')} />
           <SettingsRow label="Diagnostics" chevron onClick={() => setActiveSection('diagnostics')} />
           <SettingsRow label={t('settings.developer')} chevron onClick={() => setActiveSection('developer')} />

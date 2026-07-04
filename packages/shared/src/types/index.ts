@@ -507,7 +507,12 @@ export type SocketEvent =
   | 'marine:offer:accepted'
   | 'marine:notification'
   | 'marine:analytics:update'
-  | 'marine:finance:update';
+  | 'marine:finance:update'
+  | 'economy:update'
+  | 'market:update'
+  | 'valuation:update'
+  | 'inflation:update'
+  | 'gdp:update';
 
 export interface SocketPayload {
   event: SocketEvent;

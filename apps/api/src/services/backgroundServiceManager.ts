@@ -110,6 +110,11 @@ export function startBackgroundServiceManager(): void {
     await processPendingNotifications();
   });
 
+  registerBackgroundTask('economy-tick', 60 * 60 * 1000, async () => {
+    const { tickEconomy } = await import('./economyEngineService');
+    await tickEconomy('system');
+  });
+
   masterInterval = setInterval(() => {
     void runDueTasks();
   }, TICK_MS);
