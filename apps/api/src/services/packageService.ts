@@ -45,6 +45,8 @@ const RUNTIME_APPS = new Set([
   'com.gulfos.notes',
   'com.gulfos.recorder',
   'com.gulfos.weather',
+  'com.gulfos.assistant',
+  'com.gulfos.automation',
 ]);
 
 export interface PackageManifest {

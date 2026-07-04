@@ -62,6 +62,10 @@ import { BankApp } from '@/apps/bank';
 import { bankManifest } from '@/apps/bank/manifest';
 import { IdentityApp } from '@/apps/identity';
 import { identityManifest } from '@/apps/identity/manifest';
+import { AssistantApp } from '@/apps/assistant';
+import { assistantManifest } from '@/apps/assistant/manifest';
+import { AutomationApp } from '@/apps/automation';
+import { automationManifest } from '@/apps/automation/manifest';
 
 registerApp(
   {
@@ -118,3 +122,5 @@ registerApp(mailManifest, MailApp);
 registerApp(simManifest, SimApp);
 registerApp(bankManifest, BankApp);
 registerApp(identityManifest, IdentityApp);
+registerApp(assistantManifest, AssistantApp);
+registerApp(automationManifest, AutomationApp);

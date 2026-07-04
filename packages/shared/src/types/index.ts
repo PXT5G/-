@@ -578,7 +578,20 @@ export type SocketEvent =
   | 'identity:document:added'
   | 'identity:verification:completed'
   | 'identity:initialized'
-  | 'identity:revoked';
+  | 'identity:revoked'
+  | 'assistant:update'
+  | 'assistant:conversation'
+  | 'assistant:thinking'
+  | 'assistant:voice'
+  | 'assistant:action'
+  | 'assistant:completed'
+  | 'assistant:initialized'
+  | 'automation:created'
+  | 'automation:updated'
+  | 'automation:running'
+  | 'automation:completed'
+  | 'automation:failed'
+  | 'automation:history';
 
 export interface SocketPayload {
   event: SocketEvent;
