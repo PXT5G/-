@@ -29,6 +29,7 @@ import businessRoutes from './api/routes/business';
 import realEstateRoutes from './api/routes/realEstate';
 import vehicleRoutes from './api/routes/vehicles';
 import aviationRoutes from './api/routes/aviation';
+import marineRoutes from './api/routes/marine';
 
 const app = express();
 const httpServer = createServer(app);
@@ -71,6 +72,7 @@ app.use('/api/business', businessRoutes);
 app.use('/api/real-estate', realEstateRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/aviation', aviationRoutes);
+app.use('/api/marine', marineRoutes);
 
 app.use(errorHandler);
 

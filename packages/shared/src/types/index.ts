@@ -492,7 +492,22 @@ export type SocketEvent =
   | 'aviation:offer:accepted'
   | 'aviation:notification'
   | 'aviation:analytics:update'
-  | 'aviation:finance:update';
+  | 'aviation:finance:update'
+  | 'marine:initialized'
+  | 'marine:listed'
+  | 'marine:sold'
+  | 'marine:reserved'
+  | 'marine:leased'
+  | 'marine:auction:started'
+  | 'marine:auction:ended'
+  | 'marine:maintenance'
+  | 'marine:location:change'
+  | 'marine:price:change'
+  | 'marine:offer:received'
+  | 'marine:offer:accepted'
+  | 'marine:notification'
+  | 'marine:analytics:update'
+  | 'marine:finance:update';
 
 export interface SocketPayload {
   event: SocketEvent;

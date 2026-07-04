@@ -16,6 +16,7 @@ export const APP_PACKAGE_SIZES: Record<string, number> = {
   'com.gulfos.real-estate': 1_300_000_000,
   'com.gulfos.vehicles': 1_350_000_000,
   'com.gulfos.aviation': 1_400_000_000,
+  'com.gulfos.marine': 1_450_000_000,
   'com.gulfos.camera': 620_000_000,
   'com.gulfos.gallery': 400_000_000,
   'com.gulfos.identity': 180_000_000,

@@ -139,6 +139,12 @@ export async function searchPlate(plate: string) {
     marketplaceAircraft = await searchAircraftForPolice(plate);
   } catch { /* aviation module optional at boot */ }
 
+  let marketplaceVessels: Record<string, unknown>[] = [];
+  try {
+    const { searchVesselsForPolice } = await import('./marineIntegrationService');
+    marketplaceVessels = await searchVesselsForPolice(plate);
+  } catch { /* marine module optional at boot */ }
+
   return {
     plate: plate.toUpperCase(),
     citations: citations.map((c) => ({
@@ -156,6 +162,7 @@ export async function searchPlate(plate: string) {
     })),
     marketplaceVehicles,
     marketplaceAircraft,
+    marketplaceVessels,
     flags: citations.some((c) => c.status === 'issued') ? ['outstanding_fines'] : [],
   };
 }
@@ -170,7 +177,12 @@ export async function searchVehicle(query: string) {
       const { searchAircraftForPolice } = await import('./aviationIntegrationService');
       aircraft = await searchAircraftForPolice(query);
     } catch { /* optional */ }
-    return { ...plateResult, vehicles, aircraft };
+    let vessels: Record<string, unknown>[] = [];
+    try {
+      const { searchVesselsForPolice } = await import('./marineIntegrationService');
+      vessels = await searchVesselsForPolice(query);
+    } catch { /* optional */ }
+    return { ...plateResult, vehicles, aircraft, vessels };
   } catch {
     return plateResult;
   }
