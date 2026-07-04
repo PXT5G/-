@@ -359,7 +359,22 @@ export type SocketEvent =
   | 'permission:update'
   | 'job:update'
   | 'diagnostics:update'
-  | 'service:health';
+  | 'service:health'
+  | 'police:dispatch:new'
+  | 'police:dispatch:update'
+  | 'police:unit:update'
+  | 'police:officer:status'
+  | 'police:911:new'
+  | 'police:panic'
+  | 'police:bolo:new'
+  | 'police:warrant:new'
+  | 'police:case:update'
+  | 'police:evidence:new'
+  | 'police:chat:message'
+  | 'police:announcement'
+  | 'police:emergency:broadcast'
+  | 'police:gps:update'
+  | 'police:initialized';
 
 export interface SocketPayload {
   event: SocketEvent;

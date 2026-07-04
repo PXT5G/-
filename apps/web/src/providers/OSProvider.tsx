@@ -9,6 +9,7 @@ import { useSystemInit } from '@/hooks/useSystemServices';
 import { useCommunicationInit } from '@/hooks/useCommunicationServices';
 import { useDeviceEcosystemInit } from '@/hooks/useDeviceEcosystem';
 import { useSystemAppsInit } from '@/hooks/useSystemApps';
+import { usePoliceInit } from '@/hooks/usePolice';
 import { useSettingsInit } from '@/hooks/useSettings';
 import '@/services/registerSystemApps';
 
@@ -22,6 +23,7 @@ function OSInitializer() {
   useDeviceEcosystemInit();
   useSystemAppsInit();
   useSettingsInit();
+  usePoliceInit();
   return null;
 }
 

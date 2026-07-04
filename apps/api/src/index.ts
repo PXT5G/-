@@ -19,6 +19,7 @@ import systemRoutes from './api/routes/system';
 import worldRoutes from './api/routes/world';
 import communicationRoutes from './api/routes/communication';
 import systemAppsRoutes from './api/routes/systemApps';
+import policeRoutes from './api/routes/police';
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,6 +52,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api/world', worldRoutes);
 app.use('/api/communication', communicationRoutes);
 app.use('/api/system-apps', systemAppsRoutes);
+app.use('/api/police', policeRoutes);
 
 app.use(errorHandler);
 

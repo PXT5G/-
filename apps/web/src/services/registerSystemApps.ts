@@ -24,6 +24,8 @@ import { VoiceRecorderApp } from '@/apps/voice-recorder';
 import { voiceRecorderManifest } from '@/apps/voice-recorder/manifest';
 import { WeatherApp } from '@/apps/weather';
 import { weatherManifest } from '@/apps/weather/manifest';
+import { PoliceApp } from '@/apps/police';
+import { policeManifest } from '@/apps/police/manifest';
 
 registerApp(
   {
@@ -60,3 +62,5 @@ const SYSTEM_APPS = [
 for (const [manifest, component] of SYSTEM_APPS) {
   registerApp(manifest, component);
 }
+
+registerApp(policeManifest, PoliceApp);
