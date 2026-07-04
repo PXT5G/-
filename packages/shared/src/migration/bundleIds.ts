@@ -19,6 +19,7 @@ export const LEGACY_BUNDLE_ID_MAP: Readonly<Record<string, string>> = {
   'com.bananaos.simcard': 'com.gulfos.sim',
   'com.bananaos.contacts': 'com.gulfos.contacts',
   'com.bananaos.police': 'com.gulfos.police',
+  'com.bananaos.poetry': 'com.gulfos.poetry',
   'com.bananaos.control-panel': 'com.gulfos.control-panel',
   'com.bananaos.phone': 'com.gulfos.phone',
   'com.bananaos.messages': 'com.gulfos.messages',

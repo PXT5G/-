@@ -26,6 +26,8 @@ import { WeatherApp } from '@/apps/weather';
 import { weatherManifest } from '@/apps/weather/manifest';
 import { PoliceApp } from '@/apps/police';
 import { policeManifest } from '@/apps/police/manifest';
+import { PoetryApp } from '@/apps/poetry';
+import { poetryManifest } from '@/apps/poetry/manifest';
 
 registerApp(
   {
@@ -64,3 +66,4 @@ for (const [manifest, component] of SYSTEM_APPS) {
 }
 
 registerApp(policeManifest, PoliceApp);
+registerApp(poetryManifest, PoetryApp);

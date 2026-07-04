@@ -374,7 +374,20 @@ export type SocketEvent =
   | 'police:announcement'
   | 'police:emergency:broadcast'
   | 'police:gps:update'
-  | 'police:initialized';
+  | 'police:initialized'
+  | 'poetry:initialized'
+  | 'poetry:poem:new'
+  | 'poetry:poem:update'
+  | 'poetry:poem:published'
+  | 'poetry:comment:new'
+  | 'poetry:like'
+  | 'poetry:notification'
+  | 'poetry:announcement'
+  | 'poetry:event:update'
+  | 'poetry:competition:update'
+  | 'poetry:challenge:update'
+  | 'poetry:moderation'
+  | 'poetry:trending:update';
 
 export interface SocketPayload {
   event: SocketEvent;
