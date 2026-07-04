@@ -3,10 +3,9 @@
 import { motion } from 'framer-motion';
 import { dockAnimation } from '@/animations/transitions';
 import { AppIcon } from './AppIcon';
-import { useWindowManagerStore } from '@/stores/windowManagerStore';
 import { useSearchStore } from '@/stores/searchStore';
 import { useSound, useHaptic } from '@/hooks/useSound';
-import { v4 as uuidv4 } from 'uuid';
+import { useAppLaunch } from '@/hooks/useAppLaunch';
 
 const DOCK_APPS = [
   { bundleId: 'com.bananaos.phone', name: 'Phone', icon: '📞' },
@@ -16,29 +15,19 @@ const DOCK_APPS = [
 ];
 
 export function Dock() {
-  const openWindow = useWindowManagerStore((s) => s.openWindow);
   const openSearch = useSearchStore((s) => s.open);
+  const { launchApp } = useAppLaunch();
   const { playTap } = useSound();
   const { tap } = useHaptic();
 
   const handlePress = (app: typeof DOCK_APPS[0]) => {
-    playTap();
-    tap();
-
     if (app.bundleId === 'com.bananaos.search') {
+      playTap();
+      tap();
       openSearch();
       return;
     }
-
-    openWindow({
-      id: uuidv4(),
-      appId: app.bundleId,
-      title: app.name,
-      isMinimized: false,
-      isMaximized: false,
-      position: { x: 0, y: 0 },
-      size: { width: 390, height: 844 },
-    });
+    void launchApp({ bundleId: app.bundleId, name: app.name });
   };
 
   return (

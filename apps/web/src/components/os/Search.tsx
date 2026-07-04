@@ -4,15 +4,14 @@ import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchStore } from '@/stores/searchStore';
 import { useAppStore } from '@/stores/appStore';
-import { useWindowManagerStore } from '@/stores/windowManagerStore';
 import { useHaptic } from '@/hooks/useSound';
+import { useAppLaunch } from '@/hooks/useAppLaunch';
 import { GlassPanel } from '@/components/ui/GlassPanel';
-import { v4 as uuidv4 } from 'uuid';
 
 export function Search() {
   const { isOpen, close, query, setQuery, recentSearches, addRecentSearch } = useSearchStore();
   const installedApps = useAppStore((s) => s.installedApps);
-  const openWindow = useWindowManagerStore((s) => s.openWindow);
+  const { launchApp } = useAppLaunch();
   const { tap } = useHaptic();
 
   const results = useMemo(() => {
@@ -32,15 +31,7 @@ export function Search() {
 
   const openApp = (app: typeof installedApps[0]) => {
     tap();
-    openWindow({
-      id: uuidv4(),
-      appId: app.bundleId,
-      title: app.name,
-      isMinimized: false,
-      isMaximized: false,
-      position: { x: 0, y: 0 },
-      size: { width: 390, height: 844 },
-    });
+    void launchApp({ bundleId: app.bundleId, name: app.name });
     close();
   };
 

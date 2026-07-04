@@ -7,6 +7,8 @@ import { SettingsSection } from './SettingsSection';
 import { SettingsRow } from './SettingsRow';
 import { InstalledAppsSettings } from './InstalledAppsSettings';
 import { StorageManagerScreen } from './StorageManagerScreen';
+import { HardwareSettingsScreen } from './HardwareSettingsScreen';
+import { TaskManagerScreen } from './TaskManagerScreen';
 import { Toggle } from '@/components/ui/Toggle';
 import { Slider } from '@/components/ui/Slider';
 import { useHaptic } from '@/hooks/useSound';
@@ -26,6 +28,14 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
   if (activeSection === 'storage') {
     return <StorageManagerScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'hardware') {
+    return <HardwareSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'task-manager') {
+    return <TaskManagerScreen onBack={() => setActiveSection(null)} />;
   }
 
   if (activeSection === 'installed-apps') {
@@ -164,6 +174,16 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
         <SettingsSection title="Device">
           <SettingsRow
+            label="Hardware"
+            chevron
+            onClick={() => setActiveSection('hardware')}
+          />
+          <SettingsRow
+            label="Task Manager"
+            chevron
+            onClick={() => setActiveSection('task-manager')}
+          />
+          <SettingsRow
             label="Storage"
             chevron
             onClick={() => setActiveSection('storage')}
@@ -186,7 +206,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
         <SettingsSection title="About">
           <SettingsRow label="BananaOS Version" value="1.0.0" />
-          <SettingsRow label="Build" value="Phase 1 — Base System" />
+          <SettingsRow label="Build" value="Phase 3.1 — Hardware Simulation" />
         </SettingsSection>
       </div>
     </div>

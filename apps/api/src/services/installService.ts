@@ -85,6 +85,11 @@ export async function verifyInstallPrerequisites(
   }
 
   if (userId) {
+    const { canInstall } = await import('./lowStorageService');
+    const allowed = await canInstall(userId, manifest.storageRequired);
+    if (!allowed) {
+      throw new Error('INSUFFICIENT_STORAGE');
+    }
     const check = await checkAvailableStorage(userId, manifest.storageRequired);
     if (!check.available) {
       throw new Error('INSUFFICIENT_STORAGE');

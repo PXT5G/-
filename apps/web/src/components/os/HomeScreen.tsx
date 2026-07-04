@@ -2,13 +2,11 @@
 
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/stores/appStore';
-import { useWindowManagerStore } from '@/stores/windowManagerStore';
-import { useSound, useHaptic } from '@/hooks/useSound';
 import { AppIcon } from './AppIcon';
 import { WidgetRenderer } from './WidgetRenderer';
 import { staggerContainer, staggerItem } from '@/animations/transitions';
 import { useGestures } from '@/hooks/useGestures';
-import { v4 as uuidv4 } from 'uuid';
+import { useAppLaunch } from '@/hooks/useAppLaunch';
 
 const SYSTEM_APPS = [
   { bundleId: 'com.bananaos.store', name: 'Banana App', icon: '🍌', isSystemApp: true, route: '/store' },
@@ -17,9 +15,7 @@ const SYSTEM_APPS = [
 
 export function HomeScreen() {
   const { currentPage, setCurrentPage, pages, getAppsForPage } = useAppStore();
-  const openWindow = useWindowManagerStore((s) => s.openWindow);
-  const { playTap } = useSound();
-  const { tap } = useHaptic();
+  const { launchApp } = useAppLaunch();
 
   const apps = getAppsForPage(currentPage);
   const displayApps = apps.length > 0 ? apps : SYSTEM_APPS.map((app, i) => ({
@@ -36,17 +32,7 @@ export function HomeScreen() {
   }));
 
   const handleAppPress = (app: typeof displayApps[0]) => {
-    playTap();
-    tap();
-    openWindow({
-      id: uuidv4(),
-      appId: app.bundleId,
-      title: app.name,
-      isMinimized: false,
-      isMaximized: false,
-      position: { x: 0, y: 0 },
-      size: { width: 390, height: 844 },
-    });
+    void launchApp({ bundleId: app.bundleId, name: app.name });
   };
 
   const gestures = useGestures({

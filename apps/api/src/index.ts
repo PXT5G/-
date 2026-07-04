@@ -60,6 +60,14 @@ async function bootstrap(): Promise<void> {
       console.log('[BananaOS API] Store seeded:', result);
     }
 
+    const { startCacheGrowthSimulator } = await import('./services/cacheGrowthService');
+    const { startTrashCleanupSimulator } = await import('./services/mediaStorageService');
+    const { startHardwareSimulator } = await import('./services/hardwareService');
+    startCacheGrowthSimulator();
+    startTrashCleanupSimulator();
+    startHardwareSimulator();
+    console.log('[BananaOS API] Hardware simulators started');
+
     httpServer.listen(env.PORT, () => {
       console.log(`[BananaOS API] Running on port ${env.PORT}`);
     });

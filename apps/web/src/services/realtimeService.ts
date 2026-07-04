@@ -42,6 +42,11 @@ class RealtimeService {
       'store:download:resumed',
       'store:update:complete',
       'device:storage:updated',
+      'device:storage:warning',
+      'device:ram:updated',
+      'device:memory:pressure',
+      'device:update:complete',
+      'device:update:rollback',
     ];
 
     events.forEach((event) => {

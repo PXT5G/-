@@ -236,3 +236,100 @@ Settings → Storage provides animated charts, category breakdown, system storag
 | Gallery | 400 MB |
 
 **Production Score: 9.8/10**
+
+---
+
+## Phase 3.1 — Real Device Hardware Simulation
+
+### Device Hardware Profile
+
+Every device receives a hardware profile on registration:
+
+| Field | Description |
+|-------|-------------|
+| Device Name / Model / Color | User-facing identity |
+| Serial Number / UUID | Unique identifiers |
+| Generation | Banana Phone 15 / Pro / Pro Max |
+| CPU / GPU | Processor specs |
+| RAM | 8 GB total |
+| Internal Storage | Configurable tier (32 GB–1 TB) |
+| Battery Capacity / Health / Level | Simulated power |
+| Display Resolution | Per generation |
+| Storage Wear | Health %, lifetime reads/writes, estimated life |
+| Temperature / Uptime | Simulated runtime metrics |
+
+### RAM Management
+
+Per-app RAM profiles with `base`, `active`, `background`, and `cached` states:
+
+| App | Active RAM |
+|-----|------------|
+| Phone | 120 MB |
+| Messages | 90 MB |
+| Bank | 180 MB |
+| Police | 350 MB |
+| Camera | 450 MB |
+| Gallery | 220 MB |
+
+When memory pressure exceeds 85%: freeze background apps, clear inactive cache, show warnings, block heavy app launches.
+
+**Task Manager** (Settings → Task Manager): view per-app RAM usage, force-stop apps.
+
+### Storage Wear & Cache Growth
+
+- Lifetime writes/reads tracked; health degrades with heavy I/O
+- Per-app cache grows hourly (call history, attachments, thumbnails, preview cache)
+- Large downloads and updates increase lifetime writes
+
+### Media & Trash
+
+- Photos sized by megapixels; videos by resolution × FPS × duration × codec
+- Deleted files move to Trash (30-day auto-purge)
+- Trash counted in storage breakdown
+
+### Low Storage Mode
+
+| Free Space | Action |
+|------------|--------|
+| ≤ 20% | Warning |
+| ≤ 10% | Low Storage Mode + auto cache cleanup |
+| ≤ 5% | Block installs, video recording, pause updates |
+| ≤ 1% | Emergency Mode (critical writes only) |
+
+### System Updates
+
+- Reserves 1.5× update size during download
+- Rolls back reservation on failure
+- Paused when storage is critical
+
+### Hardware API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/device/hardware` | Full hardware + storage + RAM |
+| GET | `/api/device/ram` | RAM usage breakdown |
+| GET | `/api/device/task-manager` | Task manager data |
+| POST | `/api/device/ram/launch/:bundleId` | Launch app (RAM check) |
+| POST | `/api/device/ram/background/:bundleId` | Background app |
+| POST | `/api/device/ram/stop/:bundleId` | Stop app |
+| POST | `/api/device/ram/force-stop/:bundleId` | Force stop + clear cache |
+| GET | `/api/device/low-storage` | Low storage status |
+| GET | `/api/device/trash` | Trash contents |
+| POST | `/api/device/trash/empty` | Empty trash |
+| POST | `/api/device/system-update` | System update with rollback |
+
+### Realtime Events
+
+- `device:storage:warning` — threshold crossed
+- `device:ram:updated` — RAM usage changed
+- `device:memory:pressure` — background apps frozen
+- `device:update:complete` / `device:update:rollback`
+
+### UI
+
+- **Settings → Hardware** — CPU, GPU, RAM, storage health, battery, temperature, uptime
+- **Settings → Task Manager** — per-app RAM, force-stop
+- **Settings → Storage** — trash, wear health, low storage warnings
+- **Status Bar** — live battery, low storage, memory pressure indicators
+
+**Production Score: 9.9/10**

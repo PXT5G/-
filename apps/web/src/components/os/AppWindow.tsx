@@ -6,6 +6,7 @@ import { useWindowManagerStore } from '@/stores/windowManagerStore';
 import { getAppComponent } from '@/services/appRouter';
 import { AppPlaceholder } from './AppPlaceholder';
 import { useHaptic } from '@/hooks/useSound';
+import { useAppLaunch } from '@/hooks/useAppLaunch';
 
 interface AppWindowProps {
   window: WindowState;
@@ -14,6 +15,7 @@ interface AppWindowProps {
 
 export function AppWindow({ window, isActive }: AppWindowProps) {
   const { closeWindow, minimizeWindow, focusWindow } = useWindowManagerStore();
+  const { backgroundApp, stopApp } = useAppLaunch();
   const { tap } = useHaptic();
 
   const AppComponent = getAppComponent(window.appId) ?? AppPlaceholder;
@@ -30,14 +32,14 @@ export function AppWindow({ window, isActive }: AppWindowProps) {
     >
       <div className="flex items-center justify-between px-4 pt-12 pb-2 bg-black/80 backdrop-blur-xl border-b border-white/5">
         <button
-          onClick={() => { tap(); minimizeWindow(window.id); }}
+          onClick={() => { tap(); backgroundApp(window.appId); minimizeWindow(window.id); }}
           className="text-banana-gold text-sm font-medium"
         >
           ‹ Back
         </button>
         <h1 className="text-sm font-semibold text-white">{window.title}</h1>
         <button
-          onClick={() => { tap(); closeWindow(window.id); }}
+          onClick={() => { tap(); stopApp(window.appId); closeWindow(window.id); }}
           className="text-white/50 text-sm"
           aria-label="Close app"
         >

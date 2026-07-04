@@ -11,6 +11,9 @@ import {
   type StorageCapacityTier,
 } from '../constants/appSizes';
 import { emitToUser } from './socketService';
+import { evaluateLowStorage } from './lowStorageService';
+import { recordStorageWrite, recordStorageRead } from './storageWearService';
+import { TrashItem } from '../database/models/TrashItem';
 
 const RESERVATION_TTL_MS = 30 * 60 * 1000;
 
@@ -28,6 +31,9 @@ export interface StorageCategoryBreakdown {
   audio: number;
   other: number;
   reserved: number;
+  trash: number;
+  freeRatio: number;
+  lowStorageLevel: string;
   systemBreakdown: ISystemStorageBreakdown;
 }
 
@@ -72,6 +78,10 @@ export async function ensureDeviceProfile(
     },
     { upsert: true, new: true }
   );
+
+  const { ensureHardwareProfile } = await import('./hardwareService');
+  await ensureHardwareProfile(userId, profile.deviceName);
+
   return profile;
 }
 
@@ -93,7 +103,7 @@ async function getActiveReservations(userId: string): Promise<number> {
   return reservations.reduce((sum, r) => sum + r.bytes, 0);
 }
 
-export async function recalculateDeviceStorage(userId: string): Promise<StorageCategoryBreakdown> {
+export async function buildStorageBreakdown(userId: string): Promise<StorageCategoryBreakdown> {
   const profile = await ensureDeviceProfile(userId);
   const appStorages = await AppStorage.find({ userId });
 
@@ -124,15 +134,21 @@ export async function recalculateDeviceStorage(userId: string): Promise<StorageC
     }
   }
 
+  const trashItems = await TrashItem.find({ userId });
+  const trash = trashItems.reduce((sum, t) => sum + t.sizeBytes, 0);
+
   const system = sumSystemStorage(profile.systemStorage);
   const reserved = await getActiveReservations(userId);
-  const used = system + apps + cache + photosVideos + documents + downloads + messages + audio + other + reserved;
+  const used = system + apps + cache + photosVideos + documents + downloads + messages + audio + other + reserved + trash;
   const free = Math.max(0, profile.totalCapacity - used);
+  const freeRatio = profile.totalCapacity > 0 ? free / profile.totalCapacity : 1;
 
   profile.lastStorageRecalc = new Date();
   await profile.save();
 
-  const breakdown: StorageCategoryBreakdown = {
+  await recordStorageRead(userId, Math.floor(used * 0.001));
+
+  return {
     total: profile.totalCapacity,
     used,
     free,
@@ -146,15 +162,28 @@ export async function recalculateDeviceStorage(userId: string): Promise<StorageC
     audio,
     other,
     reserved,
+    trash,
+    freeRatio,
+    lowStorageLevel: profile.lowStorageLevel,
     systemBreakdown: profile.systemStorage,
+  };
+}
+
+export async function recalculateDeviceStorage(userId: string): Promise<StorageCategoryBreakdown> {
+  const breakdown = await buildStorageBreakdown(userId);
+  const lowStatus = await evaluateLowStorage(userId, breakdown);
+
+  const result: StorageCategoryBreakdown = {
+    ...breakdown,
+    lowStorageLevel: lowStatus.level,
   };
 
   emitToUser(userId, 'device:storage:updated' as never, {
-    ...breakdown,
+    ...result,
     timestamp: new Date().toISOString(),
   });
 
-  return breakdown;
+  return result;
 }
 
 export async function getDeviceStorage(userId: string): Promise<StorageCategoryBreakdown> {
@@ -182,6 +211,10 @@ export async function reserveStorage(
   bytes: number,
   downloadId?: string
 ): Promise<{ reservationId: string }> {
+  const { canInstall } = await import('./lowStorageService');
+  const allowed = await canInstall(userId, bytes);
+  if (!allowed) throw new Error('INSUFFICIENT_STORAGE');
+
   const check = await checkAvailableStorage(userId, bytes);
   if (!check.available) {
     throw new Error('INSUFFICIENT_STORAGE');
@@ -197,6 +230,7 @@ export async function reserveStorage(
   });
 
   await recalculateDeviceStorage(userId);
+  await recordStorageWrite(userId, bytes);
   return { reservationId: reservation._id.toString() };
 }
 

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { formatTime } from '@/utils/date';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useDeviceStorage } from '@/hooks/useDeviceStorage';
+import { useDeviceHardware } from '@/hooks/useDeviceHardware';
 import { cn } from '@/utils/cn';
 
 export function StatusBar() {
@@ -11,7 +13,13 @@ export function StatusBar() {
   const wifiEnabled = useSettingsStore((s) => s.wifiEnabled);
   const silentMode = useSettingsStore((s) => s.silentMode);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
-  const [battery] = useState(87);
+  const { data: storage } = useDeviceStorage();
+  const { data: hardware } = useDeviceHardware();
+
+  const battery = hardware?.batteryLevel ?? 87;
+  const lowStorage = storage?.lowStorageLevel === 'warning' || storage?.lowStorageLevel === 'low';
+  const criticalStorage = storage?.lowStorageLevel === 'critical' || storage?.lowStorageLevel === 'emergency';
+  const memoryPressure = hardware?.ram?.memoryPressure ?? false;
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 10000);
@@ -28,7 +36,23 @@ export function StatusBar() {
         {formatTime(time)}
       </span>
 
-      <div className="flex-1" />
+      <div className="flex-1 flex justify-center gap-1">
+        {memoryPressure && (
+          <span className="text-[9px] text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded" title="Memory pressure">
+            RAM
+          </span>
+        )}
+        {criticalStorage && (
+          <span className="text-[9px] text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded" title="Storage critical">
+            !
+          </span>
+        )}
+        {lowStorage && !criticalStorage && (
+          <span className="text-[9px] text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded" title="Low storage">
+            💾
+          </span>
+        )}
+      </div>
 
       <div className="flex items-center gap-1.5 text-white">
         {silentMode && <span className="text-[10px]" aria-label="Silent mode">🔇</span>}

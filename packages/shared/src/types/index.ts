@@ -214,7 +214,12 @@ export type SocketEvent =
   | 'store:download:paused'
   | 'store:download:resumed'
   | 'store:update:complete'
-  | 'device:storage:updated';
+  | 'device:storage:updated'
+  | 'device:storage:warning'
+  | 'device:ram:updated'
+  | 'device:memory:pressure'
+  | 'device:update:complete'
+  | 'device:update:rollback';
 
 export interface SocketPayload {
   event: SocketEvent;

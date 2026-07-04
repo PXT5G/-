@@ -25,8 +25,14 @@ export function useDeviceStorage() {
     const unsub = realtimeService.on('device:storage:updated', () => {
       queryClient.invalidateQueries({ queryKey: ['device', 'storage'] });
     });
+    const unsubWarning = realtimeService.on('device:storage:warning', () => {
+      queryClient.invalidateQueries({ queryKey: ['device'] });
+    });
 
-    return () => unsub();
+    return () => {
+      unsub();
+      unsubWarning();
+    };
   }, [isAuthenticated, token, queryClient]);
 
   return query;

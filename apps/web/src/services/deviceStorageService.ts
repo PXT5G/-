@@ -26,6 +26,9 @@ export interface DeviceStorageBreakdown {
   audio: number;
   other: number;
   reserved: number;
+  trash?: number;
+  freeRatio?: number;
+  lowStorageLevel?: string;
   capacityTier?: string;
   deviceName?: string;
   osVersion?: string;
@@ -37,7 +40,91 @@ export interface DeviceStorageBreakdown {
     updates: number;
     recovery: number;
     reservedSpace: number;
+    updateReserved?: number;
   };
+}
+
+export interface StorageWear {
+  healthPercent: number;
+  lifetimeWrites: number;
+  lifetimeReads: number;
+  estimatedRemainingLifeYears: number;
+}
+
+export interface RamAppEntry {
+  bundleId: string;
+  appName: string;
+  baseRam: number;
+  activeRam: number;
+  backgroundRam: number;
+  cachedRam: number;
+  currentRam: number;
+  state: string;
+  lastActiveAt: string;
+}
+
+export interface RamUsage {
+  total: number;
+  used: number;
+  free: number;
+  pressure: number;
+  memoryPressure: boolean;
+  apps: RamAppEntry[];
+}
+
+export interface HardwareProfile {
+  deviceName: string;
+  deviceModel: string;
+  deviceColor: string;
+  serialNumber: string;
+  deviceUuid: string;
+  generation: string;
+  cpu: string;
+  gpu: string;
+  ramTotal: number;
+  internalStorage: number;
+  capacityTier: string;
+  batteryCapacity: number;
+  batteryHealth: number;
+  batteryLevel: number;
+  displayResolution: string;
+  osVersion: string;
+  buildNumber: string;
+  temperature: number;
+  uptimeMs: number;
+  storageWear: StorageWear;
+  lowStorageMode: boolean;
+  emergencyMode: boolean;
+  lowStorageLevel: string;
+  storage?: DeviceStorageBreakdown;
+  ram?: RamUsage;
+}
+
+export interface LowStorageStatus {
+  level: string;
+  freeRatio: number;
+  freeBytes: number;
+  totalBytes: number;
+  lowStorageMode: boolean;
+  emergencyMode: boolean;
+  blockInstall: boolean;
+  blockVideoRecording: boolean;
+  pauseUpdates: boolean;
+  suggestions: string[];
+}
+
+export interface TrashInfo {
+  items: Array<{
+    id: string;
+    bundleId: string;
+    name: string;
+    type: string;
+    sizeBytes: number;
+    deletedAt: string;
+    expiresAt: string;
+  }>;
+  totalSize: number;
+  count: number;
 }
 
 export interface InstalledPackageInfo {
@@ -135,6 +222,94 @@ export const deviceStorageService = {
     );
     return res.data ?? [];
   },
+
+  async getHardware(): Promise<HardwareProfile> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: HardwareProfile }>(
+      '/api/device/hardware',
+      { token }
+    );
+    return res.data!;
+  },
+
+  async getRam(): Promise<RamUsage> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: RamUsage }>(
+      '/api/device/ram',
+      { token }
+    );
+    return res.data!;
+  },
+
+  async getTaskManager(): Promise<RamUsage & { tasks: RamAppEntry[] }> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: RamUsage & { tasks: RamAppEntry[] } }>(
+      '/api/device/task-manager',
+      { token }
+    );
+    return res.data!;
+  },
+
+  async launchApp(bundleId: string): Promise<{ allowed: boolean; reason?: string }> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: { allowed: boolean; reason?: string } }>(
+      `/api/device/ram/launch/${bundleId}`,
+      { method: 'POST', token }
+    );
+    return res.data!;
+  },
+
+  async backgroundApp(bundleId: string): Promise<void> {
+    const token = getToken();
+    if (!token) return;
+    await apiRequest(`/api/device/ram/background/${bundleId}`, { method: 'POST', token });
+  },
+
+  async stopApp(bundleId: string): Promise<void> {
+    const token = getToken();
+    if (!token) return;
+    await apiRequest(`/api/device/ram/stop/${bundleId}`, { method: 'POST', token });
+  },
+
+  async forceStopApp(bundleId: string): Promise<void> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    await apiRequest(`/api/device/ram/force-stop/${bundleId}`, { method: 'POST', token });
+  },
+
+  async getLowStorageStatus(): Promise<LowStorageStatus> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: LowStorageStatus }>(
+      '/api/device/low-storage',
+      { token }
+    );
+    return res.data!;
+  },
+
+  async getTrash(): Promise<TrashInfo> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: TrashInfo }>(
+      '/api/device/trash',
+      { token }
+    );
+    return res.data!;
+  },
+
+  async emptyTrash(): Promise<DeviceStorageBreakdown> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: { breakdown: DeviceStorageBreakdown } }>(
+      '/api/device/trash/empty',
+      { method: 'POST', token }
+    );
+    return res.data!.breakdown;
+  },
 };
 
 export function formatBytes(bytes: number): string {
@@ -142,4 +317,14 @@ export function formatBytes(bytes: number): string {
   if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
   if (bytes >= 1_000) return `${(bytes / 1_000).toFixed(0)} KB`;
   return `${bytes} B`;
+}
+
+export function formatUptime(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
 }

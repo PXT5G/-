@@ -13,6 +13,7 @@ import {
   getRefreshTokenExpiry,
 } from '../../services/jwtService';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
+import { seedHardwareProfile } from '../../services/hardwareService';
 
 const registerSchema = z.object({
   username: z.string().min(3).max(30),
@@ -52,6 +53,7 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response) => 
 
   const { ensureDeviceProfile } = await import('../../services/deviceStorageService');
   await ensureDeviceProfile(user._id.toString());
+  await seedHardwareProfile(user._id.toString(), undefined, data.displayName ?? data.username);
 
   const deviceId = uuidv4();
   const sessionId = uuidv4();
