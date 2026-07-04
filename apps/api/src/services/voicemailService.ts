@@ -30,18 +30,18 @@ function formatVoicemailEntry(v: Pick<IPhoneVoicemail, '_id' | 'callId' | 'fromN
 }
 
 export async function listVoicemails(userId: string, page = 0, limit = 30) {
-  const items = await PhoneVoicemail.find({ userId, deletedAt: { $exists: false } })
+  const items = await PhoneVoicemail.find({ userId, $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] })
     .sort({ receivedAt: -1 })
     .skip(page * limit)
     .limit(limit)
     .lean();
 
-  const unread = await PhoneVoicemail.countDocuments({ userId, isRead: false, deletedAt: { $exists: false } });
+  const unread = await PhoneVoicemail.countDocuments({ userId, isRead: false, $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] });
   return { unread, items: items.map((v) => formatVoicemailEntry(v)) };
 }
 
 export async function getVoicemail(userId: string, voicemailId: string) {
-  const v = await PhoneVoicemail.findOne({ _id: voicemailId, userId, deletedAt: { $exists: false } });
+  const v = await PhoneVoicemail.findOne({ _id: voicemailId, userId, $or: [{ deletedAt: null }, { deletedAt: { $exists: false } }] });
   if (!v) throw new Error('Voicemail not found');
   return formatVoicemailEntry(v);
 }

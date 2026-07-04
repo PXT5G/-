@@ -94,10 +94,10 @@ export function IncomingCallScreen() {
       </GlassCard>
 
       <div className="flex gap-6">
-        <button type="button" onClick={handleReject} className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center text-xl">
+        <button type="button" onClick={handleReject} aria-label="Decline call" className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center text-xl">
           ✕
         </button>
-        <button type="button" onClick={handleAnswer} className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center text-xl">
+        <button type="button" onClick={handleAnswer} aria-label="Accept call" className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center text-xl">
           📞
         </button>
       </div>

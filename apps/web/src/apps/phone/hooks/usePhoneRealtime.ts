@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { realtimeService } from '@/services/realtimeService';
 import { useAuthStore } from '@/stores/authStore';
 import { useDynamicIslandStore } from '@/stores/dynamicIslandStore';
+import { phoneService } from '../services/phoneService';
 import { usePhoneStore } from '../store/phoneStore';
 import type { IncomingCallPayload } from '../types';
 
@@ -61,9 +62,26 @@ export function usePhoneRealtime() {
       }
     };
 
-    const handleAccepted = () => {
+    const handleAccepted = async () => {
       invalidate();
       setIncomingCall(null);
+      try {
+        const active = await phoneService.getActiveCall();
+        if (active) {
+          setActiveCall(active);
+          setTab('active');
+        } else {
+          const { activeCall } = usePhoneStore.getState();
+          if (activeCall) {
+            setActiveCall({ ...activeCall, state: 'active', connectedAt: new Date().toISOString() });
+          }
+        }
+      } catch {
+        const { activeCall } = usePhoneStore.getState();
+        if (activeCall) {
+          setActiveCall({ ...activeCall, state: 'active', connectedAt: new Date().toISOString() });
+        }
+      }
       islandShow({ mode: 'activity', title: 'On Call', subtitle: '00:00', icon: '📞' });
     };
 

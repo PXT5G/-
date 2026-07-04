@@ -3,7 +3,7 @@ import { Call, ICall } from '../database/models/Call';
 import { CallHistory } from '../database/models/CallHistory';
 import { ActiveCall, IActiveCall } from '../database/models/ActiveCall';
 import { CallRecordingMetadata } from '../database/models/CallRecordingMetadata';
-import { PhoneBlockedNumber } from '../database/models/PhoneBlockedNumber';
+import { Contact } from '../database/models/Contact';
 import { SIMProfile } from '../database/models/SIMProfile';
 import {
   AuditContext,
@@ -211,7 +211,13 @@ export async function makeCall(
     }
   }
 
-  const settings = await ensurePhoneSettings(userId);
+  await ensurePhoneSettings(userId);
+
+  if (data.contactId) {
+    const ownedContact = await Contact.findOne({ _id: data.contactId, userId });
+    if (!ownedContact) throw new Error('Contact not found');
+  }
+
   const { displayName, contactId, avatar } = await resolveContactDisplay(userId, remoteNumber, data.contactId);
   const remoteUserId = await resolveUserByPhone(remoteNumber);
 

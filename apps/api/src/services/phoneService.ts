@@ -143,16 +143,53 @@ export async function getUserPhoneNumber(userId: string): Promise<string | null>
 
 export async function resolveUserByPhone(phoneNumber: string): Promise<string | null> {
   const normalized = normalizePhone(phoneNumber);
-  const pn = await PhoneNumber.findOne({ number: normalized, status: 'assigned' });
+  const trimmed = phoneNumber.trim();
+  const pn =
+    (await PhoneNumber.findOne({ number: normalized, status: 'assigned' })) ??
+    (normalized !== trimmed ? await PhoneNumber.findOne({ number: trimmed, status: 'assigned' }) : null);
   return pn?.userId?.toString() ?? null;
 }
 
+const EMERGENCY_SHORT_CODES = new Set(['911', '112', '999']);
+
+export function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Canonicalize dial input to BananaOS E.164-style numbers (+1-BNA-XXX-XXXX). */
 export function normalizePhone(phone: string): string {
-  const digits = phone.replace(/[^\d+]/g, '');
-  if (digits.startsWith('+')) return digits;
-  if (digits.length === 10) return `+1${digits}`;
-  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
-  return digits.startsWith('+') ? digits : `+${digits}`;
+  const trimmed = phone.trim();
+  const digitsOnly = trimmed.replace(/\D/g, '');
+
+  if (EMERGENCY_SHORT_CODES.has(digitsOnly)) {
+    return `+1${digitsOnly}`;
+  }
+  if (digitsOnly === '1911' || digitsOnly === '112' || digitsOnly === '999') {
+    return `+${digitsOnly}`;
+  }
+
+  const banana = trimmed.match(/\+?\s*1?\s*-?\s*BNA\s*-?\s*(\d{3})\s*-?\s*(\d{4})/i);
+  if (banana) {
+    return `+1-BNA-${banana[1]}-${banana[2]}`;
+  }
+
+  if (/^\+1-BNA-\d{3}-\d{4}$/i.test(trimmed)) {
+    return trimmed.replace(/bna/i, 'BNA');
+  }
+
+  if (digitsOnly.length === 10) {
+    return `+1-BNA-${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+  }
+  if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+    const rest = digitsOnly.slice(1);
+    return `+1-BNA-${rest.slice(0, 3)}-${rest.slice(3)}`;
+  }
+  if (digitsOnly.length === 7) {
+    return `+1-BNA-555-${digitsOnly}`;
+  }
+
+  if (trimmed.startsWith('+')) return trimmed;
+  return digitsOnly ? `+${digitsOnly}` : trimmed;
 }
 
 export async function resolveContactDisplay(
@@ -314,6 +351,10 @@ export async function removeFavorite(userId: string, favoriteId: string, ctx: Au
 
 export async function reorderFavorites(userId: string, orderedIds: string[], ctx: AuditContext) {
   await requirePermission(userId, 'manage_favorites', ctx.performedByRole as 'user' | 'admin');
+  const owned = await PhoneFavoriteContact.countDocuments({ userId, _id: { $in: orderedIds } });
+  if (owned !== orderedIds.length) {
+    throw new Error('One or more favorite IDs are invalid');
+  }
   for (let i = 0; i < orderedIds.length; i++) {
     await PhoneFavoriteContact.findOneAndUpdate({ _id: orderedIds[i], userId }, { position: i, updatedBy: userId });
   }
@@ -370,7 +411,8 @@ export async function unblockNumber(userId: string, blockedId: string, ctx: Audi
 
 export async function searchContacts(userId: string, query: string, ctx: AuditContext) {
   await requirePermission(userId, 'view_dashboard', ctx.performedByRole as 'user' | 'admin');
-  const regex = new RegExp(query.trim(), 'i');
+  const safeQuery = escapeRegex(query.trim());
+  const regex = new RegExp(safeQuery, 'i');
   const contacts = await Contact.find({
     userId,
     $or: [{ fullName: regex }, { 'phoneNumbers.number': regex }, { 'emails.address': regex }],

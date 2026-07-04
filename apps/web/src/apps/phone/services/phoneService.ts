@@ -179,8 +179,11 @@ export const phoneService = {
   },
 
   async emergencyCall() {
-    const res = await apiRequest<{ success: boolean; data: unknown }>('/api/phone/emergency/call', { method: 'POST', token: getToken() });
-    return res.data;
+    const res = await apiRequest<{ success: boolean; data: { call: { id: string }; activeCall: ActiveCallState } }>(
+      '/api/phone/emergency/call',
+      { method: 'POST', token: getToken() }
+    );
+    return res.data!;
   },
 
   async callEmergencyContact(id: string) {

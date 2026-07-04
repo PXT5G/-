@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import { usePhoneStore } from '../store/phoneStore';
 import { phoneService } from '../services/phoneService';
 import { useHaptic } from '@/hooks/useSound';
-
 const KEYS = [
   ['1', '2', '3'],
   ['4', '5', '6'],
@@ -23,14 +22,19 @@ export function DialPadScreen() {
   const { tap, success } = useHaptic();
   const queryClient = useQueryClient();
   const [calling, setCalling] = useState(false);
+  const [callError, setCallError] = useState<string | null>(null);
 
   const callMutation = useMutation({
     mutationFn: (number: string) => phoneService.makeCall(number),
     onSuccess: (data) => {
+      setCallError(null);
       setActiveCall(data.activeCall);
       setTab('active');
       queryClient.invalidateQueries({ queryKey: ['phone'] });
       success();
+    },
+    onError: (err: Error) => {
+      setCallError(err.message || 'Call failed');
     },
   });
 
@@ -47,6 +51,9 @@ export function DialPadScreen() {
 
   return (
     <div className="flex flex-col h-full items-center justify-between py-6 px-4">
+      {callError && (
+        <p className="text-red-400 text-xs text-center px-4 mb-2" role="alert">{callError}</p>
+      )}
       <div className="flex-1 flex items-center justify-center min-h-[60px]">
         <motion.p
           key={dialInput}
@@ -66,6 +73,7 @@ export function DialPadScreen() {
             whileTap={{ scale: 0.9 }}
             onClick={() => { tap(); appendDial(key); }}
             className="w-16 h-16 mx-auto rounded-full bg-white/5 border border-white/10 text-white text-2xl font-light backdrop-blur-xl"
+            aria-label={`Dial ${key}`}
           >
             {key}
           </motion.button>
@@ -84,6 +92,7 @@ export function DialPadScreen() {
           onClick={handleCall}
           disabled={!dialInput || calling}
           className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-2xl shadow-lg shadow-green-500/40 disabled:opacity-40"
+          aria-label="Place call"
         >
           📞
         </motion.button>

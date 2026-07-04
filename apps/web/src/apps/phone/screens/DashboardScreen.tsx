@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { phoneService } from '../services/phoneService';
 import { usePhoneStore } from '../store/phoneStore';
 import { GlassCard } from '../components/GlassCard';
@@ -13,7 +14,9 @@ export function DashboardScreen() {
     queryFn: () => phoneService.getDashboard(),
   });
   const setTab = usePhoneStore((s) => s.setTab);
+  const setActiveCall = usePhoneStore((s) => s.setActiveCall);
   const { tap } = useHaptic();
+  const [emergencyError, setEmergencyError] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -68,11 +71,21 @@ export function DashboardScreen() {
         ))}
       </div>
 
+      {emergencyError && (
+        <p className="text-red-400 text-xs text-center px-2" role="alert">{emergencyError}</p>
+      )}
+
       <GlassCard
         onClick={async () => {
           tap();
-          await phoneService.emergencyCall();
-          setTab('active');
+          setEmergencyError(null);
+          try {
+            const result = await phoneService.emergencyCall();
+            if (result?.activeCall) setActiveCall(result.activeCall);
+            setTab('active');
+          } catch (err) {
+            setEmergencyError(err instanceof Error ? err.message : 'Emergency call failed');
+          }
         }}
         className="border-red-400/30 bg-red-500/10"
       >

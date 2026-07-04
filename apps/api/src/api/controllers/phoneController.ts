@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import { Types } from 'mongoose';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
@@ -66,6 +67,11 @@ function auditCtx(req: AuthRequest, permission: PhonePermissionName, reason?: st
 async function checkPerm(req: AuthRequest, permission: PhonePermissionName): Promise<void> {
   const allowed = await hasPermission(req.user!.userId, permission, req.user!.role);
   if (!allowed) throw new AppError(403, `Permission denied: ${permission}`);
+}
+
+function parseObjectId(id: string, label = 'id'): string {
+  if (!Types.ObjectId.isValid(id)) throw new AppError(400, `Invalid ${label}`);
+  return id;
 }
 
 export const getPermissions = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -142,7 +148,7 @@ export const postFavorite = asyncHandler(async (req: AuthRequest, res: Response)
 
 export const deleteFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    await removeFavorite(req.user!.userId, String(req.params.id), auditCtx(req, 'manage_favorites'));
+    await removeFavorite(req.user!.userId, parseObjectId(String(req.params.id), 'favorite id'), auditCtx(req, 'manage_favorites'));
     res.json({ success: true });
   } catch (err) {
     throw new AppError(404, err instanceof Error ? err.message : 'Not found');
@@ -180,7 +186,7 @@ export const postBlocked = asyncHandler(async (req: AuthRequest, res: Response) 
 
 export const deleteBlocked = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    await unblockNumber(req.user!.userId, String(req.params.id), auditCtx(req, 'block_numbers'));
+    await unblockNumber(req.user!.userId, parseObjectId(String(req.params.id), 'blocked id'), auditCtx(req, 'block_numbers'));
     res.json({ success: true });
   } catch (err) {
     throw new AppError(404, err instanceof Error ? err.message : 'Not found');
@@ -239,7 +245,7 @@ export const postCall = asyncHandler(async (req: AuthRequest, res: Response) => 
 
 export const acceptCallHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const call = await acceptCall(req.user!.userId, String(req.params.id), auditCtx(req, 'receive_call'));
+    const call = await acceptCall(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), auditCtx(req, 'receive_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Accept failed');
@@ -248,7 +254,7 @@ export const acceptCallHandler = asyncHandler(async (req: AuthRequest, res: Resp
 
 export const rejectCallHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const call = await rejectCall(req.user!.userId, String(req.params.id), auditCtx(req, 'receive_call'));
+    const call = await rejectCall(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), auditCtx(req, 'receive_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Reject failed');
@@ -257,7 +263,7 @@ export const rejectCallHandler = asyncHandler(async (req: AuthRequest, res: Resp
 
 export const endCallHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const call = await endCall(req.user!.userId, String(req.params.id), auditCtx(req, 'end_call'));
+    const call = await endCall(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), auditCtx(req, 'end_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'End failed');
@@ -266,7 +272,7 @@ export const endCallHandler = asyncHandler(async (req: AuthRequest, res: Respons
 
 export const holdCallHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const call = await holdCall(req.user!.userId, String(req.params.id), auditCtx(req, 'end_call'));
+    const call = await holdCall(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), auditCtx(req, 'end_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Hold failed');
@@ -275,7 +281,7 @@ export const holdCallHandler = asyncHandler(async (req: AuthRequest, res: Respon
 
 export const resumeCallHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const call = await resumeCall(req.user!.userId, String(req.params.id), auditCtx(req, 'end_call'));
+    const call = await resumeCall(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), auditCtx(req, 'end_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Resume failed');
@@ -286,7 +292,7 @@ export const muteCallHandler = asyncHandler(async (req: AuthRequest, res: Respon
   const schema = z.object({ muted: z.boolean() });
   const { muted } = schema.parse(req.body);
   try {
-    const call = await muteCall(req.user!.userId, String(req.params.id), muted, auditCtx(req, 'end_call'));
+    const call = await muteCall(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), muted, auditCtx(req, 'end_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Mute failed');
@@ -297,7 +303,7 @@ export const speakerCallHandler = asyncHandler(async (req: AuthRequest, res: Res
   const schema = z.object({ speaker: z.boolean() });
   const { speaker } = schema.parse(req.body);
   try {
-    const call = await speakerCall(req.user!.userId, String(req.params.id), speaker, auditCtx(req, 'end_call'));
+    const call = await speakerCall(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), speaker, auditCtx(req, 'end_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Speaker failed');
@@ -311,7 +317,7 @@ export const conferenceHandler = asyncHandler(async (req: AuthRequest, res: Resp
   });
   const data = schema.parse(req.body);
   try {
-    const call = await addConferenceParticipant(req.user!.userId, String(req.params.id), data, auditCtx(req, 'conference_call'));
+    const call = await addConferenceParticipant(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), data, auditCtx(req, 'conference_call'));
     res.json({ success: true, data: call });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Conference failed');
@@ -320,7 +326,7 @@ export const conferenceHandler = asyncHandler(async (req: AuthRequest, res: Resp
 
 export const recordCallHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const recording = await startRecording(req.user!.userId, String(req.params.id), auditCtx(req, 'record_call'));
+    const recording = await startRecording(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), auditCtx(req, 'record_call'));
     res.json({ success: true, data: recording });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Record failed');
@@ -338,7 +344,7 @@ export const getVoicemailsHandler = asyncHandler(async (req: AuthRequest, res: R
 export const getVoicemailHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   await checkPerm(req, 'view_voicemail');
   try {
-    const vm = await getVoicemail(req.user!.userId, String(req.params.id));
+    const vm = await getVoicemail(req.user!.userId, parseObjectId(String(req.params.id), 'voicemail id'));
     res.json({ success: true, data: vm });
   } catch (err) {
     throw new AppError(404, err instanceof Error ? err.message : 'Not found');
@@ -347,7 +353,7 @@ export const getVoicemailHandler = asyncHandler(async (req: AuthRequest, res: Re
 
 export const readVoicemailHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const vm = await markVoicemailRead(req.user!.userId, String(req.params.id), auditCtx(req, 'view_voicemail'));
+    const vm = await markVoicemailRead(req.user!.userId, parseObjectId(String(req.params.id), 'voicemail id'), auditCtx(req, 'view_voicemail'));
     res.json({ success: true, data: vm });
   } catch (err) {
     throw new AppError(404, err instanceof Error ? err.message : 'Not found');
@@ -356,7 +362,7 @@ export const readVoicemailHandler = asyncHandler(async (req: AuthRequest, res: R
 
 export const deleteVoicemailHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    await deleteVoicemail(req.user!.userId, String(req.params.id), auditCtx(req, 'manage_voicemail'));
+    await deleteVoicemail(req.user!.userId, parseObjectId(String(req.params.id), 'voicemail id'), auditCtx(req, 'manage_voicemail'));
     res.json({ success: true });
   } catch (err) {
     throw new AppError(404, err instanceof Error ? err.message : 'Not found');
@@ -365,7 +371,7 @@ export const deleteVoicemailHandler = asyncHandler(async (req: AuthRequest, res:
 
 export const voicemailRedirectHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const vm = await sendToVoicemail(req.user!.userId, String(req.params.id), auditCtx(req, 'manage_voicemail'));
+    const vm = await sendToVoicemail(req.user!.userId, parseObjectId(String(req.params.id), 'call id'), auditCtx(req, 'manage_voicemail'));
     res.json({ success: true, data: vm });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Failed');
@@ -404,7 +410,7 @@ export const postEmergencyContact = asyncHandler(async (req: AuthRequest, res: R
 
 export const deleteEmergencyContact = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    await removeEmergencyContact(req.user!.userId, String(req.params.id), auditCtx(req, 'emergency_call'));
+    await removeEmergencyContact(req.user!.userId, parseObjectId(String(req.params.id), 'emergency contact id'), auditCtx(req, 'emergency_call'));
     res.json({ success: true });
   } catch (err) {
     throw new AppError(404, err instanceof Error ? err.message : 'Not found');
@@ -427,7 +433,7 @@ export const emergencyCallHandler = asyncHandler(async (req: AuthRequest, res: R
 
 export const callEmergencyContactHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
-    const result = await callEmergencyContact(req.user!.userId, String(req.params.id), auditCtx(req, 'emergency_call'));
+    const result = await callEmergencyContact(req.user!.userId, parseObjectId(String(req.params.id), 'emergency contact id'), auditCtx(req, 'emergency_call'));
     res.status(201).json({ success: true, data: result });
   } catch (err) {
     throw new AppError(400, err instanceof Error ? err.message : 'Call failed');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { phoneService } from '../services/phoneService';
 import { usePhoneStore } from '../store/phoneStore';
@@ -28,6 +28,17 @@ export function ActiveCallScreen() {
   });
 
   const call = storeCall ?? active;
+  const callId = call?.callId;
+  const callMuted = call?.isMuted ?? false;
+  const callSpeaker = call?.isSpeaker ?? false;
+  const callOnHold = call?.isOnHold ?? false;
+
+  useEffect(() => {
+    setMuted(callMuted);
+    setSpeaker(callSpeaker);
+    setOnHold(callOnHold);
+  }, [callId, callMuted, callSpeaker, callOnHold]);
+
   if (!call) {
     return <div className="flex items-center justify-center h-full text-white/40 text-sm">No active call</div>;
   }
@@ -92,6 +103,8 @@ export function ActiveCallScreen() {
             key={btn.label}
             type="button"
             onClick={btn.onClick}
+            aria-label={btn.label}
+            aria-pressed={btn.active}
             className={`flex flex-col items-center gap-1 ${btn.active ? 'text-green-400' : 'text-white/60'}`}
           >
             <span className={`w-14 h-14 rounded-full flex items-center justify-center text-xl ${btn.active ? 'bg-green-400/20 border border-green-400/40' : 'bg-white/5 border border-white/10'}`}>
@@ -105,6 +118,7 @@ export function ActiveCallScreen() {
       <button
         type="button"
         onClick={endCall}
+        aria-label="End call"
         className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center text-2xl shadow-lg shadow-red-500/40"
       >
         📵

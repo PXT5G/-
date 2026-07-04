@@ -46,10 +46,10 @@ router.post('/calls/:id/voicemail', authenticate, phoneController.voicemailRedir
 
 // Voicemail
 router.get('/voicemail', authenticate, phoneController.getVoicemailsHandler);
+router.post('/voicemail/greeting', authenticate, phoneController.voicemailGreetingHandler);
 router.get('/voicemail/:id', authenticate, phoneController.getVoicemailHandler);
 router.post('/voicemail/:id/read', authenticate, phoneController.readVoicemailHandler);
 router.delete('/voicemail/:id', authenticate, phoneController.deleteVoicemailHandler);
-router.post('/voicemail/greeting', authenticate, phoneController.voicemailGreetingHandler);
 
 // Emergency
 router.get('/emergency', authenticate, phoneController.getEmergencyContacts);

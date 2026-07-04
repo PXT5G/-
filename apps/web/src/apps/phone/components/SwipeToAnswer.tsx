@@ -43,6 +43,7 @@ export function SwipeToAnswer({ onAnswer, onReject, disabled }: SwipeToAnswerPro
         style={{ x }}
         whileTap={{ scale: 0.95 }}
         disabled={disabled || done}
+        aria-label="Swipe to answer or decline"
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-green-500 flex items-center justify-center text-2xl shadow-lg shadow-green-500/40"
       >
         📞

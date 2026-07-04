@@ -1,21 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePhoneStore } from './store/phoneStore';
 import { phoneService } from './services/phoneService';
 import { usePhoneRealtime } from './hooks/usePhoneRealtime';
 import { PhoneTabBar } from './components/PhoneTabBar';
-import { DashboardScreen } from './screens/DashboardScreen';
-import { DialPadScreen } from './screens/DialPadScreen';
-import { IncomingCallScreen } from './screens/IncomingCallScreen';
-import { ActiveCallScreen } from './screens/ActiveCallScreen';
-import { RecentCallsScreen } from './screens/RecentCallsScreen';
-import { FavoritesScreen } from './screens/FavoritesScreen';
-import { ContactsPickerScreen } from './screens/ContactsPickerScreen';
-import { VoicemailScreen } from './screens/VoicemailScreen';
-import { BlockedNumbersScreen } from './screens/BlockedNumbersScreen';
-import { SettingsScreen } from './screens/SettingsScreen';
 import { useAuthStore } from '@/stores/authStore';
 import { identityService } from '@/apps/identity/services/identityService';
 import { simService } from '@/apps/sim/services/simService';
@@ -23,6 +14,23 @@ import { useHaptic } from '@/hooks/useSound';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/shared/Button';
 import type { PhoneTab } from './types';
+
+const screenFallback = (
+  <div className="flex flex-col gap-3 p-4 animate-pulse">
+    {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-white/5 rounded-2xl" />)}
+  </div>
+);
+
+const DashboardScreen = dynamic(() => import('./screens/DashboardScreen').then((m) => m.DashboardScreen), { loading: () => screenFallback });
+const DialPadScreen = dynamic(() => import('./screens/DialPadScreen').then((m) => m.DialPadScreen), { loading: () => screenFallback });
+const IncomingCallScreen = dynamic(() => import('./screens/IncomingCallScreen').then((m) => m.IncomingCallScreen), { loading: () => screenFallback });
+const ActiveCallScreen = dynamic(() => import('./screens/ActiveCallScreen').then((m) => m.ActiveCallScreen), { loading: () => screenFallback });
+const RecentCallsScreen = dynamic(() => import('./screens/RecentCallsScreen').then((m) => m.RecentCallsScreen), { loading: () => screenFallback });
+const FavoritesScreen = dynamic(() => import('./screens/FavoritesScreen').then((m) => m.FavoritesScreen), { loading: () => screenFallback });
+const ContactsPickerScreen = dynamic(() => import('./screens/ContactsPickerScreen').then((m) => m.ContactsPickerScreen), { loading: () => screenFallback });
+const VoicemailScreen = dynamic(() => import('./screens/VoicemailScreen').then((m) => m.VoicemailScreen), { loading: () => screenFallback });
+const BlockedNumbersScreen = dynamic(() => import('./screens/BlockedNumbersScreen').then((m) => m.BlockedNumbersScreen), { loading: () => screenFallback });
+const SettingsScreen = dynamic(() => import('./screens/SettingsScreen').then((m) => m.SettingsScreen), { loading: () => screenFallback });
 
 export { phoneManifest } from './manifest';
 
@@ -61,7 +69,12 @@ export function PhoneApp() {
 
   useEffect(() => {
     if (isAuthenticated && simDashboard) {
-      phoneService.init().then(() => phoneService.getPermissions().then(setPermissions)).catch(() => {});
+      phoneService
+        .init()
+        .then(() => phoneService.getPermissions().then(setPermissions))
+        .catch((err) => {
+          console.error('[Phone] init failed:', err);
+        });
     }
   }, [isAuthenticated, simDashboard, setPermissions]);
 
@@ -156,7 +169,9 @@ export function PhoneApp() {
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden">{renderScreen()}</div>
+      <div className="flex-1 overflow-hidden">
+        <Suspense fallback={screenFallback}>{renderScreen()}</Suspense>
+      </div>
 
       {showTabBar && (
         <PhoneTabBar
