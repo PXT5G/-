@@ -9,6 +9,14 @@ export const APP_RAM_PROFILES: Record<string, { base: number; active: number; ba
   'com.bananaos.gallery': { base: 120_000_000, active: 220_000_000, background: 50_000_000, cached: 35_000_000 },
   'com.bananaos.settings': { base: 35_000_000, active: 50_000_000, background: 15_000_000, cached: 8_000_000 },
   'com.bananaos.store': { base: 70_000_000, active: 100_000_000, background: 40_000_000, cached: 20_000_000 },
+  'com.bananaos.maps': { base: 150_000_000, active: 280_000_000, background: 70_000_000, cached: 40_000_000 },
+  'com.bananaos.files': { base: 45_000_000, active: 70_000_000, background: 25_000_000, cached: 15_000_000 },
+  'com.bananaos.calendar': { base: 50_000_000, active: 80_000_000, background: 30_000_000, cached: 18_000_000 },
+  'com.bananaos.clock': { base: 30_000_000, active: 45_000_000, background: 15_000_000, cached: 10_000_000 },
+  'com.bananaos.calculator': { base: 15_000_000, active: 25_000_000, background: 8_000_000, cached: 5_000_000 },
+  'com.bananaos.notes': { base: 40_000_000, active: 65_000_000, background: 20_000_000, cached: 12_000_000 },
+  'com.bananaos.voicerecorder': { base: 35_000_000, active: 60_000_000, background: 18_000_000, cached: 10_000_000 },
+  'com.bananaos.weather': { base: 35_000_000, active: 55_000_000, background: 18_000_000, cached: 10_000_000 },
 };
 
 export const DEFAULT_RAM_PROFILE = { base: 50_000_000, active: 80_000_000, background: 25_000_000, cached: 15_000_000 };

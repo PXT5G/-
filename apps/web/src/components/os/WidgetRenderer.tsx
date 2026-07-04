@@ -5,6 +5,7 @@ import { formatTime, formatShortDate } from '@/utils/date';
 import { useState, useEffect } from 'react';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { cn } from '@/utils/cn';
+import { useWeather } from '@/hooks/useSystemApps';
 
 interface WidgetRendererProps {
   pageIndex: number;
@@ -28,11 +29,16 @@ export function WidgetRenderer({ pageIndex }: WidgetRendererProps) {
 
 function DefaultWidgets() {
   const [time, setTime] = useState(new Date());
+  const { data: weather } = useWeather();
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const current = weather?.current as Record<string, unknown> | undefined;
+  const temp = current ? Number(current.tempC) : 24;
+  const label = current ? String(current.label) : 'Sunny';
 
   return (
     <div className="px-6 pb-4 grid grid-cols-2 gap-3">
@@ -42,8 +48,8 @@ function DefaultWidgets() {
       </GlassPanel>
       <GlassPanel className="col-span-1 p-4" intensity="low">
         <p className="text-xs text-white/50">Weather</p>
-        <p className="text-2xl font-light text-white mt-1">24°</p>
-        <p className="text-xs text-white/60">Sunny</p>
+        <p className="text-2xl font-light text-white mt-1">{temp}°</p>
+        <p className="text-xs text-white/60">{label}</p>
       </GlassPanel>
     </div>
   );

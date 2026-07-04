@@ -20,6 +20,16 @@ const RUNTIME_APPS = new Set([
   'com.bananaos.police',
   'com.bananaos.control-panel',
   'com.bananaos.phone',
+  'com.bananaos.maps',
+  'com.bananaos.camera',
+  'com.bananaos.gallery',
+  'com.bananaos.files',
+  'com.bananaos.calendar',
+  'com.bananaos.clock',
+  'com.bananaos.calculator',
+  'com.bananaos.notes',
+  'com.bananaos.voicerecorder',
+  'com.bananaos.weather',
 ]);
 
 export interface PackageManifest {

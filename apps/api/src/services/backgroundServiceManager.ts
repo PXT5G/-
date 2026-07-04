@@ -91,6 +91,15 @@ export function startBackgroundServiceManager(): void {
     await deviceEcosystemTick();
   });
 
+  registerBackgroundTask('clock-alarms', 60 * 1000, async () => {
+    const { ClockAlarm } = await import('../database/models/ClockAlarm');
+    const { scheduleAlarmNotifications } = await import('./clockService');
+    const alarms = await ClockAlarm.find({ enabled: true, deletedAt: null }).distinct('userId');
+    for (const userId of alarms) {
+      await scheduleAlarmNotifications(userId.toString());
+    }
+  });
+
   registerBackgroundTask('job-processor', 5 * 1000, async () => {
     const { processJobQueue } = await import('./jobService');
     await processJobQueue();

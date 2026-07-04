@@ -46,6 +46,7 @@ import { ensureDeviceState } from '../../services/deviceStateService';
 import { initializeWorld } from '../../services/worldEngineService';
 import { initializeCommunication } from '../../services/communicationService';
 import { initializeDeviceEcosystem } from '../../services/deviceEcosystemService';
+import { initializeSystemApps } from '../../services/systemAppsService';
 import { emitToUser } from '../../services/socketService';
 
 function param(value: string | string[]): string {
@@ -353,6 +354,7 @@ export async function initializeSystemServices(userId: string): Promise<void> {
   await initializeWorld(userId);
   await initializeCommunication(userId);
   await initializeDeviceEcosystem(userId);
+  await initializeSystemApps(userId);
   const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone'] as const;
   for (const permission of commPerms) {
     await grantPermission(userId, 'com.bananaos.communication', permission, userId);
