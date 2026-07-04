@@ -57,6 +57,20 @@ export function startBackgroundServiceManager(): void {
     await refreshAllHardware();
   });
 
+  registerBackgroundTask('communication-tick', 5 * 1000, async () => {
+    const { communicationTick } = await import('./communicationService');
+    await communicationTick();
+  });
+
+  registerBackgroundTask('communication-sync', 30 * 1000, async () => {
+    const { OfflineMessageQueue } = await import('../database/models/OfflineMessageQueue');
+    const { syncOfflineQueue } = await import('./syncService');
+    const pending = await OfflineMessageQueue.find({ state: 'pending', deletedAt: null }).limit(20);
+    for (const entry of pending) {
+      await syncOfflineQueue(entry.userId.toString());
+    }
+  });
+
   registerBackgroundTask('world-engine-tick', 15 * 1000, async () => {
     const { tickAllWorlds } = await import('./worldEngineService');
     await tickAllWorlds();

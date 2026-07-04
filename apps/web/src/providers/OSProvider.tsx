@@ -6,6 +6,7 @@ import { useRealtime } from '@/hooks/useRealtime';
 import { useOSBoot } from '@/hooks/useOSBoot';
 import { useInstalledAppsHydration } from '@/hooks/useInstalledAppsHydration';
 import { useSystemInit } from '@/hooks/useSystemServices';
+import { useCommunicationInit } from '@/hooks/useCommunicationServices';
 import '@/services/registerSystemApps';
 
 function OSInitializer() {
@@ -14,6 +15,7 @@ function OSInitializer() {
   useOSBoot();
   useInstalledAppsHydration();
   useSystemInit();
+  useCommunicationInit();
   return null;
 }
 

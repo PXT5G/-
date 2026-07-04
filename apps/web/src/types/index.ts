@@ -40,6 +40,14 @@ export type {
   VpnStateSnapshot,
   CarrierStateSnapshot,
   ConnectionGeneration,
+  CommunicationMessageType,
+  CommunicationContentType,
+  ConversationType,
+  PresenceState,
+  DeliveryState,
+  ConversationSnapshot,
+  MessageSnapshot,
+  PresenceSnapshot,
 } from '@bananaos/shared';
 
 export interface AppFolder {

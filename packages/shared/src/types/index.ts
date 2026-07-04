@@ -237,6 +237,19 @@ export type SocketEvent =
   | 'vpn:update'
   | 'carrier:update'
   | 'tracking:update'
+  | 'message:new'
+  | 'message:delivered'
+  | 'message:read'
+  | 'message:edited'
+  | 'message:deleted'
+  | 'conversation:new'
+  | 'conversation:member_added'
+  | 'presence:update'
+  | 'typing:update'
+  | 'reaction:update'
+  | 'attachment:progress'
+  | 'attachment:ready'
+  | 'sync:complete'
   | 'battery:update'
   | 'device:update'
   | 'permission:update'
@@ -378,6 +391,65 @@ export interface CarrierStateSnapshot {
   name: string;
   generation: ConnectionGeneration;
   connectedTowerUuid: string | null;
+}
+
+export type CommunicationMessageType =
+  | 'sms' | 'private_chat' | 'group_chat' | 'broadcast' | 'announcement'
+  | 'system' | 'emergency' | 'police' | 'justice' | 'bank' | 'verification'
+  | 'silent' | 'hidden';
+
+export type CommunicationContentType =
+  | 'text' | 'image' | 'video' | 'voice_note' | 'audio' | 'pdf' | 'document'
+  | 'contact' | 'location' | 'live_location' | 'money_request' | 'bank_transfer'
+  | 'identity_card' | 'qr' | 'barcode' | 'gif' | 'emoji';
+
+export type ConversationType =
+  | 'private' | 'group' | 'organization' | 'government' | 'police'
+  | 'justice' | 'emergency' | 'bank' | 'business' | 'announcement';
+
+export type PresenceState =
+  | 'online' | 'offline' | 'idle' | 'typing' | 'recording_voice'
+  | 'uploading' | 'downloading' | 'reading' | 'invisible' | 'dnd';
+
+export type DeliveryState =
+  | 'queued' | 'uploading' | 'encrypting' | 'sending' | 'sent'
+  | 'delivered' | 'read' | 'failed' | 'retry' | 'cancelled';
+
+export interface ConversationSnapshot {
+  conversationId: string;
+  type: ConversationType;
+  title?: string;
+  lastMessageAt?: string;
+  lastMessagePreview?: string;
+  memberCount: number;
+  unreadCount: number;
+  isEncrypted: boolean;
+  pinned?: boolean;
+  muted?: boolean;
+}
+
+export interface MessageSnapshot {
+  messageId: string;
+  conversationId: string;
+  senderId: string;
+  messageType: CommunicationMessageType;
+  contentType: CommunicationContentType;
+  body: string;
+  sentAt?: string;
+  editedAt?: string;
+  deliveryState: DeliveryState | string;
+  mentions: string[];
+  reactions?: { emoji: string; count: number; userIds: string[] }[];
+  attachments?: unknown[];
+}
+
+export interface PresenceSnapshot {
+  userId: string;
+  state: PresenceState;
+  online: boolean;
+  lastSeenAt: string;
+  lastActiveAt: string;
+  customStatus?: string;
 }
 
 export interface DeviceStateSnapshot {

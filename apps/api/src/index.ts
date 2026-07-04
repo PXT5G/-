@@ -17,6 +17,7 @@ import storeRoutes from './api/routes/store';
 import deviceRoutes from './api/routes/device';
 import systemRoutes from './api/routes/system';
 import worldRoutes from './api/routes/world';
+import communicationRoutes from './api/routes/communication';
 
 const app = express();
 const httpServer = createServer(app);
@@ -47,6 +48,7 @@ app.use('/api/store', storeRoutes);
 app.use('/api/device', deviceRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/world', worldRoutes);
+app.use('/api/communication', communicationRoutes);
 
 app.use(errorHandler);
 

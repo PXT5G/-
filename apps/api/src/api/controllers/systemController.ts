@@ -44,6 +44,7 @@ import { ensureLocation } from '../../services/locationService';
 import { ensureNetwork } from '../../services/networkService';
 import { ensureDeviceState } from '../../services/deviceStateService';
 import { initializeWorld } from '../../services/worldEngineService';
+import { initializeCommunication } from '../../services/communicationService';
 import { emitToUser } from '../../services/socketService';
 
 function param(value: string | string[]): string {
@@ -349,6 +350,11 @@ export async function initializeSystemServices(userId: string): Promise<void> {
     seedSystemPermissions(userId),
   ]);
   await initializeWorld(userId);
+  await initializeCommunication(userId);
+  const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone'] as const;
+  for (const permission of commPerms) {
+    await grantPermission(userId, 'com.bananaos.communication', permission, userId);
+  }
   emitToUser(userId, 'system:ready', {
     services: getRegisteredTasks(),
     timestamp: new Date().toISOString(),

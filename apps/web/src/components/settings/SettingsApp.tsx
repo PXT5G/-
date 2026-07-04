@@ -267,7 +267,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
         <SettingsSection title="About">
           <SettingsRow label="BananaOS Version" value="1.0.0" />
-          <SettingsRow label="Build" value="Phase 3.3 — World Engine" />
+          <SettingsRow label="Build" value="Phase 3.4 — Communication Core" />
         </SettingsSection>
       </div>
     </div>
