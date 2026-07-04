@@ -32,6 +32,8 @@ import { BrowserApp } from '@/apps/browser';
 import { browserManifest } from '@/apps/browser/manifest';
 import { ChatApp } from '@/apps/chat';
 import { chatManifest } from '@/apps/chat/manifest';
+import { JusticeApp } from '@/apps/justice';
+import { justiceManifest } from '@/apps/justice/manifest';
 
 registerApp(
   {
@@ -73,3 +75,4 @@ registerApp(policeManifest, PoliceApp);
 registerApp(poetryManifest, PoetryApp);
 registerApp(browserManifest, BrowserApp);
 registerApp(chatManifest, ChatApp);
+registerApp(justiceManifest, JusticeApp);

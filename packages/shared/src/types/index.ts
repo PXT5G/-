@@ -407,7 +407,22 @@ export type SocketEvent =
   | 'chat:typing'
   | 'chat:presence'
   | 'chat:notification'
-  | 'chat:sync';
+  | 'chat:sync'
+  | 'justice:initialized'
+  | 'justice:case:update'
+  | 'justice:hearing:update'
+  | 'justice:trial:update'
+  | 'justice:evidence:update'
+  | 'justice:warrant:review'
+  | 'justice:appeal:update'
+  | 'justice:judgment:issued'
+  | 'justice:sentence:issued'
+  | 'justice:courtroom:live'
+  | 'justice:docket:update'
+  | 'justice:notification'
+  | 'justice:search:complete'
+  | 'justice:subpoena:issued'
+  | 'justice:citation:resolved';
 
 export interface SocketPayload {
   event: SocketEvent;

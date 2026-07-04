@@ -23,6 +23,7 @@ import policeRoutes from './api/routes/police';
 import poetryRoutes from './api/routes/poetry';
 import browserRoutes from './api/routes/browser';
 import chatRoutes from './api/routes/chat';
+import justiceRoutes from './api/routes/justice';
 
 const app = express();
 const httpServer = createServer(app);
@@ -59,6 +60,7 @@ app.use('/api/police', policeRoutes);
 app.use('/api/poetry', poetryRoutes);
 app.use('/api/browser', browserRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/justice', justiceRoutes);
 
 app.use(errorHandler);
 
