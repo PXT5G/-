@@ -396,7 +396,18 @@ export type SocketEvent =
   | 'browser:history:update'
   | 'browser:bookmark:update'
   | 'browser:notification'
-  | 'browser:session:sync';
+  | 'browser:session:sync'
+  | 'chat:initialized'
+  | 'chat:conversation:update'
+  | 'chat:message:request'
+  | 'chat:call:ringing'
+  | 'chat:call:update'
+  | 'chat:call:ended'
+  | 'chat:poll:update'
+  | 'chat:typing'
+  | 'chat:presence'
+  | 'chat:notification'
+  | 'chat:sync';
 
 export interface SocketPayload {
   event: SocketEvent;

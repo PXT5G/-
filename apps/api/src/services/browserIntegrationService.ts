@@ -177,6 +177,6 @@ export async function resolveDeepLink(url: string): Promise<{ appBundle?: string
   if (url.includes('police.gulfos')) return { appBundle: 'com.gulfos.police', nativeUrl: 'gulfos://police' };
   if (url.includes('justice.gulfos')) return { appBundle: 'com.gulfos.justice', nativeUrl: 'gulfos://justice' };
   if (url.includes('maps.gulfos') || url.startsWith('geo:')) return { appBundle: 'com.gulfos.maps', nativeUrl: 'gulfos://maps' };
-  if (url.includes('chat.gulfos')) return { appBundle: 'com.gulfos.communication', nativeUrl: 'gulfos://chat' };
+  if (url.includes('chat.gulfos')) return { appBundle: 'com.gulfos.chat', nativeUrl: 'gulfos://chat' };
   return {};
 }

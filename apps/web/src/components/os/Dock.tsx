@@ -9,7 +9,7 @@ import { useAppLaunch } from '@/hooks/useAppLaunch';
 
 const DOCK_APPS = [
   { bundleId: 'com.gulfos.phone', name: 'Phone', icon: '📞' },
-  { bundleId: 'com.gulfos.messages', name: 'Messages', icon: '💬' },
+  { bundleId: 'com.gulfos.chat', name: 'GULF Chat', icon: '💬' },
   { bundleId: 'com.gulfos.store', name: 'GULF Store', icon: '🏬' },
   { bundleId: 'com.gulfos.settings', name: 'Settings', icon: '⚙️' },
 ];

@@ -30,6 +30,8 @@ import { PoetryApp } from '@/apps/poetry';
 import { poetryManifest } from '@/apps/poetry/manifest';
 import { BrowserApp } from '@/apps/browser';
 import { browserManifest } from '@/apps/browser/manifest';
+import { ChatApp } from '@/apps/chat';
+import { chatManifest } from '@/apps/chat/manifest';
 
 registerApp(
   {
@@ -70,3 +72,4 @@ for (const [manifest, component] of SYSTEM_APPS) {
 registerApp(policeManifest, PoliceApp);
 registerApp(poetryManifest, PoetryApp);
 registerApp(browserManifest, BrowserApp);
+registerApp(chatManifest, ChatApp);

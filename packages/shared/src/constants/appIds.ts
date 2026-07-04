@@ -7,6 +7,7 @@ export const GULFOS_APP_IDS = {
   CONTACTS: 'com.gulfos.contacts',
   PHONE: 'com.gulfos.phone',
   MESSAGES: 'com.gulfos.messages',
+  CHAT: 'com.gulfos.chat',
   POLICE: 'com.gulfos.police',
   POETRY: 'com.gulfos.poetry',
   JUSTICE: 'com.gulfos.justice',
