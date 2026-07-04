@@ -2,7 +2,7 @@
 
 import { useWidgetStore } from '@/stores/widgetStore';
 import { formatTime, formatShortDate } from '@/utils/date';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 import { cn } from '@/utils/cn';
 
@@ -11,7 +11,8 @@ interface WidgetRendererProps {
 }
 
 export function WidgetRenderer({ pageIndex }: WidgetRendererProps) {
-  const instances = useWidgetStore((s) => s.getInstancesForPage(pageIndex));
+  const getInstancesForPage = useWidgetStore((s) => s.getInstancesForPage);
+  const instances = useMemo(() => getInstancesForPage(pageIndex), [getInstancesForPage, pageIndex]);
 
   if (instances.length === 0) {
     return <DefaultWidgets />;

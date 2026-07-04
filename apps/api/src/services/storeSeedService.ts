@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { App } from '../database/models/App';
 import { Developer } from '../database/models/Developer';
 import { StoreListing } from '../database/models/StoreListing';
@@ -295,16 +296,14 @@ export async function seedBananaStore(): Promise<{ apps: number; developers: num
     ];
 
     for (const r of sampleReviews) {
-      await StoreReview.findOneAndUpdate(
-        { bundleId: 'com.bananaos.bank', username: r.username },
-        {
-          listingId: bankListing._id,
-          bundleId: 'com.bananaos.bank',
-          userId: bankListing._id,
-          ...r,
-        },
-        { upsert: true }
-      );
+      const existing = await StoreReview.findOne({ bundleId: 'com.bananaos.bank', username: r.username });
+      if (existing) continue;
+      await StoreReview.create({
+        listingId: bankListing._id,
+        bundleId: 'com.bananaos.bank',
+        userId: new Types.ObjectId(),
+        ...r,
+      });
     }
   }
 

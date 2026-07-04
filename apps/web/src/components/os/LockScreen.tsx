@@ -9,12 +9,13 @@ import { useSound, useHaptic } from '@/hooks/useSound';
 import { useOSStore } from '@/stores/osStore';
 import { LockScreenPIN } from './LockScreenPIN';
 import { LockScreenBiometric } from './LockScreenBiometric';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 export function LockScreen() {
   const [time, setTime] = useState(new Date());
   const { unlockMethod, unlock } = useLockStore();
-  const notifications = useNotificationStore((s) => s.notifications.slice(0, 3));
+  const allNotifications = useNotificationStore((s) => s.notifications);
+  const notifications = useMemo(() => allNotifications.slice(0, 3), [allNotifications]);
   const setPhase = useOSStore((s) => s.setPhase);
   const { playUnlock } = useSound();
   const { success: hapticSuccess } = useHaptic();
