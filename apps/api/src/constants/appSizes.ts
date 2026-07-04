@@ -12,6 +12,7 @@ export const APP_PACKAGE_SIZES: Record<string, number> = {
   'com.gulfos.chat': 280_000_000,
   'com.gulfos.justice': 950_000_000,
   'com.gulfos.ems': 1_100_000_000,
+  'com.gulfos.business': 1_250_000_000,
   'com.gulfos.camera': 620_000_000,
   'com.gulfos.gallery': 400_000_000,
   'com.gulfos.identity': 180_000_000,

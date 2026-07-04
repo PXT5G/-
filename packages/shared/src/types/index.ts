@@ -437,7 +437,22 @@ export type SocketEvent =
   | 'ems:helicopter:dispatch'
   | 'ems:search:complete'
   | 'ems:admission:update'
-  | 'ems:queue:update';
+  | 'ems:queue:update'
+  | 'business:initialized'
+  | 'business:company:update'
+  | 'business:revenue:update'
+  | 'business:expense:update'
+  | 'business:payroll:update'
+  | 'business:inventory:update'
+  | 'business:employee:update'
+  | 'business:report:ready'
+  | 'business:notification'
+  | 'business:bank:transaction'
+  | 'business:status:change'
+  | 'business:analytics:update'
+  | 'business:invoice:update'
+  | 'business:contract:update'
+  | 'business:government:alert';
 
 export interface SocketPayload {
   event: SocketEvent;

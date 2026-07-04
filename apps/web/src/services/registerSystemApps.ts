@@ -36,6 +36,8 @@ import { JusticeApp } from '@/apps/justice';
 import { justiceManifest } from '@/apps/justice/manifest';
 import { EmsApp } from '@/apps/ems';
 import { emsManifest } from '@/apps/ems/manifest';
+import { BusinessApp } from '@/apps/business';
+import { businessManifest } from '@/apps/business/manifest';
 
 registerApp(
   {
@@ -79,3 +81,4 @@ registerApp(browserManifest, BrowserApp);
 registerApp(chatManifest, ChatApp);
 registerApp(justiceManifest, JusticeApp);
 registerApp(emsManifest, EmsApp);
+registerApp(businessManifest, BusinessApp);

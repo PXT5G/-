@@ -25,6 +25,7 @@ import browserRoutes from './api/routes/browser';
 import chatRoutes from './api/routes/chat';
 import justiceRoutes from './api/routes/justice';
 import emsRoutes from './api/routes/ems';
+import businessRoutes from './api/routes/business';
 
 const app = express();
 const httpServer = createServer(app);
@@ -63,6 +64,7 @@ app.use('/api/browser', browserRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/justice', justiceRoutes);
 app.use('/api/ems', emsRoutes);
+app.use('/api/business', businessRoutes);
 
 app.use(errorHandler);
 
