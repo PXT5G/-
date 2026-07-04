@@ -29,6 +29,7 @@ import { DeviceBackupSettingsScreen } from './DeviceBackupSettingsScreen';
 import { DeviceSyncSettingsScreen } from './DeviceSyncSettingsScreen';
 import { DeviceMaintenanceSettingsScreen } from './DeviceMaintenanceSettingsScreen';
 import { DeviceRecoverySettingsScreen } from './DeviceRecoverySettingsScreen';
+import { PhoneOsSettingsScreen } from './PhoneOsSettingsScreen';
 import { MapsSettingsScreen } from './MapsSettingsScreen';
 import { CarrierSettingsScreen } from './CarrierSettingsScreen';
 import { VpnSettingsScreen } from './VpnSettingsScreen';
@@ -75,6 +76,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
     'background-jobs': <BackgroundJobsScreen onBack={() => setActiveSection(null)} />,
     permissions: <PermissionsSettingsScreen onBack={() => setActiveSection(null)} />,
     battery: <BatterySettingsScreen onBack={() => setActiveSection(null)} />,
+    'phone-os': <PhoneOsSettingsScreen onBack={() => setActiveSection(null)} />,
     developer: <DeveloperSettingsScreen onBack={() => setActiveSection(null)} />,
     economy: <EconomyAdminScreen onBack={() => setActiveSection(null)} />,
     'device-security': <DeviceSecuritySettingsScreen onBack={() => setActiveSection(null)} />,
@@ -171,6 +173,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
         </SettingsSection>
 
         <SettingsSection title={t('settings.device')}>
+          <SettingsRow label="Phone OS" chevron onClick={() => setActiveSection('phone-os')} />
           <SettingsRow label={t('settings.battery')} chevron onClick={() => setActiveSection('battery')} />
           <SettingsRow label={t('settings.security')} chevron onClick={() => setActiveSection('device-security')} />
           <SettingsRow label="Backup" chevron onClick={() => setActiveSection('device-backup')} />

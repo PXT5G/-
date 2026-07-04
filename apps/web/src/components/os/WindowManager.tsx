@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { useWindowManagerStore } from '@/stores/windowManagerStore';
+import { usePhoneOsStore } from '@/stores/phoneOsStore';
+import { AnimatePresence } from 'framer-motion';
 import { AppWindow } from './AppWindow';
 import { MultitaskingView } from './MultitaskingView';
 
 export function WindowManager() {
   const windows = useWindowManagerStore((s) => s.windows);
   const activeWindowId = useWindowManagerStore((s) => s.activeWindowId);
-  const [showMultitasking, setShowMultitasking] = useState(false);
+  const isMultitaskingOpen = usePhoneOsStore((s) => s.isMultitaskingOpen);
+  const setMultitaskingOpen = usePhoneOsStore((s) => s.setMultitaskingOpen);
 
   const openWindows = windows.filter((w) => !w.isMinimized);
 
@@ -25,9 +26,11 @@ export function WindowManager() {
         ))}
       </AnimatePresence>
 
-      {showMultitasking && (
-        <MultitaskingView onClose={() => setShowMultitasking(false)} />
-      )}
+      <AnimatePresence>
+        {isMultitaskingOpen && (
+          <MultitaskingView onClose={() => setMultitaskingOpen(false)} />
+        )}
+      </AnimatePresence>
     </>
   );
 }

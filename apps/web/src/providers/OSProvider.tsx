@@ -11,6 +11,7 @@ import { useDeviceEcosystemInit } from '@/hooks/useDeviceEcosystem';
 import { useSystemAppsInit } from '@/hooks/useSystemApps';
 import { usePoliceInit } from '@/hooks/usePolice';
 import { useSettingsInit } from '@/hooks/useSettings';
+import { usePhoneOsInit, usePhoneOsRealtime } from '@/hooks/usePhoneOs';
 import '@/services/registerSystemApps';
 
 function OSInitializer() {
@@ -24,6 +25,8 @@ function OSInitializer() {
   useSystemAppsInit();
   useSettingsInit();
   usePoliceInit();
+  usePhoneOsInit();
+  usePhoneOsRealtime();
   return null;
 }
 

@@ -8,6 +8,30 @@ function generateSerial(): string {
   return `BN${crypto.randomBytes(6).toString('hex').toUpperCase().slice(0, 10)}`;
 }
 
+function generateImei(): string {
+  const digits = Array.from({ length: 14 }, () => Math.floor(Math.random() * 10)).join('');
+  let sum = 0;
+  for (let i = 0; i < 14; i++) {
+    let d = parseInt(digits[i], 10);
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  const check = (10 - (sum % 10)) % 10;
+  return digits + check;
+}
+
+function generateMac(): string {
+  const bytes = crypto.randomBytes(6);
+  bytes[0] = (bytes[0] | 0x02) & 0xfe;
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join(':')
+    .toUpperCase();
+}
+
 export function pickDeviceGeneration() {
   return DEVICE_GENERATIONS[Math.floor(Math.random() * DEVICE_GENERATIONS.length)];
 }
@@ -41,6 +65,17 @@ export async function seedHardwareProfile(
       batteryLevelPercent: 100,
       displayResolution: gen.display,
       bootedAt: new Date(),
+      imei: generateImei(),
+      secureDeviceId: crypto.randomBytes(32).toString('hex'),
+      simStatus: 'active',
+      carrier: 'Gulf Mobile',
+      networkType: '5G',
+      bluetoothMac: generateMac(),
+      wifiMac: generateMac(),
+      kernelVersion: '6.12.58-gulf',
+      installedBuild: '100',
+      activationDate: new Date(),
+      deviceHealthScore: 100,
       storageWear: {
         healthPercent: 100,
         lifetimeWrites: 0,
@@ -80,6 +115,18 @@ export async function getHardwareProfile(userId: string) {
     displayResolution: profile.displayResolution,
     osVersion: profile.osVersion,
     buildNumber: profile.buildNumber,
+    installedBuild: profile.installedBuild,
+    kernelVersion: profile.kernelVersion,
+    imei: profile.imei,
+    secureDeviceId: profile.secureDeviceId,
+    simStatus: profile.simStatus,
+    carrier: profile.carrier,
+    networkType: profile.networkType,
+    bluetoothMac: profile.bluetoothMac,
+    wifiMac: profile.wifiMac,
+    activationDate: profile.activationDate?.toISOString(),
+    deviceHealthScore: profile.deviceHealthScore,
+    lastBoot: profile.bootedAt.toISOString(),
     temperature: profile.temperatureCelsius,
     uptimeMs,
     storageWear: profile.storageWear,
