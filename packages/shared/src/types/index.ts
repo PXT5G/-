@@ -207,7 +207,11 @@ export type SocketEvent =
   | 'app:uninstalled'
   | 'settings:updated'
   | 'session:expired'
-  | 'system:broadcast';
+  | 'system:broadcast'
+  | 'store:download:progress'
+  | 'store:download:complete'
+  | 'store:download:cancelled'
+  | 'store:update:complete';
 
 export interface SocketPayload {
   event: SocketEvent;

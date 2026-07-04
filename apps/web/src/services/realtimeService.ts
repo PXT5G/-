@@ -35,6 +35,10 @@ class RealtimeService {
       'settings:updated',
       'session:expired',
       'system:broadcast',
+      'store:download:progress',
+      'store:download:complete',
+      'store:download:cancelled',
+      'store:update:complete',
     ];
 
     events.forEach((event) => {

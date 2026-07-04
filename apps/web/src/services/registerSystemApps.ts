@@ -2,6 +2,8 @@
 
 import { registerApp } from '@/services/appRouter';
 import { SettingsApp } from '@/components/settings/SettingsApp';
+import { BananaApp } from '@/apps/banana-app';
+import { bananaAppManifest } from '@/apps/banana-app/manifest';
 
 registerApp(
   {
@@ -19,3 +21,5 @@ registerApp(
   },
   SettingsApp
 );
+
+registerApp(bananaAppManifest, BananaApp);

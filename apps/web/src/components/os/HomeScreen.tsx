@@ -11,6 +11,7 @@ import { useGestures } from '@/hooks/useGestures';
 import { v4 as uuidv4 } from 'uuid';
 
 const SYSTEM_APPS = [
+  { bundleId: 'com.bananaos.store', name: 'Banana App', icon: '🍌', isSystemApp: true, route: '/store' },
   { bundleId: 'com.bananaos.settings', name: 'Settings', icon: '⚙️', isSystemApp: true, route: '/settings' },
 ];
 

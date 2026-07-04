@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import type { WindowState } from '@/types';
 import { useWindowManagerStore } from '@/stores/windowManagerStore';
-import { SettingsApp } from '@/components/settings/SettingsApp';
+import { getAppComponent } from '@/services/appRouter';
 import { AppPlaceholder } from './AppPlaceholder';
 import { useHaptic } from '@/hooks/useSound';
 
@@ -12,15 +12,11 @@ interface AppWindowProps {
   isActive: boolean;
 }
 
-const APP_COMPONENTS: Record<string, React.ComponentType<{ appId?: string; appName?: string }>> = {
-  'com.bananaos.settings': SettingsApp,
-};
-
 export function AppWindow({ window, isActive }: AppWindowProps) {
   const { closeWindow, minimizeWindow, focusWindow } = useWindowManagerStore();
   const { tap } = useHaptic();
 
-  const AppComponent = APP_COMPONENTS[window.appId] ?? AppPlaceholder;
+  const AppComponent = getAppComponent(window.appId) ?? AppPlaceholder;
 
   return (
     <motion.div

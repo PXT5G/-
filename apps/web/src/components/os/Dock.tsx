@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 const DOCK_APPS = [
   { bundleId: 'com.bananaos.phone', name: 'Phone', icon: '📞' },
   { bundleId: 'com.bananaos.messages', name: 'Messages', icon: '💬' },
-  { bundleId: 'com.bananaos.browser', name: 'Browser', icon: '🌐' },
+  { bundleId: 'com.bananaos.store', name: 'Banana App', icon: '🍌' },
   { bundleId: 'com.bananaos.settings', name: 'Settings', icon: '⚙️' },
 ];
 

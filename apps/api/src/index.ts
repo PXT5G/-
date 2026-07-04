@@ -13,6 +13,7 @@ import notificationRoutes from './api/routes/notifications';
 import settingsRoutes from './api/routes/settings';
 import filesystemRoutes from './api/routes/filesystem';
 import adminRoutes from './api/routes/admin';
+import storeRoutes from './api/routes/store';
 
 const app = express();
 const httpServer = createServer(app);
@@ -39,6 +40,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/filesystem', filesystemRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/store', storeRoutes);
 
 app.use(errorHandler);
 
@@ -46,6 +48,15 @@ async function bootstrap(): Promise<void> {
   try {
     await connectDatabase();
     initializeSocket(httpServer);
+
+    // Auto-seed store catalog if empty
+    const { StoreListing } = await import('./database/models/StoreListing');
+    const count = await StoreListing.countDocuments();
+    if (count === 0) {
+      const { seedBananaStore } = await import('./services/storeSeedService');
+      const result = await seedBananaStore();
+      console.log('[BananaOS API] Store seeded:', result);
+    }
 
     httpServer.listen(env.PORT, () => {
       console.log(`[BananaOS API] Running on port ${env.PORT}`);
