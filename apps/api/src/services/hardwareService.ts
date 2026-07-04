@@ -15,7 +15,7 @@ export function pickDeviceGeneration() {
 export async function seedHardwareProfile(
   userId: string,
   capacity: StorageCapacityTier = DEFAULT_CAPACITY,
-  deviceName = 'Banana Phone'
+  deviceName = 'Gulf Phone V1'
 ) {
   const gen = pickDeviceGeneration();
   const color = DEVICE_COLORS[Math.floor(Math.random() * DEVICE_COLORS.length)];

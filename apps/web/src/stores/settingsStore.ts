@@ -1,46 +1,34 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { UserSettings, WallpaperConfig } from '@/types';
-
-const defaultSettings: UserSettings = {
-  theme: 'dark',
-  accentColor: 'gold',
-  wallpaper: {
-    id: 'banana-gradient',
-    type: 'animated',
-    animatedClass: 'wallpaper-banana',
-    dark: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)',
-    light: 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 50%, #d4d4d4 100%)',
-  },
-  language: 'en',
-  reduceMotion: false,
-  highContrast: false,
-  fontSize: 'medium',
-  hapticsEnabled: true,
-  soundsEnabled: true,
-  brightness: 80,
-  volume: 70,
-  wifiEnabled: true,
-  bluetoothEnabled: false,
-  silentMode: false,
-  rotationLock: false,
-  flashlightEnabled: false,
-};
+import { DEFAULT_SETTINGS } from '@/constants/defaultSettings';
 
 interface SettingsState extends UserSettings {
+  hydrated: boolean;
   updateSettings: (partial: Partial<UserSettings>) => void;
   setWallpaper: (wallpaper: WallpaperConfig) => void;
+  hydrateFromServer: (settings: UserSettings) => void;
   resetSettings: () => void;
+  setHydrated: (hydrated: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      ...defaultSettings,
+      ...DEFAULT_SETTINGS,
+      hydrated: false,
       updateSettings: (partial) => set((s) => ({ ...s, ...partial })),
       setWallpaper: (wallpaper) => set({ wallpaper }),
-      resetSettings: () => set(defaultSettings),
+      hydrateFromServer: (settings) => set({ ...settings, hydrated: true }),
+      resetSettings: () => set({ ...DEFAULT_SETTINGS, hydrated: true }),
+      setHydrated: (hydrated) => set({ hydrated }),
     }),
-    { name: 'bananaos-settings' }
+    {
+      name: 'bananaos-settings',
+      partialize: (state) => {
+        const { hydrated, updateSettings, setWallpaper, hydrateFromServer, resetSettings, setHydrated, ...settings } = state;
+        return settings;
+      },
+    }
   )
 );

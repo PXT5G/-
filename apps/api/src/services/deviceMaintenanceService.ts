@@ -5,7 +5,6 @@ import { clearAppCache } from './storageService';
 import { InstalledApp } from '../database/models/InstalledApp';
 import { systemCleanup, detectDuplicates } from './storageExpansionService';
 import { updateNetworkSettings } from './networkService';
-import { UserSettings } from '../database/models/UserSettings';
 import { logDeviceEcosystemAudit } from './deviceEcosystemAuditService';
 import { emitToUser } from './socketService';
 
@@ -54,7 +53,8 @@ export async function runMaintenance(userId: string, action: MaintenanceAction, 
         result = { networkReset: true };
         break;
       case 'reset_settings': {
-        await UserSettings.findOneAndUpdate({ userId }, { brightness: 80, volume: 70, silentMode: false });
+        const { resetUserSettings } = await import('./settingsService');
+        await resetUserSettings(userId, actorId);
         result = { settingsReset: true };
         break;
       }

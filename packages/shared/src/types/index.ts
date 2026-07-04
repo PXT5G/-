@@ -146,11 +146,26 @@ export interface WallpaperConfig {
   animatedClass?: string;
 }
 
+export type DateFormat = 'mdy' | 'dmy' | 'ymd';
+export type TimeFormat = '12h' | '24h';
+export type TemperatureUnit = 'celsius' | 'fahrenheit';
+export type DistanceUnit = 'km' | 'mi';
+export type DisplayZoom = 'default' | 'large' | 'larger';
+export type RefreshRate = 60 | 90 | 120;
+
 export interface UserSettings {
   theme: ThemeMode;
   accentColor: AccentColor;
   wallpaper: WallpaperConfig;
   language: string;
+  region: string;
+  timezone: string;
+  dateFormat: DateFormat;
+  timeFormat: TimeFormat;
+  temperatureUnit: TemperatureUnit;
+  distanceUnit: DistanceUnit;
+  currency: string;
+  keyboardLayout: 'qwerty' | 'azerty' | 'qwertz' | 'arabic';
   reduceMotion: boolean;
   highContrast: boolean;
   fontSize: 'small' | 'medium' | 'large';
@@ -163,6 +178,68 @@ export interface UserSettings {
   silentMode: boolean;
   rotationLock: boolean;
   flashlightEnabled: boolean;
+  autoTheme: boolean;
+  displayZoom: DisplayZoom;
+  animationsEnabled: boolean;
+  autoBrightness: boolean;
+  refreshRate: RefreshRate;
+  screenTimeout: number;
+  alwaysOnDisplay: boolean;
+  mediaVolume: number;
+  callVolume: number;
+  notificationVolume: number;
+  alarmVolume: number;
+  vibrationEnabled: boolean;
+  ringtone: string;
+  notificationSound: string;
+  keyboardSound: boolean;
+  mobileDataEnabled: boolean;
+  hotspotEnabled: boolean;
+  airplaneMode: boolean;
+  powerSavingMode: boolean;
+  lowPowerMode: boolean;
+  voiceOverEnabled: boolean;
+  largeText: boolean;
+  boldText: boolean;
+  colorFilters: boolean;
+  monoAudio: boolean;
+  touchAssistance: boolean;
+  developerModeEnabled: boolean;
+  twoFactorEnabled: boolean;
+  appLockEnabled: boolean;
+  defaultApps?: Record<string, string>;
+  dockApps?: string[];
+  updatedAt?: string;
+}
+
+export interface SupportedLanguage {
+  code: string;
+  name: string;
+  nativeName: string;
+  rtl: boolean;
+}
+
+export interface DeviceAboutInfo {
+  model: string;
+  deviceName: string;
+  developer: string;
+  manufacturer: string;
+  operatingSystem: string;
+  kernel: string;
+  hardwareVersion: string;
+  buildNumber: string;
+  osVersion: string;
+  deviceUuid: string;
+  serialNumber: string;
+  storage: { total: number; used: number; free: number };
+  ram: { total: number; used: number };
+  cpu: string;
+  gpu: string;
+  batteryHealth: number;
+  imei?: string;
+  generation?: string;
+  deviceModel?: string;
+  deviceColor?: string;
 }
 
 export interface FileNode {

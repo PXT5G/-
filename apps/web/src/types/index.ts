@@ -19,6 +19,8 @@ export type {
   WidgetInstance,
   WallpaperConfig,
   UserSettings,
+  SupportedLanguage,
+  DeviceAboutInfo,
   FileNode,
   WindowState,
   OSPhase,

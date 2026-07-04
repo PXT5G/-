@@ -7,5 +7,8 @@ const router = Router();
 router.get('/', authenticate, settingsController.getSettings);
 router.patch('/', authenticate, settingsController.updateSettings);
 router.post('/reset', authenticate, settingsController.resetSettings);
+router.get('/languages', authenticate, settingsController.listLanguages);
+router.get('/about', authenticate, settingsController.getAbout);
+router.get('/translations/:code', authenticate, settingsController.getTranslations);
 
 export default router;

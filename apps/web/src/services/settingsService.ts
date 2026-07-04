@@ -1,5 +1,5 @@
 import { apiRequest } from '@/utils/api';
-import type { UserSettings, ApiResponse } from '@/types';
+import type { UserSettings, ApiResponse, SupportedLanguage, DeviceAboutInfo } from '@/types';
 
 export const settingsService = {
   async get(token: string): Promise<UserSettings> {
@@ -21,6 +21,16 @@ export const settingsService = {
       method: 'POST',
       token,
     });
+    return response.data!;
+  },
+
+  async getLanguages(token: string): Promise<SupportedLanguage[]> {
+    const response = await apiRequest<ApiResponse<SupportedLanguage[]>>('/api/settings/languages', { token });
+    return response.data!;
+  },
+
+  async getAbout(token: string): Promise<DeviceAboutInfo> {
+    const response = await apiRequest<ApiResponse<DeviceAboutInfo>>('/api/settings/about', { token });
     return response.data!;
   },
 };

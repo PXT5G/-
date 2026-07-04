@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { realtimeService } from '@/services/realtimeService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useAppStore } from '@/stores/appStore';
-import { useSettingsStore } from '@/stores/settingsStore';
+import { updateFromServer } from '@/hooks/useSettings';
 import type { OSNotification, InstalledApp, UserSettings } from '@/types';
 
 export function useRealtime() {
@@ -36,7 +36,7 @@ export function useRealtime() {
         useAppStore.getState().removeApp(bundleId);
       }),
       realtimeService.on('settings:updated', (payload) => {
-        useSettingsStore.getState().updateSettings(payload.data as Partial<UserSettings>);
+        updateFromServer(payload.data as UserSettings);
       }),
       realtimeService.on('session:expired', () => {
         useAuthStore.getState().logout();

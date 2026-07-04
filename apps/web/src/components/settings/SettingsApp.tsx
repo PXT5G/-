@@ -1,10 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useSettingsStore } from '@/stores/settingsStore';
-import { useThemeStore } from '@/stores/themeStore';
+import { useState, type ReactNode } from 'react';
+import { useSettings, useUpdateSettings } from '@/hooks/useSettings';
+import { useTranslation } from '@/stores/i18nStore';
 import { SettingsSection } from './SettingsSection';
 import { SettingsRow } from './SettingsRow';
+import { GeneralSettingsScreen } from './GeneralSettingsScreen';
+import { LanguageSettingsScreen } from './LanguageSettingsScreen';
+import { DisplaySettingsScreen } from './DisplaySettingsScreen';
+import { SoundSettingsScreen } from './SoundSettingsScreen';
+import { AccessibilitySettingsScreen } from './AccessibilitySettingsScreen';
+import { AboutDeviceScreen } from './AboutDeviceScreen';
+import { NetworkSettingsQuickScreen } from './NetworkSettingsQuickScreen';
 import { InstalledAppsSettings } from './InstalledAppsSettings';
 import { StorageManagerScreen } from './StorageManagerScreen';
 import { HardwareSettingsScreen } from './HardwareSettingsScreen';
@@ -27,7 +34,6 @@ import { VpnSettingsScreen } from './VpnSettingsScreen';
 import { SignalSettingsScreen } from './SignalSettingsScreen';
 import { CellTowersSettingsScreen } from './CellTowersSettingsScreen';
 import { Toggle } from '@/components/ui/Toggle';
-import { Slider } from '@/components/ui/Slider';
 import { useHaptic } from '@/hooks/useSound';
 
 const WALLPAPERS = [
@@ -38,113 +44,66 @@ const WALLPAPERS = [
 ];
 
 export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
-  const settings = useSettingsStore();
-  const { mode, accentColor, setMode, setAccentColor } = useThemeStore();
+  const settings = useSettings();
+  const update = useUpdateSettings();
+  const { t } = useTranslation();
   const { tap } = useHaptic();
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  if (activeSection === 'storage') {
-    return <StorageManagerScreen onBack={() => setActiveSection(null)} />;
-  }
+  const patch = (partial: Parameters<typeof update.mutate>[0]) => {
+    tap();
+    update.mutate(partial);
+  };
 
-  if (activeSection === 'hardware') {
-    return <HardwareSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'task-manager') {
-    return <TaskManagerScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'network') {
-    return <NetworkSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'location') {
-    return <LocationSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'diagnostics') {
-    return <DiagnosticsSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'background-jobs') {
-    return <BackgroundJobsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'permissions') {
-    return <PermissionsSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'battery') {
-    return <BatterySettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'developer') {
-    return <DeveloperSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'device-security') {
-    return <DeviceSecuritySettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'device-backup') {
-    return <DeviceBackupSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'device-sync') {
-    return <DeviceSyncSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'device-maintenance') {
-    return <DeviceMaintenanceSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'device-recovery') {
-    return <DeviceRecoverySettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'maps') {
-    return <MapsSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'carrier') {
-    return <CarrierSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'vpn') {
-    return <VpnSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'signal') {
-    return <SignalSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'cell-towers') {
-    return <CellTowersSettingsScreen onBack={() => setActiveSection(null)} />;
-  }
-
-  if (activeSection === 'installed-apps') {
-    return <InstalledAppsSettings onBack={() => setActiveSection(null)} />;
-  }
+  const sectionScreens: Record<string, ReactNode> = {
+    general: <GeneralSettingsScreen onBack={() => setActiveSection(null)} />,
+    language: <LanguageSettingsScreen onBack={() => setActiveSection(null)} />,
+    display: <DisplaySettingsScreen onBack={() => setActiveSection(null)} />,
+    sound: <SoundSettingsScreen onBack={() => setActiveSection(null)} />,
+    accessibility: <AccessibilitySettingsScreen onBack={() => setActiveSection(null)} />,
+    about: <AboutDeviceScreen onBack={() => setActiveSection(null)} />,
+    'network-quick': <NetworkSettingsQuickScreen onBack={() => setActiveSection(null)} onAdvanced={() => setActiveSection('vpn')} />,
+    storage: <StorageManagerScreen onBack={() => setActiveSection(null)} />,
+    hardware: <HardwareSettingsScreen onBack={() => setActiveSection(null)} />,
+    'task-manager': <TaskManagerScreen onBack={() => setActiveSection(null)} />,
+    network: <NetworkSettingsScreen onBack={() => setActiveSection(null)} />,
+    location: <LocationSettingsScreen onBack={() => setActiveSection(null)} />,
+    diagnostics: <DiagnosticsSettingsScreen onBack={() => setActiveSection(null)} />,
+    'background-jobs': <BackgroundJobsScreen onBack={() => setActiveSection(null)} />,
+    permissions: <PermissionsSettingsScreen onBack={() => setActiveSection(null)} />,
+    battery: <BatterySettingsScreen onBack={() => setActiveSection(null)} />,
+    developer: <DeveloperSettingsScreen onBack={() => setActiveSection(null)} />,
+    'device-security': <DeviceSecuritySettingsScreen onBack={() => setActiveSection(null)} />,
+    'device-backup': <DeviceBackupSettingsScreen onBack={() => setActiveSection(null)} />,
+    'device-sync': <DeviceSyncSettingsScreen onBack={() => setActiveSection(null)} />,
+    'device-maintenance': <DeviceMaintenanceSettingsScreen onBack={() => setActiveSection(null)} />,
+    'device-recovery': <DeviceRecoverySettingsScreen onBack={() => setActiveSection(null)} />,
+    maps: <MapsSettingsScreen onBack={() => setActiveSection(null)} />,
+    carrier: <CarrierSettingsScreen onBack={() => setActiveSection(null)} />,
+    vpn: <VpnSettingsScreen onBack={() => setActiveSection(null)} />,
+    signal: <SignalSettingsScreen onBack={() => setActiveSection(null)} />,
+    'cell-towers': <CellTowersSettingsScreen onBack={() => setActiveSection(null)} />,
+    'installed-apps': <InstalledAppsSettings onBack={() => setActiveSection(null)} />,
+  };
 
   if (activeSection === 'wallpaper') {
     return (
       <div className="h-full overflow-y-auto bg-black p-4">
-        <button onClick={() => setActiveSection(null)} className="text-banana-gold text-sm mb-4">‹ Settings</button>
-        <h2 className="text-xl font-bold text-white mb-4">Wallpaper</h2>
+        <button type="button" onClick={() => setActiveSection(null)} className="text-banana-gold text-sm mb-4">‹ {t('common.settings')}</button>
+        <h2 className="text-xl font-bold text-white mb-4">{t('settings.wallpaper')}</h2>
         <div className="grid grid-cols-2 gap-3">
           {WALLPAPERS.map((wp) => (
             <button
               key={wp.id}
-              onClick={() => {
-                tap();
-                settings.setWallpaper({
+              type="button"
+              onClick={() => patch({
+                wallpaper: {
                   id: wp.id,
                   type: wp.type,
                   dark: wp.dark,
                   animatedClass: wp.type === 'animated' ? 'wallpaper-banana' : undefined,
-                });
-              }}
+                },
+              })}
               className={`aspect-[9/16] rounded-2xl overflow-hidden border-2 ${
                 settings.wallpaper.id === wp.id ? 'border-banana-gold' : 'border-transparent'
               }`}
@@ -158,146 +117,90 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
     );
   }
 
+  if (activeSection && sectionScreens[activeSection]) {
+    return sectionScreens[activeSection];
+  }
+
+  const langLabel = settings.language.toUpperCase();
+
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
+        <h1 className="text-2xl font-bold text-white mb-6">{t('settings.title')}</h1>
 
-        <SettingsSection title="Appearance">
-          <SettingsRow label="Theme" value={mode}>
-            <div className="flex gap-2">
-              {(['light', 'dark', 'system'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => { tap(); setMode(t); settings.updateSettings({ theme: t }); }}
-                  className={`px-3 py-1 rounded-full text-xs capitalize ${
-                    mode === t ? 'bg-banana-gold text-black' : 'bg-white/10 text-white'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </SettingsRow>
-          <SettingsRow
-            label="Wallpaper"
-            chevron
-            onClick={() => setActiveSection('wallpaper')}
-          />
-          <SettingsRow label="Accent Color" value={accentColor}>
-            <div className="flex gap-2">
-              {(['gold', 'white', 'black'] as const).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => { tap(); setAccentColor(c); settings.updateSettings({ accentColor: c }); }}
-                  className={`w-6 h-6 rounded-full border-2 ${
-                    accentColor === c ? 'border-banana-gold' : 'border-white/20'
-                  }`}
-                  style={{ background: c === 'gold' ? '#D4AF37' : c === 'white' ? '#fff' : '#1a1a1a' }}
-                  aria-label={c}
-                />
-              ))}
-            </div>
+        <SettingsSection title={t('settings.general')}>
+          <SettingsRow label={t('settings.language')} value={langLabel} chevron onClick={() => setActiveSection('language')} />
+          <SettingsRow label={t('settings.general')} chevron onClick={() => setActiveSection('general')} />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.appearance')}>
+          <SettingsRow label={t('settings.display')} chevron onClick={() => setActiveSection('display')} />
+          <SettingsRow label={t('settings.wallpaper')} chevron onClick={() => setActiveSection('wallpaper')} />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.soundHaptics')}>
+          <SettingsRow label={t('settings.soundHaptics')} chevron onClick={() => setActiveSection('sound')} />
+          <SettingsRow label="Silent Mode">
+            <Toggle enabled={settings.silentMode} onChange={(v) => patch({ silentMode: v })} label="Silent Mode" />
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection title="Display">
-          <SettingsRow label="Brightness">
-            <Slider
-              value={settings.brightness}
-              onChange={(v) => settings.updateSettings({ brightness: v })}
-              label="Brightness"
-              className="w-32"
-            />
+        <SettingsSection title={t('settings.network')}>
+          <SettingsRow label={t('settings.network')} chevron onClick={() => setActiveSection('network-quick')} />
+          <SettingsRow label={t('settings.wifi')}>
+            <Toggle enabled={settings.wifiEnabled} onChange={(v) => patch({ wifiEnabled: v })} label={t('settings.wifi')} />
           </SettingsRow>
-          <SettingsRow label="Font Size" value={settings.fontSize}>
-            <select
-              value={settings.fontSize}
-              onChange={(e) => settings.updateSettings({ fontSize: e.target.value as 'small' | 'medium' | 'large' })}
-              className="bg-white/10 text-white text-xs rounded-lg px-2 py-1"
-            >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
+          <SettingsRow label={t('settings.bluetooth')}>
+            <Toggle enabled={settings.bluetoothEnabled} onChange={(v) => patch({ bluetoothEnabled: v })} label={t('settings.bluetooth')} />
+          </SettingsRow>
+          <SettingsRow label={t('settings.airplaneMode')}>
+            <Toggle enabled={settings.airplaneMode} onChange={(v) => patch({ airplaneMode: v })} label={t('settings.airplaneMode')} />
           </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection title="Accessibility">
-          <SettingsRow label="Reduce Motion">
-            <Toggle
-              enabled={settings.reduceMotion}
-              onChange={(v) => settings.updateSettings({ reduceMotion: v })}
-              label="Reduce Motion"
-            />
-          </SettingsRow>
-          <SettingsRow label="High Contrast">
-            <Toggle
-              enabled={settings.highContrast}
-              onChange={(v) => settings.updateSettings({ highContrast: v })}
-              label="High Contrast"
-            />
-          </SettingsRow>
+        <SettingsSection title={t('settings.privacySecurity')}>
+          <SettingsRow label={t('settings.permissions')} chevron onClick={() => setActiveSection('permissions')} />
         </SettingsSection>
 
-        <SettingsSection title="Sound & Haptics">
-          <SettingsRow label="Sounds">
-            <Toggle
-              enabled={settings.soundsEnabled}
-              onChange={(v) => settings.updateSettings({ soundsEnabled: v })}
-              label="Sounds"
-            />
-          </SettingsRow>
-          <SettingsRow label="Haptics">
-            <Toggle
-              enabled={settings.hapticsEnabled}
-              onChange={(v) => settings.updateSettings({ hapticsEnabled: v })}
-              label="Haptics"
-            />
-          </SettingsRow>
+        <SettingsSection title={t('settings.accessibility')}>
+          <SettingsRow label={t('settings.accessibility')} chevron onClick={() => setActiveSection('accessibility')} />
         </SettingsSection>
 
-        <SettingsSection title="Device">
-          <SettingsRow label="Battery" chevron onClick={() => setActiveSection('battery')} />
-          <SettingsRow label="Security" chevron onClick={() => setActiveSection('device-security')} />
+        <SettingsSection title={t('settings.device')}>
+          <SettingsRow label={t('settings.battery')} chevron onClick={() => setActiveSection('battery')} />
+          <SettingsRow label={t('settings.security')} chevron onClick={() => setActiveSection('device-security')} />
           <SettingsRow label="Backup" chevron onClick={() => setActiveSection('device-backup')} />
           <SettingsRow label="Sync" chevron onClick={() => setActiveSection('device-sync')} />
           <SettingsRow label="Maintenance" chevron onClick={() => setActiveSection('device-maintenance')} />
           <SettingsRow label="Recovery" chevron onClick={() => setActiveSection('device-recovery')} />
           <SettingsRow label="Location" chevron onClick={() => setActiveSection('location')} />
           <SettingsRow label="Maps" chevron onClick={() => setActiveSection('maps')} />
-          <SettingsRow label="Network" chevron onClick={() => setActiveSection('network')} />
           <SettingsRow label="Carrier" chevron onClick={() => setActiveSection('carrier')} />
-          <SettingsRow label="VPN" chevron onClick={() => setActiveSection('vpn')} />
+          <SettingsRow label={t('settings.vpn')} chevron onClick={() => setActiveSection('vpn')} />
           <SettingsRow label="Signal" chevron onClick={() => setActiveSection('signal')} />
           <SettingsRow label="Cell Towers" chevron onClick={() => setActiveSection('cell-towers')} />
           <SettingsRow label="Hardware" chevron onClick={() => setActiveSection('hardware')} />
           <SettingsRow label="Task Manager" chevron onClick={() => setActiveSection('task-manager')} />
-          <SettingsRow label="Storage" chevron onClick={() => setActiveSection('storage')} />
+          <SettingsRow label={t('settings.storage')} chevron onClick={() => setActiveSection('storage')} />
+          <SettingsRow label={t('settings.powerSaving')}>
+            <Toggle enabled={settings.powerSavingMode} onChange={(v) => patch({ powerSavingMode: v, lowPowerMode: v })} label={t('settings.powerSaving')} />
+          </SettingsRow>
         </SettingsSection>
 
-        <SettingsSection title="System">
-          <SettingsRow label="Permissions" chevron onClick={() => setActiveSection('permissions')} />
+        <SettingsSection title={t('settings.system')}>
           <SettingsRow label="Background Jobs" chevron onClick={() => setActiveSection('background-jobs')} />
           <SettingsRow label="Diagnostics" chevron onClick={() => setActiveSection('diagnostics')} />
-          <SettingsRow label="Developer" chevron onClick={() => setActiveSection('developer')} />
+          <SettingsRow label={t('settings.developer')} chevron onClick={() => setActiveSection('developer')} />
         </SettingsSection>
 
-        <SettingsSection title="Apps">
-          <SettingsRow
-            label="Installed Apps"
-            chevron
-            onClick={() => setActiveSection('installed-apps')}
-          />
+        <SettingsSection title={t('settings.apps')}>
+          <SettingsRow label={t('settings.installedApps')} chevron onClick={() => setActiveSection('installed-apps')} />
         </SettingsSection>
 
-        <SettingsSection title="Privacy & Security">
-          <SettingsRow label="Language" value={settings.language} chevron />
-        </SettingsSection>
-
-        <SettingsSection title="About">
-          <SettingsRow label="BananaOS Version" value="1.0.0" />
-          <SettingsRow label="Build" value="Phase 3.5 — Device Ecosystem" />
+        <SettingsSection title={t('settings.about')}>
+          <SettingsRow label={t('settings.aboutDevice')} chevron onClick={() => setActiveSection('about')} />
+          <SettingsRow label={t('settings.version')} value="1.0.0" />
+          <SettingsRow label={t('settings.buildNumber')} value="3.7.0" />
         </SettingsSection>
       </div>
     </div>

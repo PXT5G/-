@@ -79,7 +79,7 @@ const storageWearSchema = new Schema<IStorageWear>(
 const deviceProfileSchema = new Schema<IDeviceProfile>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
-    deviceName: { type: String, default: 'Banana Phone' },
+    deviceName: { type: String, default: 'Gulf Phone V1' },
     deviceModel: { type: String, default: 'Banana Phone 15 Pro' },
     deviceColor: { type: String, default: 'Gold' },
     serialNumber: { type: String, default: '' },

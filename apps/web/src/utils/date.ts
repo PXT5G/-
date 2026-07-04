@@ -1,13 +1,22 @@
-export function formatTime(date: Date = new Date(), use24h = true): string {
-  return date.toLocaleTimeString('en-US', {
+import { useSettingsStore } from '@/stores/settingsStore';
+
+export function formatTime(date: Date = new Date(), use24h?: boolean): string {
+  const settings = useSettingsStore.getState();
+  const hour12 = use24h !== undefined ? !use24h : settings.timeFormat === '12h';
+  const locale = settings.language === 'en' ? 'en-US' : settings.language;
+
+  return date.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: !use24h,
+    hour12,
   });
 }
 
 export function formatDate(date: Date = new Date()): string {
-  return date.toLocaleDateString('en-US', {
+  const settings = useSettingsStore.getState();
+  const locale = settings.language === 'en' ? 'en-US' : settings.language;
+
+  return date.toLocaleDateString(locale, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -15,7 +24,10 @@ export function formatDate(date: Date = new Date()): string {
 }
 
 export function formatShortDate(date: Date = new Date()): string {
-  return date.toLocaleDateString('en-US', {
+  const settings = useSettingsStore.getState();
+  const locale = settings.language === 'en' ? 'en-US' : settings.language;
+
+  return date.toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
