@@ -422,7 +422,22 @@ export type SocketEvent =
   | 'justice:notification'
   | 'justice:search:complete'
   | 'justice:subpoena:issued'
-  | 'justice:citation:resolved';
+  | 'justice:citation:resolved'
+  | 'ems:initialized'
+  | 'ems:dispatch:new'
+  | 'ems:dispatch:update'
+  | 'ems:unit:update'
+  | 'ems:personnel:status'
+  | 'ems:911:new'
+  | 'ems:patient:update'
+  | 'ems:ambulance:gps'
+  | 'ems:hospital:capacity'
+  | 'ems:incident:update'
+  | 'ems:alert'
+  | 'ems:helicopter:dispatch'
+  | 'ems:search:complete'
+  | 'ems:admission:update'
+  | 'ems:queue:update';
 
 export interface SocketPayload {
   event: SocketEvent;

@@ -23,6 +23,7 @@ const RUNTIME_APPS = new Set([
   'com.gulfos.browser',
   'com.gulfos.chat',
   'com.gulfos.justice',
+  'com.gulfos.ems',
   'com.gulfos.control-panel',
   'com.gulfos.phone',
   'com.gulfos.maps',

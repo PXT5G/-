@@ -35,6 +35,7 @@ export const LEGACY_BUNDLE_ID_MAP: Readonly<Record<string, string>> = {
   'com.bananaos.weather': 'com.gulfos.weather',
   'com.bananaos.social': 'com.gulfos.social',
   'com.bananaos.justice': 'com.gulfos.justice',
+  'com.bananaos.ems': 'com.gulfos.ems',
   'com.bananaos.browser': 'com.gulfos.browser',
   'com.bananaos.chat': 'com.gulfos.chat',
   'com.bananaos.vpn': 'com.gulfos.vpn',

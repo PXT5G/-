@@ -11,6 +11,7 @@ export const APP_RAM_PROFILES: Record<string, { base: number; active: number; ba
   'com.gulfos.browser': { base: 120_000_000, active: 220_000_000, background: 60_000_000, cached: 40_000_000 },
   'com.gulfos.chat': { base: 95_000_000, active: 180_000_000, background: 50_000_000, cached: 35_000_000 },
   'com.gulfos.justice': { base: 150_000_000, active: 280_000_000, background: 80_000_000, cached: 40_000_000 },
+  'com.gulfos.ems': { base: 180_000_000, active: 320_000_000, background: 90_000_000, cached: 45_000_000 },
   'com.gulfos.camera': { base: 250_000_000, active: 450_000_000, background: 80_000_000, cached: 40_000_000 },
   'com.gulfos.gallery': { base: 120_000_000, active: 220_000_000, background: 50_000_000, cached: 35_000_000 },
   'com.gulfos.settings': { base: 35_000_000, active: 50_000_000, background: 15_000_000, cached: 8_000_000 },
