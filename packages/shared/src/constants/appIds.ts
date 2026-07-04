@@ -13,6 +13,7 @@ export const GULFOS_APP_IDS = {
   JUSTICE: 'com.gulfos.justice',
   EMS: 'com.gulfos.ems',
   BUSINESS: 'com.gulfos.business',
+  REAL_ESTATE: 'com.gulfos.real-estate',
   CONTROL_PANEL: 'com.gulfos.control-panel',
   SETTINGS: 'com.gulfos.settings',
   STORE: 'com.gulfos.store',

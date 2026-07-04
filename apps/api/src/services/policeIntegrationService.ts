@@ -154,15 +154,25 @@ export async function searchProperty(query: string) {
   const orgs = await (await import('../database/models/PoliceOrganization')).PoliceOrganization.find({
     $or: [{ name: new RegExp(query, 'i') }, { address: new RegExp(query, 'i') }],
     deletedAt: null,
-  }).limit(20);
-  return orgs.map((o) => ({
+  }).limit(10);
+
+  const orgResults = orgs.map((o) => ({
     orgId: o.orgId,
     name: o.name,
     type: o.type,
     address: o.address,
     district: o.district,
     flags: o.flags,
+    source: 'organization' as const,
   }));
+
+  try {
+    const { searchPropertiesForPolice } = await import('./realEstateIntegrationService');
+    const properties = await searchPropertiesForPolice(query);
+    return [...properties.map((p) => ({ ...p, source: 'property' as const })), ...orgResults];
+  } catch {
+    return orgResults;
+  }
 }
 
 export async function searchBusiness(query: string) {

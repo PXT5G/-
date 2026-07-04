@@ -38,6 +38,8 @@ import { EmsApp } from '@/apps/ems';
 import { emsManifest } from '@/apps/ems/manifest';
 import { BusinessApp } from '@/apps/business';
 import { businessManifest } from '@/apps/business/manifest';
+import { RealEstateApp } from '@/apps/real-estate';
+import { realEstateManifest } from '@/apps/real-estate/manifest';
 
 registerApp(
   {
@@ -82,3 +84,4 @@ registerApp(chatManifest, ChatApp);
 registerApp(justiceManifest, JusticeApp);
 registerApp(emsManifest, EmsApp);
 registerApp(businessManifest, BusinessApp);
+registerApp(realEstateManifest, RealEstateApp);

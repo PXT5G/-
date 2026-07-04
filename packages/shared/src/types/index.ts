@@ -452,7 +452,21 @@ export type SocketEvent =
   | 'business:analytics:update'
   | 'business:invoice:update'
   | 'business:contract:update'
-  | 'business:government:alert';
+  | 'business:government:alert'
+  | 'realestate:initialized'
+  | 'realestate:listing:created'
+  | 'realestate:listing:updated'
+  | 'realestate:property:sold'
+  | 'realestate:property:rented'
+  | 'realestate:offer:received'
+  | 'realestate:offer:accepted'
+  | 'realestate:maintenance:update'
+  | 'realestate:price:change'
+  | 'realestate:notification'
+  | 'realestate:analytics:update'
+  | 'realestate:escrow:update'
+  | 'realestate:lease:update'
+  | 'realestate:inspection:update';
 
 export interface SocketPayload {
   event: SocketEvent;
