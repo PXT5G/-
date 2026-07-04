@@ -86,6 +86,11 @@ export function startBackgroundServiceManager(): void {
     await refreshAllStorage();
   });
 
+  registerBackgroundTask('device-ecosystem-tick', 60 * 1000, async () => {
+    const { deviceEcosystemTick } = await import('./deviceEcosystemService');
+    await deviceEcosystemTick();
+  });
+
   registerBackgroundTask('job-processor', 5 * 1000, async () => {
     const { processJobQueue } = await import('./jobService');
     await processJobQueue();

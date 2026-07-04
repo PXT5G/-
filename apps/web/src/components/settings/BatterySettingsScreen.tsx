@@ -1,6 +1,7 @@
 'use client';
 
 import { useBattery } from '@/hooks/useSystemServices';
+import { useDevicePower } from '@/hooks/useDeviceEcosystem';
 import { useHaptic } from '@/hooks/useSound';
 import { formatBytes } from '@/services/deviceStorageService';
 
@@ -16,6 +17,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export function BatterySettingsScreen({ onBack }: { onBack: () => void }) {
   const { tap } = useHaptic();
   const { data, isLoading, batteryLevel, batteryHealth, isCharging, temperature, lowPowerMode } = useBattery();
+  const { data: power } = useDevicePower();
 
   if (isLoading || !data) {
     return (
@@ -40,6 +42,15 @@ export function BatterySettingsScreen({ onBack }: { onBack: () => void }) {
 
         <section className="p-4 rounded-xl bg-white/5 border border-white/10">
           <InfoRow label="Battery Health" value={`${batteryHealth}%`} />
+          {power && (
+            <>
+              <InfoRow label="Charging Cycles" value={String(power.chargingCycles)} />
+              <InfoRow label="Power Mode" value={power.powerMode.replace(/_/g, ' ')} />
+              <InfoRow label="Charging Type" value={power.chargingType} />
+              <InfoRow label="Fast Charging" value={power.fastChargingEnabled ? 'Enabled' : 'Disabled'} />
+              <InfoRow label="Wireless Charging" value={power.wirelessChargingEnabled ? 'Enabled' : 'Disabled'} />
+            </>
+          )}
           <InfoRow label="Temperature" value={`${temperature}°C`} />
           <InfoRow label="RAM Used" value={formatBytes(data.ramUsed)} />
           <InfoRow label="Storage Used" value={formatBytes(data.storageUsed)} />

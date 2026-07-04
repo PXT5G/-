@@ -226,6 +226,23 @@ export type SocketEvent =
   | 'device:memory:pressure'
   | 'device:update:complete'
   | 'device:update:rollback'
+  | 'device:profile:update'
+  | 'device:power:update'
+  | 'device:power:emergency'
+  | 'device:security:update'
+  | 'device:security:unlocked'
+  | 'device:security:remote_lock'
+  | 'device:security:remote_wipe'
+  | 'device:backup:complete'
+  | 'device:backup:progress'
+  | 'device:backup:restored'
+  | 'device:sync:complete'
+  | 'device:sync:progress'
+  | 'device:maintenance:complete'
+  | 'device:recovery:update'
+  | 'device:recovery:factory_reset'
+  | 'device:ecosystem:ready'
+  | 'device:diagnostics:extended'
   | 'system:ready'
   | 'system:error'
   | 'location:update'
@@ -518,4 +535,104 @@ export interface SystemEventInfo {
   priority: number;
   source: string;
   createdAt: string;
+}
+
+// ─── Device Ecosystem (Phase 3.5) ───────────────────────────────────────────
+
+export interface DeviceProfileSnapshot {
+  deviceName: string;
+  deviceModel: string;
+  deviceColor: string;
+  serialNumber: string;
+  deviceUuid: string;
+  generation: string;
+  purchaseDate?: string;
+  warrantyExpiresAt?: string;
+  warrantyActive?: boolean;
+  region?: string;
+  language?: string;
+  timezone?: string;
+  osVersion?: string;
+  internalStorage?: number;
+  batteryLevel?: number;
+  batteryHealth?: number;
+}
+
+export interface PowerStateSnapshot {
+  batteryLevel: number;
+  batteryHealth: number;
+  chargingCycles: number;
+  chargingType: 'none' | 'wired' | 'fast' | 'wireless';
+  isCharging: boolean;
+  fastChargingEnabled: boolean;
+  wirelessChargingEnabled: boolean;
+  powerMode: 'normal' | 'low_power' | 'critical' | 'emergency_shutdown';
+  degradationRate: number;
+  lastChargeAt?: string;
+  emergencyShutdownAt?: string;
+}
+
+export interface SecurityConfigSnapshot {
+  faceUnlockEnabled: boolean;
+  fingerprintEnabled: boolean;
+  pinEnabled: boolean;
+  passwordEnabled: boolean;
+  primaryUnlockMethod: string;
+  trustedDevices: Array<{ deviceId: string; deviceName: string; lastSeenAt: string; trustedAt: string }>;
+  failedAttempts: number;
+  tempLocked: boolean;
+  tempLockedUntil?: string;
+  remoteLocked: boolean;
+  remoteWipeRequested: boolean;
+  lastUnlockAt?: string;
+}
+
+export interface ExpandedStorageSnapshot {
+  downloads: number;
+  trash: number;
+  cache: number;
+  applicationData: number;
+  mediaLibrary: number;
+  system: number;
+}
+
+export interface BackupSnapshot {
+  backupId: string;
+  backupType: 'automatic' | 'manual';
+  state: string;
+  version: number;
+  sizeBytes?: number;
+  completedAt?: string;
+  restoredAt?: string;
+}
+
+export interface SyncStatusSnapshot {
+  syncing: boolean;
+  activeSyncId?: string;
+  progress: number;
+  lastSyncAt?: string;
+}
+
+export interface RecoveryStateSnapshot {
+  recoveryMode: 'normal' | 'safe' | 'recovery';
+  safeModeEnabled: boolean;
+  factoryResetPending: boolean;
+  rollbackVersion?: string;
+  lastRecoveryAt?: string;
+}
+
+export interface MaintenanceRecordSnapshot {
+  action: string;
+  status: string;
+  bytesFreed?: number;
+  itemsProcessed?: number;
+  durationMs?: number;
+  createdAt: string;
+}
+
+export interface ExtendedDiagnosticsReport extends DiagnosticsReport {
+  power?: PowerStateSnapshot;
+  sensors?: Record<string, unknown>;
+  systemHealth?: { score: number; powerMode: string; chargingCycles: number };
+  errorReports?: Array<{ message: string; category: string; at: string }>;
 }

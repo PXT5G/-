@@ -44,6 +44,11 @@ export interface IDeviceProfile extends Document {
   temperatureCelsius: number;
   bootedAt: Date;
   lastStorageRecalc: Date;
+  purchaseDate?: Date;
+  warrantyExpiresAt?: Date;
+  region: string;
+  language: string;
+  timezone: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -99,6 +104,11 @@ const deviceProfileSchema = new Schema<IDeviceProfile>(
     temperatureCelsius: { type: Number, default: 32 },
     bootedAt: { type: Date, default: Date.now },
     lastStorageRecalc: { type: Date, default: Date.now },
+    purchaseDate: { type: Date },
+    warrantyExpiresAt: { type: Date },
+    region: { type: String, default: 'US' },
+    language: { type: String, default: 'en' },
+    timezone: { type: String, default: 'America/Los_Angeles' },
   },
   { timestamps: true }
 );

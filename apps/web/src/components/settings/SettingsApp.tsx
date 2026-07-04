@@ -16,6 +16,11 @@ import { BackgroundJobsScreen } from './BackgroundJobsScreen';
 import { PermissionsSettingsScreen } from './PermissionsSettingsScreen';
 import { BatterySettingsScreen } from './BatterySettingsScreen';
 import { DeveloperSettingsScreen } from './DeveloperSettingsScreen';
+import { DeviceSecuritySettingsScreen } from './DeviceSecuritySettingsScreen';
+import { DeviceBackupSettingsScreen } from './DeviceBackupSettingsScreen';
+import { DeviceSyncSettingsScreen } from './DeviceSyncSettingsScreen';
+import { DeviceMaintenanceSettingsScreen } from './DeviceMaintenanceSettingsScreen';
+import { DeviceRecoverySettingsScreen } from './DeviceRecoverySettingsScreen';
 import { MapsSettingsScreen } from './MapsSettingsScreen';
 import { CarrierSettingsScreen } from './CarrierSettingsScreen';
 import { VpnSettingsScreen } from './VpnSettingsScreen';
@@ -76,6 +81,26 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
   if (activeSection === 'developer') {
     return <DeveloperSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'device-security') {
+    return <DeviceSecuritySettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'device-backup') {
+    return <DeviceBackupSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'device-sync') {
+    return <DeviceSyncSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'device-maintenance') {
+    return <DeviceMaintenanceSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'device-recovery') {
+    return <DeviceRecoverySettingsScreen onBack={() => setActiveSection(null)} />;
   }
 
   if (activeSection === 'maps') {
@@ -234,6 +259,11 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
         <SettingsSection title="Device">
           <SettingsRow label="Battery" chevron onClick={() => setActiveSection('battery')} />
+          <SettingsRow label="Security" chevron onClick={() => setActiveSection('device-security')} />
+          <SettingsRow label="Backup" chevron onClick={() => setActiveSection('device-backup')} />
+          <SettingsRow label="Sync" chevron onClick={() => setActiveSection('device-sync')} />
+          <SettingsRow label="Maintenance" chevron onClick={() => setActiveSection('device-maintenance')} />
+          <SettingsRow label="Recovery" chevron onClick={() => setActiveSection('device-recovery')} />
           <SettingsRow label="Location" chevron onClick={() => setActiveSection('location')} />
           <SettingsRow label="Maps" chevron onClick={() => setActiveSection('maps')} />
           <SettingsRow label="Network" chevron onClick={() => setActiveSection('network')} />
@@ -267,7 +297,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
         <SettingsSection title="About">
           <SettingsRow label="BananaOS Version" value="1.0.0" />
-          <SettingsRow label="Build" value="Phase 3.4 — Communication Core" />
+          <SettingsRow label="Build" value="Phase 3.5 — Device Ecosystem" />
         </SettingsSection>
       </div>
     </div>

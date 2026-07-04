@@ -7,6 +7,7 @@ import { useOSBoot } from '@/hooks/useOSBoot';
 import { useInstalledAppsHydration } from '@/hooks/useInstalledAppsHydration';
 import { useSystemInit } from '@/hooks/useSystemServices';
 import { useCommunicationInit } from '@/hooks/useCommunicationServices';
+import { useDeviceEcosystemInit } from '@/hooks/useDeviceEcosystem';
 import '@/services/registerSystemApps';
 
 function OSInitializer() {
@@ -16,6 +17,7 @@ function OSInitializer() {
   useInstalledAppsHydration();
   useSystemInit();
   useCommunicationInit();
+  useDeviceEcosystemInit();
   return null;
 }
 

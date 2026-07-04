@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import * as deviceController from '../controllers/deviceController';
+import deviceEcosystemRoutes from './deviceEcosystem';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
+
+router.use('/ecosystem', deviceEcosystemRoutes);
 
 router.get('/storage', authenticate, deviceController.getStorage);
 router.post('/storage/recalculate', authenticate, deviceController.recalcStorage);

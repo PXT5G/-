@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { systemService } from '@/services/systemService';
 import { worldService } from '@/services/worldService';
+import { deviceEcosystemService } from '@/services/deviceEcosystemService';
 import { useHaptic } from '@/hooks/useSound';
 
 export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
@@ -23,11 +24,39 @@ export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
     queryFn: () => worldService.getWorldState(),
   });
 
+  const { data: devDashboard } = useQuery({
+    queryKey: ['device-ecosystem', 'developer'],
+    queryFn: () => deviceEcosystemService.getDeveloperDashboard(),
+  });
+
+  const logs = (devDashboard?.logs as Array<{ level: string; message: string; at: string }>) ?? [];
+  const permissions = devDashboard?.permissions as { total?: number; granted?: number } | undefined;
+  const apiEvents = (devDashboard?.api as { recentApiEvents?: Array<{ namespace: string; event: string; at: string }> })?.recentApiEvents ?? [];
+
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
         <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
-        <h1 className="text-2xl font-bold text-white mb-6">Developer</h1>
+        <h1 className="text-2xl font-bold text-white mb-6">Developer Mode</h1>
+
+        <section className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
+          <h2 className="text-xs font-semibold text-white/40 uppercase mb-3">Device Ecosystem</h2>
+          <p className="text-xs text-white/60">Permissions: {permissions?.granted ?? 0}/{permissions?.total ?? 0} granted</p>
+          {logs.slice(0, 5).map((l, i) => (
+            <p key={i} className="text-[10px] text-white/50 font-mono py-0.5">[{l.level}] {l.message}</p>
+          ))}
+        </section>
+
+        <section className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
+          <h2 className="text-xs font-semibold text-white/40 uppercase mb-3">API Inspector</h2>
+          {apiEvents.length === 0 ? (
+            <p className="text-xs text-white/40">No API events</p>
+          ) : (
+            apiEvents.slice(0, 5).map((e, i) => (
+              <p key={i} className="text-[10px] text-banana-gold font-mono py-0.5">{e.namespace}:{e.event}</p>
+            ))
+          )}
+        </section>
 
         <section className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
           <h2 className="text-xs font-semibold text-white/40 uppercase mb-3">World Engine</h2>

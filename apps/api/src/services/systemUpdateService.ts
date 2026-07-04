@@ -40,18 +40,22 @@ export async function completeSystemUpdate(
   await profile.save();
 }
 
-export async function rollbackUpdate(userId: string): Promise<void> {
+export async function rollbackUpdate(userId: string): Promise<{ previousVersion: string; message: string; timestamp: string } | null> {
   const profile = await DeviceProfile.findOne({ userId });
-  if (!profile) return;
+  if (!profile) return null;
 
+  const previousVersion = profile.osVersion;
   profile.systemStorage.updateReserved = 0;
   await profile.save();
   await releaseReservation(userId, 'com.bananaos.system');
 
-  emitToUser(userId, 'device:update:rollback' as never, {
+  const result = {
+    previousVersion,
     message: 'System update rolled back.',
     timestamp: new Date().toISOString(),
-  });
+  };
+  emitToUser(userId, 'device:update:rollback' as never, result);
+  return result;
 }
 
 function bumpPatch(version: string): string {

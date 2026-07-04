@@ -48,6 +48,15 @@ export type {
   ConversationSnapshot,
   MessageSnapshot,
   PresenceSnapshot,
+  DeviceProfileSnapshot,
+  PowerStateSnapshot,
+  SecurityConfigSnapshot,
+  ExpandedStorageSnapshot,
+  BackupSnapshot,
+  SyncStatusSnapshot,
+  RecoveryStateSnapshot,
+  MaintenanceRecordSnapshot,
+  ExtendedDiagnosticsReport,
 } from '@bananaos/shared';
 
 export interface AppFolder {
