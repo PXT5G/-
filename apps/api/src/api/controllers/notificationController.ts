@@ -2,7 +2,11 @@ import { Response } from 'express';
 import { Notification } from '../../database/models/Notification';
 import { AuthRequest } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { emitToUser } from '../../services/socketService';
+import { enqueueNotification, markNotificationRead as brokerMarkRead } from '../../services/notificationBrokerService';
+
+function param(value: string | string[]): string {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export const getNotifications = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { limit = '50', unreadOnly } = req.query;
@@ -24,7 +28,7 @@ export const getNotifications = asyncHandler(async (req: AuthRequest, res: Respo
 export const createNotification = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { appId, title, body, icon, image, priority, actions, groupId } = req.body;
 
-  const notification = await Notification.create({
+  const formatted = await enqueueNotification({
     userId: req.user!.userId,
     appId,
     title,
@@ -32,31 +36,28 @@ export const createNotification = asyncHandler(async (req: AuthRequest, res: Res
     icon,
     image,
     priority: priority ?? 'normal',
-    actions,
     groupId,
+    actions,
+    actorId: req.user!.userId,
   });
-
-  const formatted = formatNotification(notification);
-  emitToUser(req.user!.userId, 'notification:new', formatted);
 
   res.status(201).json({ success: true, data: formatted });
 });
 
 export const markAsRead = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  const notification = await Notification.findOneAndUpdate(
-    { _id: id, userId: req.user!.userId },
-    { read: true },
-    { new: true }
-  );
-
-  if (!notification) {
-    throw new AppError(404, 'Notification not found');
+  try {
+    const formatted = await brokerMarkRead(req.user!.userId, param(id), req.user!.userId);
+    res.json({ success: true, data: formatted });
+  } catch {
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id, userId: req.user!.userId },
+      { read: true },
+      { new: true }
+    );
+    if (!notification) throw new AppError(404, 'Notification not found');
+    res.json({ success: true, data: formatNotification(notification) });
   }
-
-  emitToUser(req.user!.userId, 'notification:read', { id });
-
-  res.json({ success: true, data: formatNotification(notification) });
 });
 
 export const markAllAsRead = asyncHandler(async (req: AuthRequest, res: Response) => {

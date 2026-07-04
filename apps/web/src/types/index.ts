@@ -26,6 +26,13 @@ export type {
   ApiResponse,
   SocketEvent,
   SocketPayload,
+  DeviceLocationState,
+  NetworkStateSnapshot,
+  DeviceStateSnapshot,
+  BackgroundJobInfo,
+  DiagnosticsReport,
+  SystemEventInfo,
+  SystemPermissionType,
 } from '@bananaos/shared';
 
 export interface AppFolder {

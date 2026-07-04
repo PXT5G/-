@@ -74,7 +74,13 @@ export type PermissionType =
   | 'notifications'
   | 'storage'
   | 'network'
-  | 'biometrics';
+  | 'biometrics'
+  | 'phone'
+  | 'bluetooth'
+  | 'sim'
+  | 'files';
+
+export type SystemPermissionType = PermissionType;
 
 export interface InstalledApp extends AppManifest {
   installedAt: string;
@@ -219,10 +225,122 @@ export type SocketEvent =
   | 'device:ram:updated'
   | 'device:memory:pressure'
   | 'device:update:complete'
-  | 'device:update:rollback';
+  | 'device:update:rollback'
+  | 'system:ready'
+  | 'system:error'
+  | 'location:update'
+  | 'network:update'
+  | 'battery:update'
+  | 'device:update'
+  | 'permission:update'
+  | 'job:update'
+  | 'diagnostics:update'
+  | 'service:health';
 
 export interface SocketPayload {
   event: SocketEvent;
   data: unknown;
   timestamp: string;
+}
+
+export interface DeviceLocationState {
+  latitude: number;
+  longitude: number;
+  heading: number;
+  speed: number;
+  altitude: number;
+  accuracy: number;
+  district: string;
+  street: string;
+  zone: string;
+  region: string;
+  gpsTimestamp: string;
+  movementState: 'stationary' | 'walking' | 'driving' | 'unknown';
+  enabled: boolean;
+}
+
+export interface NetworkStateSnapshot {
+  carrier: string;
+  signalStrength: number;
+  cellTowers: { id: string; strength: number; band: string }[];
+  internetConnected: boolean;
+  vpnEnabled: boolean;
+  vpnName?: string;
+  coverage: string;
+  latencyMs: number;
+  bandwidthMbps: number;
+  packetLoss: number;
+  jitterMs: number;
+  connectionState: 'connected' | 'connecting' | 'disconnected' | 'limited';
+  wifiEnabled: boolean;
+  wifiSsid?: string;
+  bluetoothEnabled: boolean;
+}
+
+export interface DeviceStateSnapshot {
+  batteryLevel: number;
+  batteryHealth: number;
+  isCharging: boolean;
+  temperature: number;
+  screenState: 'on' | 'off' | 'dimmed';
+  lockState: 'locked' | 'unlocked';
+  ramUsed: number;
+  ramTotal: number;
+  storageUsed: number;
+  storageTotal: number;
+  cpuLoad: number;
+  gpuLoad: number;
+  deviceHealth: number;
+  lowPowerMode: boolean;
+  criticalMode: boolean;
+  emergencyMode: boolean;
+  lastSnapshotAt: string;
+}
+
+export type JobStatus =
+  | 'queued'
+  | 'running'
+  | 'retry'
+  | 'cancelled'
+  | 'completed'
+  | 'failed';
+
+export interface BackgroundJobInfo {
+  id: string;
+  type: string;
+  name: string;
+  status: JobStatus;
+  priority: 'low' | 'normal' | 'high' | 'critical';
+  progress: number;
+  error?: string;
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+}
+
+export interface DiagnosticsReport {
+  memory: { used: number; total: number; pressure: boolean };
+  cpu: { load: number; model: string };
+  gpu: { load: number; model: string };
+  fps: number;
+  storage: { used: number; total: number; health: number };
+  network: { latency: number; bandwidth: number; connected: boolean };
+  battery: { level: number; health: number; charging: boolean };
+  temperature: number;
+  backgroundJobs: { running: number; queued: number; failed: number };
+  socketConnected: boolean;
+  serviceHealth: Record<string, 'healthy' | 'degraded' | 'down'>;
+  errors: string[];
+  warnings: string[];
+  collectedAt: string;
+}
+
+export interface SystemEventInfo {
+  id: string;
+  namespace: string;
+  event: string;
+  payload: Record<string, unknown>;
+  priority: number;
+  source: string;
+  createdAt: string;
 }

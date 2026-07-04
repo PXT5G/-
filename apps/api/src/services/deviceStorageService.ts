@@ -293,4 +293,13 @@ export async function getDownloadStorage(userId: string) {
   return downloads.reduce((sum, d) => sum + (d.size - (d.downloadedBytes ?? 0)), 0);
 }
 
+export async function refreshAllStorage(): Promise<number> {
+  const { DeviceProfile } = await import('../database/models/DeviceProfile');
+  const profiles = await DeviceProfile.find({}).select('userId');
+  for (const p of profiles) {
+    await recalculateDeviceStorage(p.userId.toString());
+  }
+  return profiles.length;
+}
+
 export { STORAGE_CAPACITY_TIERS, DEFAULT_CAPACITY, formatCapacityLabel };

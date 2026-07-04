@@ -55,6 +55,9 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response) => 
   await ensureDeviceProfile(user._id.toString());
   await seedHardwareProfile(user._id.toString(), undefined, data.displayName ?? data.username);
 
+  const { initializeSystemServices } = await import('./systemController');
+  await initializeSystemServices(user._id.toString());
+
   const deviceId = uuidv4();
   const sessionId = uuidv4();
   const refreshToken = generateRefreshToken(user._id.toString(), sessionId);

@@ -47,6 +47,16 @@ class RealtimeService {
       'device:memory:pressure',
       'device:update:complete',
       'device:update:rollback',
+      'system:ready',
+      'system:error',
+      'location:update',
+      'network:update',
+      'battery:update',
+      'device:update',
+      'permission:update',
+      'job:update',
+      'diagnostics:update',
+      'service:health',
     ];
 
     events.forEach((event) => {

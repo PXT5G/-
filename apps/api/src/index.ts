@@ -15,6 +15,7 @@ import filesystemRoutes from './api/routes/filesystem';
 import adminRoutes from './api/routes/admin';
 import storeRoutes from './api/routes/store';
 import deviceRoutes from './api/routes/device';
+import systemRoutes from './api/routes/system';
 
 const app = express();
 const httpServer = createServer(app);
@@ -43,6 +44,7 @@ app.use('/api/filesystem', filesystemRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/device', deviceRoutes);
+app.use('/api/system', systemRoutes);
 
 app.use(errorHandler);
 
@@ -60,13 +62,25 @@ async function bootstrap(): Promise<void> {
       console.log('[BananaOS API] Store seeded:', result);
     }
 
-    const { startCacheGrowthSimulator } = await import('./services/cacheGrowthService');
-    const { startTrashCleanupSimulator } = await import('./services/mediaStorageService');
-    const { startHardwareSimulator } = await import('./services/hardwareService');
-    startCacheGrowthSimulator();
-    startTrashCleanupSimulator();
-    startHardwareSimulator();
-    console.log('[BananaOS API] Hardware simulators started');
+    const { startBackgroundServiceManager } = await import('./services/backgroundServiceManager');
+    const { registerJobHandler } = await import('./services/jobService');
+    const { recoverCrashedJobs } = await import('./services/jobService');
+
+    registerJobHandler('cache-cleanup', async () => {
+      const { growCachesForAll } = await import('./services/cacheGrowthService');
+      const grown = await growCachesForAll();
+      return { grown };
+    });
+
+    registerJobHandler('diagnostics-collect', async (job) => {
+      const { collectDiagnostics } = await import('./services/diagnosticsService');
+      const report = await collectDiagnostics(job.userId.toString());
+      return { collectedAt: report.collectedAt };
+    });
+
+    await recoverCrashedJobs();
+    startBackgroundServiceManager();
+    console.log('[BananaOS API] Core OS services started');
 
     httpServer.listen(env.PORT, () => {
       console.log(`[BananaOS API] Running on port ${env.PORT}`);

@@ -5,21 +5,22 @@ import { formatTime } from '@/utils/date';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useDeviceStorage } from '@/hooks/useDeviceStorage';
-import { useDeviceHardware } from '@/hooks/useDeviceHardware';
+import { useBattery, useNetwork } from '@/hooks/useSystemServices';
 import { cn } from '@/utils/cn';
 
 export function StatusBar() {
   const [time, setTime] = useState(new Date());
-  const wifiEnabled = useSettingsStore((s) => s.wifiEnabled);
   const silentMode = useSettingsStore((s) => s.silentMode);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
   const { data: storage } = useDeviceStorage();
-  const { data: hardware } = useDeviceHardware();
+  const { batteryLevel } = useBattery();
+  const { data: network } = useNetwork();
 
-  const battery = hardware?.batteryLevel ?? 87;
+  const battery = batteryLevel ?? 87;
+  const wifiEnabled = network?.wifiEnabled ?? true;
   const lowStorage = storage?.lowStorageLevel === 'warning' || storage?.lowStorageLevel === 'low';
   const criticalStorage = storage?.lowStorageLevel === 'critical' || storage?.lowStorageLevel === 'emergency';
-  const memoryPressure = hardware?.ram?.memoryPressure ?? false;
+  const memoryPressure = false;
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 10000);

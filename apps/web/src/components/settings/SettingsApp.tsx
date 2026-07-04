@@ -9,6 +9,13 @@ import { InstalledAppsSettings } from './InstalledAppsSettings';
 import { StorageManagerScreen } from './StorageManagerScreen';
 import { HardwareSettingsScreen } from './HardwareSettingsScreen';
 import { TaskManagerScreen } from './TaskManagerScreen';
+import { NetworkSettingsScreen } from './NetworkSettingsScreen';
+import { LocationSettingsScreen } from './LocationSettingsScreen';
+import { DiagnosticsSettingsScreen } from './DiagnosticsSettingsScreen';
+import { BackgroundJobsScreen } from './BackgroundJobsScreen';
+import { PermissionsSettingsScreen } from './PermissionsSettingsScreen';
+import { BatterySettingsScreen } from './BatterySettingsScreen';
+import { DeveloperSettingsScreen } from './DeveloperSettingsScreen';
 import { Toggle } from '@/components/ui/Toggle';
 import { Slider } from '@/components/ui/Slider';
 import { useHaptic } from '@/hooks/useSound';
@@ -36,6 +43,34 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
   if (activeSection === 'task-manager') {
     return <TaskManagerScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'network') {
+    return <NetworkSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'location') {
+    return <LocationSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'diagnostics') {
+    return <DiagnosticsSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'background-jobs') {
+    return <BackgroundJobsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'permissions') {
+    return <PermissionsSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'battery') {
+    return <BatterySettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'developer') {
+    return <DeveloperSettingsScreen onBack={() => setActiveSection(null)} />;
   }
 
   if (activeSection === 'installed-apps') {
@@ -173,21 +208,19 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
         </SettingsSection>
 
         <SettingsSection title="Device">
-          <SettingsRow
-            label="Hardware"
-            chevron
-            onClick={() => setActiveSection('hardware')}
-          />
-          <SettingsRow
-            label="Task Manager"
-            chevron
-            onClick={() => setActiveSection('task-manager')}
-          />
-          <SettingsRow
-            label="Storage"
-            chevron
-            onClick={() => setActiveSection('storage')}
-          />
+          <SettingsRow label="Battery" chevron onClick={() => setActiveSection('battery')} />
+          <SettingsRow label="Location" chevron onClick={() => setActiveSection('location')} />
+          <SettingsRow label="Network" chevron onClick={() => setActiveSection('network')} />
+          <SettingsRow label="Hardware" chevron onClick={() => setActiveSection('hardware')} />
+          <SettingsRow label="Task Manager" chevron onClick={() => setActiveSection('task-manager')} />
+          <SettingsRow label="Storage" chevron onClick={() => setActiveSection('storage')} />
+        </SettingsSection>
+
+        <SettingsSection title="System">
+          <SettingsRow label="Permissions" chevron onClick={() => setActiveSection('permissions')} />
+          <SettingsRow label="Background Jobs" chevron onClick={() => setActiveSection('background-jobs')} />
+          <SettingsRow label="Diagnostics" chevron onClick={() => setActiveSection('diagnostics')} />
+          <SettingsRow label="Developer" chevron onClick={() => setActiveSection('developer')} />
         </SettingsSection>
 
         <SettingsSection title="Apps">
@@ -200,13 +233,11 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
         <SettingsSection title="Privacy & Security">
           <SettingsRow label="Language" value={settings.language} chevron />
-          <SettingsRow label="Permissions" chevron />
-          <SettingsRow label="Privacy" chevron />
         </SettingsSection>
 
         <SettingsSection title="About">
           <SettingsRow label="BananaOS Version" value="1.0.0" />
-          <SettingsRow label="Build" value="Phase 3.1 — Hardware Simulation" />
+          <SettingsRow label="Build" value="Phase 3.2 — Core OS Services" />
         </SettingsSection>
       </div>
     </div>

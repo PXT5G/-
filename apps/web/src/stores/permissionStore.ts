@@ -28,7 +28,7 @@ export const usePermissionStore = create<PermissionState>()(
           pendingRequests.set(key, resolve);
         }),
 
-      grantPermission: (appId, permission) => {
+      grantPermission: async (appId, permission) => {
         set((s) => {
           const existing = s.grants.find(
             (g) => g.appId === appId && g.permission === permission
@@ -55,6 +55,11 @@ export const usePermissionStore = create<PermissionState>()(
           };
         });
 
+        try {
+          const { systemService } = await import('@/services/systemService');
+          await systemService.grantPermission(appId, permission);
+        } catch { /* offline */ }
+
         const key = `${appId}:${permission}`;
         const resolver = pendingRequests.get(key);
         if (resolver) {
@@ -63,14 +68,19 @@ export const usePermissionStore = create<PermissionState>()(
         }
       },
 
-      revokePermission: (appId, permission) =>
+      revokePermission: async (appId, permission) => {
         set((s) => ({
           grants: s.grants.map((g) =>
             g.appId === appId && g.permission === permission
               ? { ...g, granted: false }
               : g
           ),
-        })),
+        }));
+        try {
+          const { systemService } = await import('@/services/systemService');
+          await systemService.revokePermission(appId, permission);
+        } catch { /* offline */ }
+      },
 
       hasPermission: (appId, permission) =>
         get().grants.some(

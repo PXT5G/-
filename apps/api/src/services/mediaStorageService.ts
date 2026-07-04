@@ -120,12 +120,5 @@ export async function purgeExpiredTrash(): Promise<number> {
 }
 
 export function startTrashCleanupSimulator(): void {
-  setInterval(async () => {
-    try {
-      const purged = await purgeExpiredTrash();
-      if (purged > 0) console.log(`[Trash] Purged ${purged} expired items`);
-    } catch (err) {
-      console.error('[Trash] Cleanup failed:', err);
-    }
-  }, 24 * 60 * 60 * 1000);
+  // Deprecated: use backgroundServiceManager
 }

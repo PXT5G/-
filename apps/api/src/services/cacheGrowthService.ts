@@ -37,14 +37,15 @@ export async function growCachesForUser(userId: string): Promise<number> {
 }
 
 export function startCacheGrowthSimulator(): void {
-  setInterval(async () => {
-    try {
-      const profiles = await DeviceProfile.find({}).select('userId');
-      for (const p of profiles) {
-        await growCachesForUser(p.userId.toString());
-      }
-    } catch (err) {
-      console.error('[CacheGrowth] Tick failed:', err);
-    }
-  }, TICK_INTERVAL_MS);
+  // Deprecated: use backgroundServiceManager.registerBackgroundTask
+}
+
+export async function growCachesForAll(): Promise<number> {
+  const { DeviceProfile } = await import('../database/models/DeviceProfile');
+  const profiles = await DeviceProfile.find({}).select('userId');
+  let total = 0;
+  for (const p of profiles) {
+    total += await growCachesForUser(p.userId.toString());
+  }
+  return total;
 }

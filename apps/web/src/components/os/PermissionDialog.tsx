@@ -16,6 +16,10 @@ const PERMISSION_LABELS: Record<PermissionType, { title: string; description: st
   storage: { title: 'Storage', description: 'Read and write files on your device' },
   network: { title: 'Network', description: 'Access the internet' },
   biometrics: { title: 'Biometrics', description: 'Use Face ID or fingerprint for authentication' },
+  phone: { title: 'Phone', description: 'Make and receive phone calls' },
+  bluetooth: { title: 'Bluetooth', description: 'Connect to Bluetooth devices' },
+  sim: { title: 'SIM', description: 'Access SIM card information' },
+  files: { title: 'Files', description: 'Access files and documents' },
 };
 
 export function PermissionDialog() {

@@ -141,17 +141,16 @@ export async function ensureHardwareProfile(userId: string, deviceName?: string)
 }
 
 export function startHardwareSimulator(): void {
-  setInterval(async () => {
-    try {
-      const profiles = await DeviceProfile.find({}).select('userId');
-      for (const p of profiles) {
-        await simulateTemperature(p.userId.toString());
-        if (Math.random() < 0.3) {
-          await simulateBatteryDrain(p.userId.toString(), 0.1);
-        }
-      }
-    } catch (err) {
-      console.error('[Hardware] Simulator tick failed:', err);
+  // Deprecated: use backgroundServiceManager
+}
+
+export async function refreshAllHardware(): Promise<number> {
+  const profiles = await DeviceProfile.find({}).select('userId');
+  for (const p of profiles) {
+    await simulateTemperature(p.userId.toString());
+    if (Math.random() < 0.3) {
+      await simulateBatteryDrain(p.userId.toString(), 0.1);
     }
-  }, 5 * 60 * 1000);
+  }
+  return profiles.length;
 }
