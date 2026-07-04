@@ -1,0 +1,60 @@
+---
+description: BananaOS security — RBAC, audit logs, auth, validation
+globs: apps/api/**/*
+alwaysApply: false
+---
+
+# BananaOS Security Rule
+
+Every application implements RBAC, audit logging, authentication, and input validation.
+
+## RBAC Pattern (per app)
+
+```typescript
+// models/<App>Permission.ts
+export type AppPermissionName = 'view_x' | 'edit_x' | 'delete_x' | ...;
+export const USER_DEFAULT_PERMISSIONS: AppPermissionName[] = [...];
+export const ADMIN_PERMISSIONS: AppPermissionName[] = [...];
+
+// service
+export async function hasPermission(userId, permission, userRole): Promise<boolean> {
+  if (userRole === 'admin') return true;
+  return !!(await Permission.findOne({ userId, permission, granted: true }));
+}
+export async function requirePermission(...) { ... }
+```
+
+## Audit Log Pattern
+
+Log every mutation: user, action, entityType, entityId, deviceId, ipAddress, oldValue, newValue, reason.
+
+```typescript
+await logAudit(userId, 'contact_created', 'Contact', ctx, entityId, undefined, newValue);
+```
+
+## Controller Guards
+
+```typescript
+import { authenticate, requireAdmin } from '../middleware/auth';
+
+router.get('/admin/audit', authenticate, requireAdmin, adminController.auditLogs);
+router.post('/', authenticate, controller.create);  // + checkPerm inside
+```
+
+## Validation
+
+Zod schemas in controllers mirror frontend test schemas in `__tests__/`. Never trust `req.body` without parsing.
+
+## Middleware Stack
+
+`helmet` · `cors` · `globalRateLimiter` · `authenticate` · per-route permission checks
+
+## Session & Auth
+
+JWT via `AuthRequest`. Pass `token` from `useAuthStore.getAccessToken()` on frontend. Include `X-App-Id` header for cross-app API calls.
+
+## Don't
+
+- Skip audit logs on admin actions
+- Allow mutations without permission checks
+- Expose internal errors to clients (use `AppError` with safe messages)
