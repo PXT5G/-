@@ -30,6 +30,7 @@ const RUNTIME_APPS = new Set([
   'com.gulfos.aviation',
   'com.gulfos.marine',
   'com.gulfos.economy-engine',
+  'com.gulfos.exchange',
   'com.gulfos.control-panel',
   'com.gulfos.phone',
   'com.gulfos.maps',

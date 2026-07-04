@@ -17,6 +17,7 @@ export const GULFOS_APP_IDS = {
   VEHICLES: 'com.gulfos.vehicles',
   AVIATION: 'com.gulfos.aviation',
   MARINE: 'com.gulfos.marine',
+  EXCHANGE: 'com.gulfos.exchange',
   ECONOMY_ENGINE: 'com.gulfos.economy-engine',
   CONTROL_PANEL: 'com.gulfos.control-panel',
   SETTINGS: 'com.gulfos.settings',

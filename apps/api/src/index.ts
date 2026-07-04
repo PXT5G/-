@@ -31,6 +31,7 @@ import vehicleRoutes from './api/routes/vehicles';
 import aviationRoutes from './api/routes/aviation';
 import marineRoutes from './api/routes/marine';
 import economyRoutes from './api/routes/economy';
+import exchangeRoutes from './api/routes/exchange';
 
 const app = express();
 const httpServer = createServer(app);
@@ -75,6 +76,7 @@ app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/aviation', aviationRoutes);
 app.use('/api/marine', marineRoutes);
 app.use('/api/economy', economyRoutes);
+app.use('/api/exchange', exchangeRoutes);
 
 app.use(errorHandler);
 

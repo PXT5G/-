@@ -113,6 +113,8 @@ export function startBackgroundServiceManager(): void {
   registerBackgroundTask('economy-tick', 60 * 60 * 1000, async () => {
     const { tickEconomy } = await import('./economyEngineService');
     await tickEconomy('system');
+    const { tickExchange } = await import('./exchangeService');
+    await tickExchange();
   });
 
   masterInterval = setInterval(() => {

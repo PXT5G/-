@@ -512,7 +512,14 @@ export type SocketEvent =
   | 'market:update'
   | 'valuation:update'
   | 'inflation:update'
-  | 'gdp:update';
+  | 'gdp:update'
+  | 'exchange:update'
+  | 'stock:update'
+  | 'trade:update'
+  | 'portfolio:update'
+  | 'order:update'
+  | 'dividend:update'
+  | 'news:update';
 
 export interface SocketPayload {
   event: SocketEvent;
