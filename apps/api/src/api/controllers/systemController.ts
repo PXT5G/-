@@ -357,6 +357,8 @@ export async function initializeSystemServices(userId: string): Promise<void> {
   await initializeSystemApps(userId);
   const { initializePhoneOs } = await import('../../services/phoneOsService');
   await initializePhoneOs(userId, userId);
+  const { initializePremiumExperience } = await import('../../services/premiumExperienceService');
+  await initializePremiumExperience(userId, userId);
   const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone'] as const;
   for (const permission of commPerms) {
     await grantPermission(userId, 'com.gulfos.communication', permission, userId);

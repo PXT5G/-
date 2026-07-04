@@ -542,7 +542,11 @@ export type SocketEvent =
   | 'widget:update'
   | 'liveactivity:update'
   | 'performance:update'
-  | 'security:update';
+  | 'security:update'
+  | 'premium:ready'
+  | 'premium:update'
+  | 'notification:history'
+  | 'widget:data:update';
 
 export interface SocketPayload {
   event: SocketEvent;
@@ -1025,4 +1029,76 @@ export interface GlobalSearchResult {
   icon?: string;
   route?: string;
   metadata?: Record<string, unknown>;
+}
+
+export interface PremiumExperienceSnapshot {
+  lockScreenLayout: string;
+  clockFont: string;
+  clockColor: string;
+  wallpaperCollection: string;
+  liveWallpaper: boolean;
+  depthWallpaper: boolean;
+  lockScreenWidgets: { type: string; position: string; config: Record<string, unknown> }[];
+  quickNotes: string[];
+  smartSuggestions: boolean;
+  chargingAnimation: boolean;
+  unlockAnimation: string;
+  homeBlurIntensity: number;
+  unlimitedPages: boolean;
+  smartFolders: boolean;
+  hiddenPageIndexes: number[];
+  iconPackId: string;
+  iconSize: string;
+  dockApps: string[];
+  hiddenApps: string[];
+  multitaskingMode: 'cards' | 'grid' | 'horizontal';
+  pinnedApps: string[];
+  lockedApps: string[];
+  dynamicIslandMaxActivities: number;
+  dynamicIslandEnabledTypes: string[];
+  notificationGroupStrategy: string;
+  pinnedNotificationIds: string[];
+  notificationHistoryEnabled: boolean;
+  controlCenterPages: string[];
+  controlCenterControls: string[];
+  controlCenterPageIndex: number;
+  appLibrarySuggestions: boolean;
+  appLibraryAiRecommendations: boolean;
+  reduceMotionOverride: boolean;
+  blurIntensity: number;
+  parallaxEnabled: boolean;
+  animationScale: number;
+  lastUsedApps: { bundleId: string; usedAt: string; count: number }[];
+}
+
+export interface WidgetRegistrySnapshot {
+  widgetId: string;
+  type: string;
+  appId: string;
+  name: string;
+  description: string;
+  sizes: string[];
+  defaultSize: string;
+  interactive: boolean;
+  live: boolean;
+  animated: boolean;
+  refreshIntervalSec: number;
+  icon: string;
+}
+
+export interface NotificationHistorySnapshot {
+  id: string;
+  appId: string;
+  title: string;
+  body: string;
+  icon?: string;
+  priority: string;
+  groupId?: string;
+  category?: string;
+  pinned: boolean;
+  silent: boolean;
+  deliveredAt: string;
+  readAt?: string;
+  dismissedAt?: string;
+  actions?: { id: string; label: string }[];
 }

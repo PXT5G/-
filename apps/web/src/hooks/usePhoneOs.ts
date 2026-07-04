@@ -118,6 +118,17 @@ export function useLiveActivities() {
   });
 }
 
+export function useLiveActivitiesHydration() {
+  const setLiveActivities = usePhoneOsStore((s) => s.setLiveActivities);
+  const query = useLiveActivities();
+
+  useEffect(() => {
+    if (query.data) setLiveActivities(query.data);
+  }, [query.data, setLiveActivities]);
+
+  return query;
+}
+
 export function useGlobalSearch(query: string, enabled = true) {
   return useQuery({
     queryKey: [...PHONE_OS_KEY, 'search', query],
