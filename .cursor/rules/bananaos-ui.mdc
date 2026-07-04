@@ -1,0 +1,51 @@
+---
+description: Banana Design System — glassmorphism, components, mobile-first UI
+globs: apps/web/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# BananaOS UI Rule
+
+Original BananaOS design — premium mobile polish without copying Apple UI.
+
+## Design Tokens
+
+- Accent: `banana-gold` · Background: `black` / `bg-white/5` · Borders: `border-white/10`
+- Glass: `backdrop-blur-xl` + `bg-white/5` or `bg-black/90`
+- Typography: `text-[10px]` labels (uppercase tracking-widest), `text-sm` body, `text-2xl` hero numbers
+- Radius: `rounded-xl` cards, `rounded-2xl` panels, `rounded-3xl` dock
+
+## Reuse Before Creating
+
+| Need | Use |
+|------|-----|
+| Glass card | `GlassPanel` from `@/components/ui/GlassPanel` |
+| Button | `Button` from `@/components/shared/Button` |
+| Empty state | `EmptyState` from `@/components/shared/EmptyState` |
+| App icon | `AppIcon` from `@/components/os/AppIcon` |
+| Phone frame | `PhoneFrame` layout |
+
+## App Shell Pattern
+
+```tsx
+// Header
+<p className="text-banana-gold text-[10px] tracking-widest uppercase">App Name</p>
+<p className="text-white/40 text-[9px]">Official BananaOS Application</p>
+
+// Card
+<div className="bg-gradient-to-br from-banana-gold/15 via-black/70 to-black/90 backdrop-blur-2xl rounded-2xl border border-banana-gold/20 p-5" />
+```
+
+## Required States
+
+Every screen: loading spinner (`border-banana-gold`), empty state, error feedback. No blank screens.
+
+## Tab Bars
+
+Spring tab indicator with `layoutId`, `framer-motion` scale on active icon. See `BankTabBar.tsx` / `ContactsTabBar.tsx`.
+
+## Don't
+
+- Hardcode colors outside design tokens
+- Duplicate shared components per app
+- Ship placeholder "Coming soon" UI

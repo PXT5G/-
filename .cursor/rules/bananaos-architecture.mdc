@@ -1,0 +1,61 @@
+---
+description: BananaOS monorepo architecture — apps, API, services, integration
+globs: "{apps/**,packages/**}/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# BananaOS Architecture Rule
+
+## Monorepo Layout
+
+```
+apps/api/src/          # Express API
+  database/models/     # Mongoose schemas
+  services/            # Business logic
+  api/controllers/     # Request handlers (Zod + asyncHandler)
+  api/routes/          # Route mounting
+
+apps/web/src/
+  apps/<app>/          # One folder per BananaOS app
+  services/            # Shared APIs (simApi, contactsApi, appRouter)
+  stores/              # Global Zustand (auth, OS, windows)
+  components/os/       # Shell (HomeScreen, Dock, LockScreen)
+
+packages/shared/       # Shared types (SocketEvent, etc.)
+```
+
+## App Module Pattern
+
+Each app: `manifest.ts` · `index.tsx` · `types.ts` · `store/` · `services/` · `screens/` · `hooks/use*Realtime.ts` · `__tests__/`
+
+## Backend Pattern
+
+```typescript
+// Controller
+function auditCtx(req: AuthRequest, permission: PermName): AuditContext { ... }
+await checkPerm(req, 'view_resource');
+const data = schema.parse(req.body);
+res.json({ success: true, data: formatEntity(entity) });
+
+// Service owns business logic, audit logs, socket emits
+```
+
+## Frontend Data
+
+- Server state: TanStack Query (`queryKey: ['app', 'resource']`)
+- UI state: Zustand store per app
+- Realtime: `use*Realtime()` invalidates query keys on socket events
+
+## API Responses
+
+Always `{ success: boolean, data?: T, error?: string }`. Use `apiRequest` from `@/utils/api`.
+
+## Database Models
+
+Include `timestamps: true`. Add `createdBy`/`updatedBy`/`deletedAt` when the entity is user-managed. Index foreign keys and search fields.
+
+## Don't
+
+- Put business logic in controllers
+- Create parallel routing systems outside `appRouter.ts`
+- Skip route registration in `apps/api/src/index.ts`
