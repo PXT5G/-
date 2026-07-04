@@ -39,6 +39,10 @@ class RealtimeService {
       'store:download:complete',
       'store:download:cancelled',
       'store:update:complete',
+      'bank:balance:updated',
+      'bank:transfer:complete',
+      'bank:notification',
+      'bank:accounts:provisioned',
     ];
 
     events.forEach((event) => {

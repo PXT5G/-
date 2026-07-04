@@ -6,6 +6,8 @@ import { BananaApp } from '@/apps/banana-app';
 import { bananaAppManifest } from '@/apps/banana-app/manifest';
 import { IdentityApp } from '@/apps/identity';
 import { identityManifest } from '@/apps/identity/manifest';
+import { BankApp } from '@/apps/bank';
+import { bankManifest } from '@/apps/bank/manifest';
 
 registerApp(
   {
@@ -26,3 +28,4 @@ registerApp(
 
 registerApp(bananaAppManifest, BananaApp);
 registerApp(identityManifest, IdentityApp);
+registerApp(bankManifest, BankApp);

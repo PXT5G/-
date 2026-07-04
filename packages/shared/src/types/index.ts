@@ -214,7 +214,11 @@ export type SocketEvent =
   | 'store:update:complete'
   | 'identity:verified'
   | 'identity:updated'
-  | 'identity:expiry';
+  | 'identity:expiry'
+  | 'bank:balance:updated'
+  | 'bank:transfer:complete'
+  | 'bank:notification'
+  | 'bank:accounts:provisioned';
 
 export interface SocketPayload {
   event: SocketEvent;
