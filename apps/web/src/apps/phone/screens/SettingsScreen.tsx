@@ -1,10 +1,16 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { phoneService } from '../services/phoneService';
-import { GlassCard } from '../components/GlassCard';
-import type { PhoneSettings } from '../types';
+import { GlassCard, LoadingSkeleton } from '@/components/shared';
 import { useHaptic } from '@/hooks/useSound';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { Toggle } from '@/components/ui/Toggle';
+import { toast } from '@/stores/toastStore';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { queueIfOffline } from '../hooks/usePhoneOffline';
+import type { PhoneSettings } from '../types';
 
 const TOGGLES: { key: keyof PhoneSettings; label: string; desc: string }[] = [
   { key: 'callerIdEnabled', label: 'Caller ID', desc: 'Show your number to recipients' },
@@ -22,6 +28,8 @@ const TOGGLES: { key: keyof PhoneSettings; label: string; desc: string }[] = [
 export function SettingsScreen() {
   const queryClient = useQueryClient();
   const { tap } = useHaptic();
+  const online = useOnlineStatus();
+  const reducedMotion = useReducedMotion();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['phone', 'settings'],
@@ -30,33 +38,44 @@ export function SettingsScreen() {
 
   const mutation = useMutation({
     mutationFn: (patch: Partial<PhoneSettings>) => phoneService.updateSettings(patch),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['phone'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['phone'] });
+      toast('Settings saved', 'success');
+    },
+    onError: () => toast('Failed to save settings', 'error'),
   });
 
   const toggle = (key: keyof PhoneSettings) => {
     if (!settings) return;
     tap();
-    mutation.mutate({ [key]: !settings[key] });
+    const patch = { [key]: !settings[key] };
+    if (queueIfOffline(online, 'updateSettings', patch)) return;
+    mutation.mutate(patch);
   };
 
   if (isLoading || !settings) {
-    return <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-14 bg-white/5 rounded-2xl animate-pulse" />)}</div>;
+    return <LoadingSkeleton rows={4} height="h-14" />;
   }
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-4 gap-3">
-      {TOGGLES.map((t) => (
-        <GlassCard key={t.key}>
-          <button type="button" onClick={() => toggle(t.key)} className="w-full flex items-center justify-between text-left">
-            <div>
-              <p className="text-white text-sm">{t.label}</p>
-              <p className="text-white/40 text-[10px]">{t.desc}</p>
+      {TOGGLES.map((t, i) => (
+        <motion.div
+          key={t.key}
+          initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reducedMotion ? { duration: 0 } : { delay: i * 0.03 }}
+        >
+          <GlassCard>
+            <div className="w-full flex items-center justify-between gap-3">
+              <div>
+                <p className="text-white text-sm">{t.label}</p>
+                <p className="text-white/40 text-[10px]">{t.desc}</p>
+              </div>
+              <Toggle enabled={!!settings[t.key]} onChange={() => toggle(t.key)} label={t.label} />
             </div>
-            <div className={`w-11 h-6 rounded-full transition-colors ${settings[t.key] ? 'bg-green-500' : 'bg-white/10'}`}>
-              <div className={`w-5 h-5 rounded-full bg-white mt-0.5 transition-transform ${settings[t.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
-            </div>
-          </button>
-        </GlassCard>
+          </GlassCard>
+        </motion.div>
       ))}
 
       {settings.callForwardingEnabled && (
@@ -65,9 +84,14 @@ export function SettingsScreen() {
           <input
             type="tel"
             defaultValue={settings.callForwardingNumber ?? ''}
-            onBlur={(e) => mutation.mutate({ callForwardingNumber: e.target.value })}
+            onBlur={(e) => {
+              const patch = { callForwardingNumber: e.target.value };
+              if (queueIfOffline(online, 'updateSettings', patch)) return;
+              mutation.mutate(patch);
+            }}
             className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
             placeholder="+1..."
+            aria-label="Call forwarding number"
           />
         </GlassCard>
       )}

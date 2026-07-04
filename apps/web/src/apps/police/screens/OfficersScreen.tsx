@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { policeService } from '../services/policeService';
-import { GlassCard } from '../components/GlassCard';
+import { GlassCard } from '@/components/shared/GlassCard';
 import type { OfficerStatus } from '../types';
 
 const STATUS_OPTIONS: OfficerStatus[] = ['on_duty', 'off_duty', 'break', 'en_route', 'on_scene'];

@@ -23,6 +23,16 @@ export function usePhoneRealtime() {
 
     const invalidate = () => queryClient.invalidateQueries({ queryKey: ['phone'] });
 
+    const syncActiveCall = async () => {
+      invalidate();
+      try {
+        const active = await phoneService.getActiveCall();
+        if (active) setActiveCall(active);
+      } catch {
+        // keep existing store state
+      }
+    };
+
     const handleRinging = (payload: { data: IncomingCallPayload }) => {
       const data = payload.data;
       invalidate();
@@ -97,10 +107,10 @@ export function usePhoneRealtime() {
       ['phone:accepted', handleAccepted],
       ['phone:ended', handleEnded],
       ['phone:missed', handleEnded],
-      ['phone:hold', invalidate],
-      ['phone:resume', invalidate],
-      ['phone:mute', invalidate],
-      ['phone:speaker', invalidate],
+      ['phone:hold', syncActiveCall],
+      ['phone:resume', syncActiveCall],
+      ['phone:mute', syncActiveCall],
+      ['phone:speaker', syncActiveCall],
       ['phone:voicemail', invalidate],
       ['sim:deactivated', invalidate],
       ['sim:suspended', invalidate],

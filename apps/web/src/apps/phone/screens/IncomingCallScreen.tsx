@@ -3,9 +3,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { phoneService } from '../services/phoneService';
 import { usePhoneStore } from '../store/phoneStore';
-import { GlassCard } from '../components/GlassCard';
+import { GlassCard } from '@/components/shared/GlassCard';
 import { CallerAvatar } from '../components/CallerAvatar';
 import { SwipeToAnswer } from '../components/SwipeToAnswer';
+import { PhoneIcon } from '@/components/shared/PhoneIcons';
 import { useHaptic } from '@/hooks/useSound';
 
 export function IncomingCallScreen() {
@@ -20,6 +21,7 @@ export function IncomingCallScreen() {
     queryKey: ['phone', 'active'],
     queryFn: () => phoneService.getActiveCall(),
     enabled: !!incomingCall,
+    staleTime: Infinity,
   });
 
   const call = incomingCall ?? (active?.direction === 'incoming' ? {
@@ -32,7 +34,7 @@ export function IncomingCallScreen() {
   } : null);
 
   if (!call) {
-    return <div className="flex items-center justify-center h-full text-white/40 text-sm">No incoming calls</div>;
+    return <div className="flex items-center justify-center h-full text-white/40 text-sm" role="status">No incoming calls</div>;
   }
 
   const handleAnswer = async () => {
@@ -78,7 +80,7 @@ export function IncomingCallScreen() {
   };
 
   return (
-    <div className="flex flex-col h-full items-center justify-between py-12 px-6 bg-gradient-to-b from-black via-green-950/20 to-black">
+    <div className="flex flex-col h-full items-center justify-between py-12 px-6 bg-gradient-to-b from-black via-banana-gold/10 to-black">
       <div className="text-center space-y-4">
         <p className="text-white/40 text-sm">{call.isEmergency ? 'Emergency Incoming' : 'Incoming Call'}</p>
         <CallerAvatar name={call.displayName} avatar={call.avatar} emergency={call.isEmergency} />
@@ -93,12 +95,12 @@ export function IncomingCallScreen() {
         <p className="text-center text-white/30 text-[10px] mt-3">Swipe right to answer • left to decline</p>
       </GlassCard>
 
-      <div className="flex gap-6">
-        <button type="button" onClick={handleReject} aria-label="Decline call" className="w-14 h-14 rounded-full bg-red-500 flex items-center justify-center text-xl">
-          ✕
+      <div className="flex gap-6" role="group" aria-label="Call actions">
+        <button type="button" onClick={handleReject} aria-label="Decline call" className="w-14 h-14 min-w-[44px] min-h-[44px] rounded-full bg-red-500 flex items-center justify-center text-xl text-white">
+          <span aria-hidden="true">✕</span>
         </button>
-        <button type="button" onClick={handleAnswer} aria-label="Accept call" className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center text-xl">
-          📞
+        <button type="button" onClick={handleAnswer} aria-label="Accept call" className="w-14 h-14 min-w-[44px] min-h-[44px] rounded-full bg-banana-gold flex items-center justify-center text-black">
+          <PhoneIcon className="w-6 h-6" />
         </button>
       </div>
     </div>

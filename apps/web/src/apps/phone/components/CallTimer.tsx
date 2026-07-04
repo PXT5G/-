@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 interface CallTimerProps {
   startedAt?: string;
@@ -17,6 +18,7 @@ function formatDuration(seconds: number): string {
 
 export function CallTimer({ startedAt, connectedAt, running = true }: CallTimerProps) {
   const [seconds, setSeconds] = useState(0);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!running) return;
@@ -29,10 +31,12 @@ export function CallTimer({ startedAt, connectedAt, running = true }: CallTimerP
 
   return (
     <motion.p
-      key={seconds}
-      initial={{ opacity: 0.6 }}
+      key={reducedMotion ? undefined : seconds}
+      initial={reducedMotion ? false : { opacity: 0.6 }}
       animate={{ opacity: 1 }}
-      className="text-green-400 text-sm font-mono tracking-widest"
+      className="text-banana-gold text-sm font-mono tracking-widest"
+      aria-live="off"
+      aria-label={`Call duration ${formatDuration(seconds)}`}
     >
       {formatDuration(seconds)}
     </motion.p>

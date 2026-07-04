@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { policeService } from '../services/policeService';
 import { usePoliceStore } from '../store/policeStore';
-import { GlassCard } from '../components/GlassCard';
+import { GlassCard } from '@/components/shared/GlassCard';
 
 const STATUS_COLORS: Record<string, string> = {
   on_duty: 'text-green-400',

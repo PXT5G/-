@@ -6,6 +6,9 @@ import { motion } from 'framer-motion';
 import { usePhoneStore } from '../store/phoneStore';
 import { phoneService } from '../services/phoneService';
 import { useHaptic } from '@/hooks/useSound';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { PhoneIcon } from '@/components/shared/PhoneIcons';
+
 const KEYS = [
   ['1', '2', '3'],
   ['4', '5', '6'],
@@ -21,6 +24,7 @@ export function DialPadScreen() {
   const setActiveCall = usePhoneStore((s) => s.setActiveCall);
   const { tap, success } = useHaptic();
   const queryClient = useQueryClient();
+  const reducedMotion = useReducedMotion();
   const [calling, setCalling] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
 
@@ -57,22 +61,24 @@ export function DialPadScreen() {
       <div className="flex-1 flex items-center justify-center min-h-[60px]">
         <motion.p
           key={dialInput}
-          initial={{ opacity: 0, y: 4 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-white text-3xl font-light tracking-widest font-mono"
+          aria-live="polite"
+          aria-label={dialInput ? `Dialing ${dialInput}` : 'Enter number'}
         >
           {dialInput || 'Enter number'}
         </motion.p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 w-full max-w-[280px]">
+      <div className="grid grid-cols-3 gap-4 w-full max-w-[280px]" role="group" aria-label="Dial pad">
         {KEYS.flat().map((key) => (
           <motion.button
             key={key}
             type="button"
-            whileTap={{ scale: 0.9 }}
+            whileTap={reducedMotion ? undefined : { scale: 0.9 }}
             onClick={() => { tap(); appendDial(key); }}
-            className="w-16 h-16 mx-auto rounded-full bg-white/5 border border-white/10 text-white text-2xl font-light backdrop-blur-xl"
+            className="w-16 h-16 min-w-[44px] min-h-[44px] mx-auto rounded-full bg-white/5 border border-white/10 text-white text-2xl font-light backdrop-blur-xl"
             aria-label={`Dial ${key}`}
           >
             {key}
@@ -82,19 +88,19 @@ export function DialPadScreen() {
 
       <div className="flex items-center gap-8 mt-6">
         {dialInput && (
-          <button type="button" onClick={() => { tap(); clearDial(); }} className="text-white/40 text-sm">
+          <button type="button" onClick={() => { tap(); clearDial(); }} className="text-white/40 text-sm min-h-[44px] px-2" aria-label="Clear number">
             Clear
           </button>
         )}
         <motion.button
           type="button"
-          whileTap={{ scale: 0.9 }}
+          whileTap={reducedMotion ? undefined : { scale: 0.9 }}
           onClick={handleCall}
           disabled={!dialInput || calling}
-          className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-2xl shadow-lg shadow-green-500/40 disabled:opacity-40"
+          className="w-16 h-16 min-w-[44px] min-h-[44px] rounded-full bg-banana-gold flex items-center justify-center shadow-lg shadow-banana-gold/40 disabled:opacity-40 text-black"
           aria-label="Place call"
         >
-          📞
+          <PhoneIcon className="w-7 h-7" />
         </motion.button>
       </div>
     </div>

@@ -33,8 +33,8 @@ describe('normalizePhone', () => {
     expect(normalizePhone('+1 BNA 555 0199')).toBe('+1-BNA-555-0199');
   });
 
-  it('converts 10-digit US numbers', () => {
-    expect(normalizePhone('5551234567')).toBe('+1-BNA-555-1234567');
+  it('converts 10-digit US numbers to Banana format', () => {
+    expect(normalizePhone('5555550199')).toBe('+1-BNA-555-0199');
   });
 
   it('handles emergency short codes', () => {

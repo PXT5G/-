@@ -178,11 +178,11 @@ export function normalizePhone(phone: string): string {
   }
 
   if (digitsOnly.length === 10) {
-    return `+1-BNA-${digitsOnly.slice(0, 3)}-${digitsOnly.slice(3)}`;
+    return `+1-BNA-${digitsOnly.slice(0, 3)}-${digitsOnly.slice(6, 10)}`;
   }
   if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
     const rest = digitsOnly.slice(1);
-    return `+1-BNA-${rest.slice(0, 3)}-${rest.slice(3)}`;
+    return `+1-BNA-${rest.slice(0, 3)}-${rest.slice(6, 10)}`;
   }
   if (digitsOnly.length === 7) {
     return `+1-BNA-555-${digitsOnly}`;

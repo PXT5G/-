@@ -1,25 +1,22 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usePhoneStore } from './store/phoneStore';
 import { phoneService } from './services/phoneService';
 import { usePhoneRealtime } from './hooks/usePhoneRealtime';
+import { usePhoneOfflineSync } from './hooks/usePhoneOffline';
 import { PhoneTabBar } from './components/PhoneTabBar';
 import { useAuthStore } from '@/stores/authStore';
 import { identityService } from '@/apps/identity/services/identityService';
 import { simService } from '@/apps/sim/services/simService';
 import { useHaptic } from '@/hooks/useSound';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { EmptyState, OfflineBanner, ToastContainer, LoadingSkeleton } from '@/components/shared';
 import { Button } from '@/components/shared/Button';
 import type { PhoneTab } from './types';
 
-const screenFallback = (
-  <div className="flex flex-col gap-3 p-4 animate-pulse">
-    {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-white/5 rounded-2xl" />)}
-  </div>
-);
+const screenFallback = <LoadingSkeleton rows={3} />;
 
 const DashboardScreen = dynamic(() => import('./screens/DashboardScreen').then((m) => m.DashboardScreen), { loading: () => screenFallback });
 const DialPadScreen = dynamic(() => import('./screens/DialPadScreen').then((m) => m.DialPadScreen), { loading: () => screenFallback });
@@ -35,7 +32,13 @@ const SettingsScreen = dynamic(() => import('./screens/SettingsScreen').then((m)
 export { phoneManifest } from './manifest';
 
 export function PhoneApp() {
-  const { activeTab, setTab, setLoading, loading, setPermissions, incomingCall, activeCall } = usePhoneStore();
+  const activeTab = usePhoneStore((s) => s.activeTab);
+  const setTab = usePhoneStore((s) => s.setTab);
+  const loading = usePhoneStore((s) => s.loading);
+  const setLoading = usePhoneStore((s) => s.setLoading);
+  const setPermissions = usePhoneStore((s) => s.setPermissions);
+  const incomingCall = usePhoneStore((s) => s.incomingCall);
+  const activeCall = usePhoneStore((s) => s.activeCall);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { tap } = useHaptic();
   const queryClient = useQueryClient();
@@ -46,6 +49,7 @@ export function PhoneApp() {
   const [initializing, setInitializing] = useState(false);
 
   usePhoneRealtime();
+  usePhoneOfflineSync();
 
   const { data: identity, isLoading: identityLoading } = useQuery({
     queryKey: ['identity', 'me'],
@@ -99,6 +103,11 @@ export function PhoneApp() {
     }
   };
 
+  const handleTabChange = useCallback((t: PhoneTab) => {
+    tap();
+    setTab(t);
+  }, [tap, setTab]);
+
   const effectiveTab = incomingCall ? 'incoming' : activeCall ? 'active' : (moreTab ?? activeTab);
 
   const renderScreen = () => {
@@ -124,8 +133,8 @@ export function PhoneApp() {
   if (loading || identityLoading || (identity?.verified && simLoading)) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-black gap-3">
-        <div className="w-10 h-10 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
-        <p className="text-white/40 text-sm">Loading Phone...</p>
+        <div className="w-10 h-10 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+        <p className="text-white/40 text-sm" role="status">Loading Phone...</p>
       </div>
     );
   }
@@ -147,7 +156,7 @@ export function PhoneApp() {
   if (!dashboard && !initializing) {
     return (
       <div className="flex flex-col items-center justify-center h-full px-6 text-center bg-black">
-        <span className="text-5xl mb-4">📞</span>
+        <span className="text-5xl mb-4" aria-hidden="true">📞</span>
         <h2 className="text-white font-bold text-xl mb-2">Initialize Phone</h2>
         <p className="text-white/50 text-sm mb-6">Set up your dialer, permissions, and call settings.</p>
         <Button label="Initialize Phone" onClick={handleInit} loading={initializing} size="lg" />
@@ -159,13 +168,15 @@ export function PhoneApp() {
 
   return (
     <div className="flex flex-col h-full bg-black relative">
+      <ToastContainer />
+      <OfflineBanner />
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/5">
         <div>
-          <p className="text-green-400 text-[10px] tracking-widest uppercase">Phone</p>
+          <p className="text-banana-gold text-[10px] tracking-widest uppercase">Phone</p>
           <p className="text-white/40 text-[9px]">{dashboard?.phoneNumber ?? 'BananaOS Dialer'}</p>
         </div>
         {moreTab && (
-          <button type="button" onClick={() => setMoreTab(null)} className="text-green-400 text-xs">‹ Back</button>
+          <button type="button" onClick={() => setMoreTab(null)} className="text-banana-gold text-xs min-h-[44px] px-2" aria-label="Go back">‹ Back</button>
         )}
       </div>
 
@@ -176,29 +187,29 @@ export function PhoneApp() {
       {showTabBar && (
         <PhoneTabBar
           active={activeTab}
-          onChange={(t) => { tap(); setTab(t); }}
+          onChange={handleTabChange}
           onMore={() => setShowMore(!showMore)}
           missedCount={dashboard?.missedCalls ?? 0}
         />
       )}
 
       {showMore && (
-        <div className="absolute bottom-14 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-white/10 p-3 z-10">
+        <div className="absolute bottom-14 left-0 right-0 bg-black/95 backdrop-blur-xl border-t border-white/10 p-3 z-10" role="menu" aria-label="More phone options">
           <div className="grid grid-cols-3 gap-2">
             {[
-              { tab: 'contacts' as PhoneTab, icon: '👤', label: 'Contacts' },
-              { tab: 'voicemail' as PhoneTab, icon: '📬', label: 'Voicemail' },
-              { tab: 'blocked' as PhoneTab, icon: '🚫', label: 'Blocked' },
-              { tab: 'settings' as PhoneTab, icon: '⚙️', label: 'Settings' },
+              { tab: 'contacts' as PhoneTab, label: 'Contacts' },
+              { tab: 'voicemail' as PhoneTab, label: 'Voicemail' },
+              { tab: 'blocked' as PhoneTab, label: 'Blocked' },
+              { tab: 'settings' as PhoneTab, label: 'Settings' },
             ].map((item) => (
               <button
                 key={item.tab}
                 type="button"
+                role="menuitem"
                 onClick={() => { tap(); setMoreTab(item.tab); setShowMore(false); }}
-                className="bg-white/5 rounded-xl py-3 flex flex-col items-center gap-1 border border-white/10"
+                className="bg-white/5 rounded-xl py-3 flex flex-col items-center gap-1 border border-white/10 min-h-[44px]"
               >
-                <span>{item.icon}</span>
-                <span className="text-white/60 text-[9px]">{item.label}</span>
+                <span className="text-white/60 text-[10px] font-medium">{item.label}</span>
               </button>
             ))}
           </div>

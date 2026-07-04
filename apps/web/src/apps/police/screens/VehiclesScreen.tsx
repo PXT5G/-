@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { policeService } from '../services/policeService';
-import { GlassCard } from '../components/GlassCard';
+import { GlassCard } from '@/components/shared/GlassCard';
 import { Button } from '@/components/shared/Button';
 import { usePoliceStore } from '../store/policeStore';
 

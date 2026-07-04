@@ -3,9 +3,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { phoneService } from '../services/phoneService';
 import { usePhoneStore } from '../store/phoneStore';
-import { GlassCard } from '../components/GlassCard';
+import { GlassCard, LoadingSkeleton } from '@/components/shared';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { CallerAvatar } from '../components/CallerAvatar';
 import { useHaptic } from '@/hooks/useSound';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { toast } from '@/stores/toastStore';
+import { queueIfOffline } from '../hooks/usePhoneOffline';
 
 export function FavoritesScreen() {
   const { data, isLoading, error } = useQuery({
@@ -16,45 +20,68 @@ export function FavoritesScreen() {
   const setActiveCall = usePhoneStore((s) => s.setActiveCall);
   const queryClient = useQueryClient();
   const { tap } = useHaptic();
+  const online = useOnlineStatus();
 
   const handleCall = async (phoneNumber: string, contactId?: string) => {
     tap();
-    const result = await phoneService.makeCall(phoneNumber, contactId);
-    setActiveCall(result.activeCall);
-    setTab('active');
+    try {
+      const result = await phoneService.makeCall(phoneNumber, contactId);
+      setActiveCall(result.activeCall);
+      setTab('active');
+    } catch {
+      toast('Call failed', 'error');
+    }
   };
 
   const handleRemove = async (id: string) => {
     tap();
-    await phoneService.removeFavorite(id);
-    queryClient.invalidateQueries({ queryKey: ['phone', 'favorites'] });
+    if (queueIfOffline(online, 'removeFavorite', { id })) return;
+    try {
+      await phoneService.removeFavorite(id);
+      queryClient.invalidateQueries({ queryKey: ['phone', 'favorites'] });
+      toast('Removed from favorites', 'success');
+    } catch {
+      toast('Failed to remove favorite', 'error');
+    }
   };
 
-  if (isLoading) return <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-16 bg-white/5 rounded-2xl animate-pulse" />)}</div>;
-  if (error) return <div className="p-6 text-center text-white/50 text-sm">Failed to load favorites</div>;
+  if (isLoading) return <LoadingSkeleton rows={3} />;
+  if (error) return <EmptyState icon="⭐" title="Unable to Load" description="Failed to load favorites." />;
 
   const favorites = data ?? [];
 
   return (
     <div className="flex flex-col h-full overflow-y-auto p-4 gap-3">
       {favorites.length === 0 ? (
-        <div className="text-center py-12 text-white/40 text-sm">
-          <p className="text-4xl mb-3">⭐</p>
-          <p>No favorites yet</p>
-          <p className="text-xs mt-1">Add speed dial contacts from Contacts Picker</p>
-        </div>
+        <EmptyState
+          icon="⭐"
+          title="No Favorites Yet"
+          description="Add speed-dial contacts from the Contacts picker."
+        />
       ) : (
         favorites.map((fav) => (
           <GlassCard key={fav.id}>
             <div className="flex items-center gap-3">
-              <button type="button" onClick={() => handleCall(fav.phoneNumber, fav.contactId)} className="flex items-center gap-3 flex-1 text-left">
+              <button
+                type="button"
+                onClick={() => handleCall(fav.phoneNumber, fav.contactId)}
+                className="flex items-center gap-3 flex-1 text-left min-h-[44px]"
+                aria-label={`Call ${fav.label}`}
+              >
                 <CallerAvatar name={fav.label} avatar={fav.avatar} size="sm" />
                 <div>
                   <p className="text-white text-sm font-medium">{fav.label}</p>
                   <p className="text-white/40 text-[10px]">{fav.phoneNumber}</p>
                 </div>
               </button>
-              <button type="button" onClick={() => handleRemove(fav.id)} className="text-white/30 text-xs px-2">Remove</button>
+              <button
+                type="button"
+                onClick={() => handleRemove(fav.id)}
+                className="text-white/30 text-xs px-2 min-h-[44px]"
+                aria-label={`Remove ${fav.label} from favorites`}
+              >
+                Remove
+              </button>
             </div>
           </GlassCard>
         ))

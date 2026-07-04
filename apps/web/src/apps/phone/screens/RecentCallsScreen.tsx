@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { phoneService } from '../services/phoneService';
 import { usePhoneStore } from '../store/phoneStore';
-import { GlassCard } from '../components/GlassCard';
+import { GlassCard, LoadingSkeleton } from '@/components/shared';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { CallerAvatar } from '../components/CallerAvatar';
 import { useHaptic } from '@/hooks/useSound';
+import { toast } from '@/stores/toastStore';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -34,36 +36,40 @@ export function RecentCallsScreen() {
 
   const items = data?.items ?? [];
 
-  const statusIcon = (status: string, direction: string) => {
-    if (status === 'missed') return '📵';
-    if (status === 'rejected') return '✕';
-    return direction === 'incoming' ? '↙️' : '↗️';
+  const statusLabel = (status: string, direction: string) => {
+    if (status === 'missed') return 'Missed';
+    if (status === 'rejected') return 'Rejected';
+    return direction === 'incoming' ? 'Incoming' : 'Outgoing';
   };
 
   const handleCallBack = async (number: string, contactId?: string) => {
     tap();
-    const result = await phoneService.makeCall(number, contactId);
-    setActiveCall(result.activeCall);
-    setTab('active');
+    try {
+      const result = await phoneService.makeCall(number, contactId);
+      setActiveCall(result.activeCall);
+      setTab('active');
+    } catch {
+      toast('Call failed', 'error');
+    }
   };
 
-  if (isLoading) {
-    return <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <div key={i} className="h-16 bg-white/5 rounded-2xl animate-pulse" />)}</div>;
-  }
+  if (isLoading) return <LoadingSkeleton rows={4} />;
 
   if (error) {
-    return <div className="p-6 text-center text-white/50 text-sm">Failed to load call history</div>;
+    return <EmptyState icon="🕐" title="Unable to Load" description="Failed to load call history." />;
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-2 p-4 overflow-x-auto">
+      <div className="flex gap-2 p-4 overflow-x-auto" role="tablist" aria-label="Call history filters">
         {FILTERS.map((f) => (
           <button
             key={f.id}
             type="button"
+            role="tab"
+            aria-selected={filter === f.id}
             onClick={() => { tap(); setFilter(f.id); }}
-            className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${filter === f.id ? 'bg-green-400/20 text-green-400 border border-green-400/30' : 'bg-white/5 text-white/50 border border-white/10'}`}
+            className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap min-h-[36px] ${filter === f.id ? 'bg-banana-gold/20 text-banana-gold border border-banana-gold/30' : 'bg-white/5 text-white/50 border border-white/10'}`}
           >
             {f.label}
           </button>
@@ -72,11 +78,11 @@ export function RecentCallsScreen() {
 
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
         {items.length === 0 ? (
-          <div className="text-center py-12 text-white/40 text-sm">No calls yet</div>
+          <EmptyState icon="🕐" title="No Calls Yet" description="Your recent calls will appear here." />
         ) : (
           items.map((entry) => (
             <GlassCard key={entry.id} onClick={() => handleCallBack(entry.remoteNumber, entry.contactId)}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-h-[44px]">
                 <CallerAvatar name={entry.displayName} size="sm" />
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium truncate ${entry.status === 'missed' ? 'text-red-300' : 'text-white'}`}>
@@ -86,7 +92,9 @@ export function RecentCallsScreen() {
                     {new Date(entry.endedAt).toLocaleString()} • {entry.durationSeconds > 0 ? `${entry.durationSeconds}s` : '—'}
                   </p>
                 </div>
-                <span className="text-lg">{statusIcon(entry.status, entry.direction)}</span>
+                <span className="text-[10px] text-white/40" aria-label={statusLabel(entry.status, entry.direction)}>
+                  {statusLabel(entry.status, entry.direction)}
+                </span>
               </div>
             </GlassCard>
           ))

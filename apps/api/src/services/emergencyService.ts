@@ -107,12 +107,6 @@ export async function placeEmergencyCall(userId: string, ctx: AuditContext) {
   });
 
   await notify(userId, 'Emergency Call', 'Connecting to emergency services (911)...', 'critical');
-  eventBusService.emitToUser(userId, 'phone:ringing', {
-    phoneNumber: EMERGENCY_SERVICES_NUMBER,
-    displayName: 'Emergency Services',
-    direction: 'outgoing',
-    isEmergency: true,
-  });
 
   const result = await makeCall(userId, { phoneNumber: EMERGENCY_SERVICES_NUMBER }, ctx);
   return result;
