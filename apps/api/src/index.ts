@@ -18,6 +18,7 @@ import identityRoutes from './api/routes/identity';
 import bankRoutes from './api/routes/bank';
 import simRoutes from './api/routes/sim';
 import contactsRoutes from './api/routes/contacts';
+import policeRoutes from './api/routes/police';
 
 const app = express();
 const httpServer = createServer(app);
@@ -49,6 +50,7 @@ app.use('/api/identity', identityRoutes);
 app.use('/api/bank', bankRoutes);
 app.use('/api/sim', simRoutes);
 app.use('/api/contacts', contactsRoutes);
+app.use('/api/police', policeRoutes);
 
 app.use(errorHandler);
 

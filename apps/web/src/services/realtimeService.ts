@@ -60,6 +60,17 @@ class RealtimeService {
       'contacts:unblocked',
       'contacts:group:created',
       'contacts:notification',
+      'police:dispatch:created',
+      'police:dispatch:assigned',
+      'police:dispatch:updated',
+      'police:report:created',
+      'police:report:reviewed',
+      'police:case:created',
+      'police:chat:message',
+      'police:officer:status',
+      'police:rank:changed',
+      'police:officer:provisioned',
+      'police:notification',
     ];
 
     events.forEach((event) => {

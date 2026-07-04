@@ -235,7 +235,18 @@ export type SocketEvent =
   | 'contacts:blocked'
   | 'contacts:unblocked'
   | 'contacts:group:created'
-  | 'contacts:notification';
+  | 'contacts:notification'
+  | 'police:dispatch:created'
+  | 'police:dispatch:assigned'
+  | 'police:dispatch:updated'
+  | 'police:report:created'
+  | 'police:report:reviewed'
+  | 'police:case:created'
+  | 'police:chat:message'
+  | 'police:officer:status'
+  | 'police:rank:changed'
+  | 'police:officer:provisioned'
+  | 'police:notification';
 
 export interface SocketPayload {
   event: SocketEvent;

@@ -12,6 +12,8 @@ import { SimApp } from '@/apps/sim';
 import { simManifest } from '@/apps/sim/manifest';
 import { ContactsApp } from '@/apps/contacts';
 import { contactsManifest } from '@/apps/contacts/manifest';
+import { PoliceApp } from '@/apps/police';
+import { policeManifest } from '@/apps/police/manifest';
 
 registerApp(
   {
@@ -35,3 +37,4 @@ registerApp(identityManifest, IdentityApp);
 registerApp(bankManifest, BankApp);
 registerApp(simManifest, SimApp);
 registerApp(contactsManifest, ContactsApp);
+registerApp(policeManifest, PoliceApp);
