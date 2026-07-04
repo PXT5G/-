@@ -13,10 +13,15 @@ import {
 } from '../database/models/ContactPermission';
 import { Identity } from '../database/models/Identity';
 import { PhoneNumber } from '../database/models/PhoneNumber';
-import { Notification } from '../database/models/Notification';
-import { emitToUser } from './socketService';
+import {
+  auditService,
+  eventBusService,
+  notificationService,
+  permissionEngineService,
+  BANANAOS_APP_IDS,
+} from '../platform';
 
-const CONTACTS_APP_ID = 'com.bananaos.contacts';
+const CONTACTS_APP_ID = BANANAOS_APP_IDS.CONTACTS;
 
 export interface AuditContext {
   performedBy: string;
@@ -54,9 +59,8 @@ export async function hasPermission(
   permission: ContactPermissionName,
   userRole: 'user' | 'admin'
 ): Promise<boolean> {
-  if (userRole === 'admin') return true;
-  const perm = await ContactPermission.findOne({ userId, permission, granted: true });
-  return !!perm;
+  const result = await permissionEngineService.hasPermission(CONTACTS_APP_ID, userId, permission, userRole);
+  return result.granted;
 }
 
 export async function requirePermission(
@@ -69,23 +73,11 @@ export async function requirePermission(
 }
 
 export async function grantDefaultPermissions(userId: string, grantedBy: string): Promise<void> {
-  for (const permission of USER_DEFAULT_CONTACT_PERMISSIONS) {
-    await ContactPermission.findOneAndUpdate(
-      { userId, permission },
-      { granted: true, grantedBy, grantedAt: new Date(), revokedAt: undefined },
-      { upsert: true }
-    );
-  }
+  await permissionEngineService.grantPermissions(CONTACTS_APP_ID, userId, [...USER_DEFAULT_CONTACT_PERMISSIONS], grantedBy);
 }
 
 export async function grantAdminPermissions(userId: string): Promise<void> {
-  for (const permission of ADMIN_CONTACT_PERMISSIONS) {
-    await ContactPermission.findOneAndUpdate(
-      { userId, permission },
-      { granted: true, grantedBy: userId, grantedAt: new Date() },
-      { upsert: true }
-    );
-  }
+  await permissionEngineService.grantPermissions(CONTACTS_APP_ID, userId, [...ADMIN_CONTACT_PERMISSIONS], userId);
 }
 
 export async function logContactAudit(
@@ -98,6 +90,18 @@ export async function logContactAudit(
   newValue?: string,
   reason?: string
 ): Promise<void> {
+  await auditService.log({
+    appId: CONTACTS_APP_ID,
+    userId: targetUserId,
+    action,
+    entityType,
+    entityId,
+    ctx,
+    oldValue,
+    newValue,
+    reason,
+  });
+
   await ContactAuditLog.create({
     userId: targetUserId,
     action,
@@ -120,25 +124,7 @@ async function sendContactNotification(
   body: string,
   priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'
 ): Promise<void> {
-  const notification = await Notification.create({
-    userId,
-    appId: CONTACTS_APP_ID,
-    title,
-    body,
-    icon: '👤',
-    priority,
-  });
-  emitToUser(userId, 'notification:new', {
-    id: notification._id.toString(),
-    appId: CONTACTS_APP_ID,
-    title,
-    body,
-    icon: '👤',
-    priority,
-    read: false,
-    createdAt: notification.createdAt.toISOString(),
-  });
-  emitToUser(userId, 'contacts:notification', { title, body, priority });
+  await notificationService.send({ userId, appId: CONTACTS_APP_ID, title, body, priority });
 }
 
 export function formatContact(contact: IContact, orgName?: string) {
@@ -244,7 +230,7 @@ export async function createContact(userId: string, input: ContactInput, ctx: Au
   });
 
   await logContactAudit(userId, 'contact_created', 'Contact', ctx, contact._id.toString(), undefined, contact.fullName);
-  emitToUser(userId, 'contacts:created', { contactId: contact._id.toString(), fullName: contact.fullName });
+  eventBusService.emitToUser(userId, 'contacts:created', { contactId: contact._id.toString(), fullName: contact.fullName });
   return contact;
 }
 
@@ -284,7 +270,7 @@ export async function updateContact(
   await contact.save();
 
   await logContactAudit(userId, 'contact_updated', 'Contact', ctx, contactId, oldName, contact.fullName);
-  emitToUser(userId, 'contacts:updated', { contactId, fullName: contact.fullName });
+  eventBusService.emitToUser(userId, 'contacts:updated', { contactId, fullName: contact.fullName });
   return contact;
 }
 
@@ -300,7 +286,7 @@ export async function deleteContact(userId: string, contactId: string, ctx: Audi
   await contact.deleteOne();
 
   await logContactAudit(userId, 'contact_deleted', 'Contact', ctx, contactId, contact.fullName, undefined);
-  emitToUser(userId, 'contacts:deleted', { contactId });
+  eventBusService.emitToUser(userId, 'contacts:deleted', { contactId });
 }
 
 export async function searchContacts(
@@ -376,7 +362,7 @@ export async function toggleFavorite(userId: string, contactId: string, ctx: Aud
   }
 
   await logContactAudit(userId, contact.isFavorite ? 'contact_favorited' : 'contact_unfavorited', 'Contact', ctx, contactId);
-  emitToUser(userId, 'contacts:favorite:changed', { contactId, isFavorite: contact.isFavorite });
+  eventBusService.emitToUser(userId, 'contacts:favorite:changed', { contactId, isFavorite: contact.isFavorite });
   return contact;
 }
 
@@ -391,7 +377,7 @@ export async function blockContact(userId: string, contactId: string, reason: st
   await BlockedContact.findOneAndUpdate({ userId, contactId }, { reason }, { upsert: true });
 
   await logContactAudit(userId, 'contact_blocked', 'Contact', ctx, contactId, undefined, contact.fullName, reason);
-  emitToUser(userId, 'contacts:blocked', { contactId });
+  eventBusService.emitToUser(userId, 'contacts:blocked', { contactId });
   return contact;
 }
 
@@ -406,7 +392,7 @@ export async function unblockContact(userId: string, contactId: string, ctx: Aud
   await BlockedContact.deleteOne({ userId, contactId });
 
   await logContactAudit(userId, 'contact_unblocked', 'Contact', ctx, contactId);
-  emitToUser(userId, 'contacts:unblocked', { contactId });
+  eventBusService.emitToUser(userId, 'contacts:unblocked', { contactId });
   return contact;
 }
 
@@ -445,7 +431,7 @@ export async function importContacts(
   }
 
   await logContactAudit(userId, 'contacts_imported', 'Contact', ctx, undefined, undefined, `${imported} contacts`);
-  emitToUser(userId, 'contacts:imported', { imported, failed });
+  eventBusService.emitToUser(userId, 'contacts:imported', { imported, failed });
   await sendContactNotification(userId, 'Import Complete', `${imported} contacts imported successfully.`);
   return { imported, failed };
 }
@@ -457,7 +443,7 @@ export async function exportContacts(userId: string, ctx: AuditContext) {
   const formatted = contacts.map((c) => formatContact(c));
 
   await logContactAudit(userId, 'contacts_exported', 'Contact', ctx, undefined, undefined, `${contacts.length} contacts`);
-  emitToUser(userId, 'contacts:exported', { count: contacts.length });
+  eventBusService.emitToUser(userId, 'contacts:exported', { count: contacts.length });
   return formatted;
 }
 
@@ -466,7 +452,7 @@ export async function createGroup(userId: string, name: string, color?: string, 
 
   const group = await ContactGroup.create({ userId, name, color, icon, contactIds: [] });
   if (ctx) await logContactAudit(userId, 'group_created', 'ContactGroup', ctx, group._id.toString(), undefined, name);
-  emitToUser(userId, 'contacts:group:created', { groupId: group._id.toString(), name });
+  eventBusService.emitToUser(userId, 'contacts:group:created', { groupId: group._id.toString(), name });
   return group;
 }
 

@@ -9,11 +9,10 @@ import { IdentityPermission } from '../database/models/IdentityPermission';
 import { VerificationLog, VerificationMethod, VerificationResult } from '../database/models/VerificationLog';
 import { TemporaryPass } from '../database/models/TemporaryPass';
 import { TrustedDevice } from '../database/models/TrustedDevice';
-import { Notification } from '../database/models/Notification';
 import { User } from '../database/models/User';
-import { emitToUser } from './socketService';
+import { notificationService, eventBusService, BANANAOS_APP_IDS } from '../platform';
 
-const IDENTITY_APP_ID = 'com.bananaos.identity';
+const IDENTITY_APP_ID = BANANAOS_APP_IDS.IDENTITY;
 
 export interface QrPayload {
   v: number;
@@ -90,24 +89,7 @@ export async function sendIdentityNotification(
   body: string,
   priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'
 ): Promise<void> {
-  const notification = await Notification.create({
-    userId,
-    appId: IDENTITY_APP_ID,
-    title,
-    body,
-    icon: '🪪',
-    priority,
-  });
-  emitToUser(userId, 'notification:new', {
-    id: notification._id.toString(),
-    appId: IDENTITY_APP_ID,
-    title,
-    body,
-    icon: '🪪',
-    priority,
-    read: false,
-    createdAt: notification.createdAt.toISOString(),
-  });
+  await notificationService.send({ userId, appId: IDENTITY_APP_ID, title, body, priority });
 }
 
 export function formatIdentity(identity: IIdentity, includePrivate = false) {

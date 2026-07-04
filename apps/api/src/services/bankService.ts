@@ -16,10 +16,16 @@ import { Budget, IBudget } from '../database/models/Budget';
 import { BankAuditLog } from '../database/models/BankAuditLog';
 import { BankSecuritySettings } from '../database/models/BankSecuritySettings';
 import { User } from '../database/models/User';
-import { Notification } from '../database/models/Notification';
-import { emitToUser } from './socketService';
+import { PhoneNumber } from '../database/models/PhoneNumber';
+import {
+  auditService,
+  eventBusService,
+  notificationService,
+  permissionEngineService,
+  BANANAOS_APP_IDS,
+} from '../platform';
 
-const BANK_APP_ID = 'com.bananaos.bank';
+const BANK_APP_ID = BANANAOS_APP_IDS.BANK;
 const FRAUD_THRESHOLD = 5000;
 const WELCOME_BONUS = 1000;
 
@@ -46,6 +52,17 @@ export async function logAudit(
   amount?: number,
   ipAddress?: string
 ): Promise<void> {
+  await auditService.log({
+    appId: BANK_APP_ID,
+    userId,
+    action,
+    entityType,
+    entityId,
+    ctx: { performedBy, performedByRole, ipAddress },
+    details,
+    amount,
+  });
+
   await BankAuditLog.create({
     userId,
     action,
@@ -65,25 +82,7 @@ export async function sendBankNotification(
   body: string,
   priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'
 ): Promise<void> {
-  const notification = await Notification.create({
-    userId,
-    appId: BANK_APP_ID,
-    title,
-    body,
-    icon: '🏦',
-    priority,
-  });
-  emitToUser(userId, 'notification:new', {
-    id: notification._id.toString(),
-    appId: BANK_APP_ID,
-    title,
-    body,
-    icon: '🏦',
-    priority,
-    read: false,
-    createdAt: notification.createdAt.toISOString(),
-  });
-  emitToUser(userId, 'bank:notification', { title, body, priority });
+  await notificationService.send({ userId, appId: BANK_APP_ID, title, body, priority });
 }
 
 function buildPaymentSignature(payload: Omit<PaymentQrPayload, 'sig'>): string {
@@ -249,7 +248,7 @@ export async function provisionBankAccounts(userId: string): Promise<IBankAccoun
   await logAudit(userId, 'accounts_provisioned', 'BankAccount', userId, 'system', undefined, `Created ${accounts.length} accounts`);
   await sendBankNotification(userId, 'Welcome to Banana Bank', `Your accounts are ready. Welcome bonus of ${WELCOME_BONUS} BNA credited.`, 'high');
 
-  emitToUser(userId, 'bank:accounts:provisioned', { accountCount: accounts.length });
+  eventBusService.emitToUser(userId, 'bank:accounts:provisioned', { accountCount: accounts.length });
   return accounts;
 }
 
@@ -444,10 +443,10 @@ export async function completeTransfer(
   await sendBankNotification(transfer.fromUserId.toString(), 'Transfer Sent', `${transfer.amount} BNA sent. Ref: ${transfer.reference}`, 'normal');
   await sendBankNotification(transfer.toUserId.toString(), 'Money Received', `${transfer.amount} BNA received from ${fromUser?.displayName ?? 'user'}.`, 'high');
 
-  emitToUser(transfer.fromUserId.toString(), 'bank:transfer:complete', { transferId: transfer._id.toString(), amount: transfer.amount, direction: 'out' });
-  emitToUser(transfer.toUserId.toString(), 'bank:transfer:complete', { transferId: transfer._id.toString(), amount: transfer.amount, direction: 'in' });
-  emitToUser(transfer.fromUserId.toString(), 'bank:balance:updated', { accountId: fromAccount._id.toString(), balance: fromAccount.balance });
-  emitToUser(transfer.toUserId.toString(), 'bank:balance:updated', { accountId: toAccount._id.toString(), balance: toAccount.balance });
+  eventBusService.emitToUser(transfer.fromUserId.toString(), 'bank:transfer:complete', { transferId: transfer._id.toString(), amount: transfer.amount, direction: 'out' });
+  eventBusService.emitToUser(transfer.toUserId.toString(), 'bank:transfer:complete', { transferId: transfer._id.toString(), amount: transfer.amount, direction: 'in' });
+  eventBusService.emitToUser(transfer.fromUserId.toString(), 'bank:balance:updated', { accountId: fromAccount._id.toString(), balance: fromAccount.balance });
+  eventBusService.emitToUser(transfer.toUserId.toString(), 'bank:balance:updated', { accountId: toAccount._id.toString(), balance: toAccount.balance });
 
   return transfer;
 }
@@ -508,7 +507,7 @@ export async function processDeposit(params: {
 
   await logAudit(params.userId, 'deposit', 'Deposit', params.performedBy, params.performedByRole, deposit._id.toString(), deposit.receiptNumber, params.amount, params.ipAddress);
   await sendBankNotification(params.userId, 'Deposit Received', `${params.amount} BNA deposited. Receipt: ${deposit.receiptNumber}`, 'normal');
-  emitToUser(params.userId, 'bank:balance:updated', { accountId: account._id.toString(), balance: account.balance });
+  eventBusService.emitToUser(params.userId, 'bank:balance:updated', { accountId: account._id.toString(), balance: account.balance });
 
   return deposit;
 }
@@ -565,7 +564,7 @@ export async function processWithdrawal(params: {
 
   await logAudit(params.userId, 'withdrawal', 'Withdrawal', params.performedBy, params.performedByRole, withdrawal._id.toString(), withdrawal.receiptNumber, params.amount, params.ipAddress);
   await sendBankNotification(params.userId, 'Withdrawal Complete', `${params.amount} BNA withdrawn. Receipt: ${withdrawal.receiptNumber}`, 'normal');
-  emitToUser(params.userId, 'bank:balance:updated', { accountId: account._id.toString(), balance: account.balance });
+  eventBusService.emitToUser(params.userId, 'bank:balance:updated', { accountId: account._id.toString(), balance: account.balance });
 
   return withdrawal;
 }
@@ -622,7 +621,7 @@ export async function processPayment(params: {
   await updateBudgetSpent(params.userId, params.type, params.amount);
   await logAudit(params.userId, 'payment', 'Payment', params.performedBy, params.performedByRole, payment._id.toString(), params.recipient, params.amount, params.ipAddress);
   await sendBankNotification(params.userId, 'Payment Sent', `${params.amount} BNA paid to ${params.recipient}`, 'normal');
-  emitToUser(params.userId, 'bank:balance:updated', { accountId: account._id.toString(), balance: account.balance });
+  eventBusService.emitToUser(params.userId, 'bank:balance:updated', { accountId: account._id.toString(), balance: account.balance });
 
   return payment;
 }

@@ -13,11 +13,16 @@ import { PoliceChatMessage, POLICE_CHANNELS } from '../database/models/PoliceCha
 import { Identity } from '../database/models/Identity';
 import { Contact } from '../database/models/Contact';
 import { PhoneNumber } from '../database/models/PhoneNumber';
-import { Notification } from '../database/models/Notification';
 import { User } from '../database/models/User';
-import { emitToUser } from './socketService';
+import {
+  auditService,
+  eventBusService,
+  notificationService,
+  permissionEngineService,
+  BANANAOS_APP_IDS,
+} from '../platform';
 
-const POLICE_APP_ID = 'com.bananaos.police';
+const POLICE_APP_ID = BANANAOS_APP_IDS.POLICE;
 
 const RANK_ORDER: PoliceRank[] = ['cadet', 'officer', 'sergeant', 'lieutenant', 'captain', 'chief'];
 
@@ -31,9 +36,8 @@ export interface AuditContext {
 }
 
 export async function hasPermission(userId: string, permission: PolicePermissionName, userRole: 'user' | 'admin'): Promise<boolean> {
-  if (userRole === 'admin') return true;
-  const perm = await PolicePermission.findOne({ userId, permission, granted: true });
-  return !!perm;
+  const result = await permissionEngineService.hasPermission(POLICE_APP_ID, userId, permission, userRole);
+  return result.granted;
 }
 
 export async function requirePermission(userId: string, permission: PolicePermissionName, userRole: 'user' | 'admin'): Promise<void> {
@@ -43,13 +47,7 @@ export async function requirePermission(userId: string, permission: PolicePermis
 
 export async function grantRankPermissions(userId: string, rank: PoliceRank, grantedBy: string): Promise<void> {
   const perms = RANK_PERMISSIONS[rank] ?? RANK_PERMISSIONS.officer;
-  for (const permission of perms) {
-    await PolicePermission.findOneAndUpdate(
-      { userId, permission },
-      { granted: true, grantedBy, grantedAt: new Date(), revokedAt: undefined },
-      { upsert: true }
-    );
-  }
+  await permissionEngineService.grantPermissions(POLICE_APP_ID, userId, perms, grantedBy, { rank });
 }
 
 export async function logPoliceAudit(
@@ -59,6 +57,20 @@ export async function logPoliceAudit(
   ctx: AuditContext,
   options?: { entityId?: string; officerId?: string; query?: string; oldValue?: string; newValue?: string; reason?: string }
 ): Promise<void> {
+  await auditService.log({
+    appId: POLICE_APP_ID,
+    userId: targetUserId,
+    action,
+    entityType,
+    entityId: options?.entityId,
+    ctx,
+    query: options?.query,
+    oldValue: options?.oldValue,
+    newValue: options?.newValue,
+    reason: options?.reason,
+    metadata: options?.officerId ? { officerId: options.officerId } : undefined,
+  });
+
   await PoliceAuditLog.create({
     userId: targetUserId,
     officerId: options?.officerId ? new Types.ObjectId(options.officerId) : undefined,
@@ -78,9 +90,7 @@ export async function logPoliceAudit(
 }
 
 async function notify(userId: string, title: string, body: string, priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'): Promise<void> {
-  await Notification.create({ userId, appId: POLICE_APP_ID, title, body, icon: '🚔', priority });
-  emitToUser(userId, 'notification:new', { appId: POLICE_APP_ID, title, body, icon: '🚔', priority });
-  emitToUser(userId, 'police:notification', { title, body, priority });
+  await notificationService.send({ userId, appId: POLICE_APP_ID, title, body, priority });
 }
 
 export async function getOfficerByUserId(userId: string): Promise<IPoliceOfficer | null> {
@@ -111,7 +121,7 @@ export async function provisionOfficer(userId: string, data: { firstName: string
 
   await grantRankPermissions(userId, rank, ctx.performedBy);
   await logPoliceAudit(userId, 'officer_provisioned', 'PoliceOfficer', ctx, { entityId: officer._id.toString(), officerId: officer._id.toString(), newValue: badgeNumber });
-  emitToUser(userId, 'police:officer:provisioned', { officerId: officer._id.toString(), badgeNumber });
+  eventBusService.emitToUser(userId, 'police:officer:provisioned', { officerId: officer._id.toString(), badgeNumber });
   await notify(userId, 'Welcome Officer', `Badge ${badgeNumber} assigned. Stay safe.`, 'high');
   return officer;
 }
@@ -231,7 +241,7 @@ export async function createReport(userId: string, officerId: string, data: Part
     updatedBy: ctx.performedBy,
   });
   await logPoliceAudit(userId, 'report_created', 'PoliceReport', ctx, { entityId: report._id.toString(), newValue: report.reportNumber });
-  emitToUser(userId, 'police:report:created', { reportId: report._id.toString() });
+  eventBusService.emitToUser(userId, 'police:report:created', { reportId: report._id.toString() });
   return report;
 }
 
@@ -251,7 +261,7 @@ export async function reviewReport(userId: string, reportId: string, approve: bo
   report.updatedBy = new Types.ObjectId(ctx.performedBy);
   await report.save();
   await logPoliceAudit(userId, approve ? 'report_approved' : 'report_rejected', 'PoliceReport', ctx, { entityId: reportId, reason: note });
-  emitToUser(report.userId.toString(), 'police:report:reviewed', { reportId, status: report.status });
+  eventBusService.emitToUser(report.userId.toString(), 'police:report:reviewed', { reportId, status: report.status });
   return report;
 }
 
@@ -286,7 +296,7 @@ export async function promoteOfficer(userId: string, officerId: string, newRank:
   });
   await grantRankPermissions(officer.userId.toString(), newRank, ctx.performedBy);
   await logPoliceAudit(officer.userId.toString(), 'officer_promoted', 'PoliceOfficer', ctx, { entityId: officerId, oldValue: oldRank, newValue: newRank, reason });
-  emitToUser(officer.userId.toString(), 'police:rank:changed', { rank: newRank });
+  eventBusService.emitToUser(officer.userId.toString(), 'police:rank:changed', { rank: newRank });
   return officer;
 }
 
@@ -321,7 +331,7 @@ export async function updateOfficerStatus(userId: string, officerId: string, sta
   officer.updatedBy = new Types.ObjectId(ctx.performedBy);
   await officer.save();
   await logPoliceAudit(officer.userId.toString(), 'officer_status_changed', 'PoliceOfficer', ctx, { entityId: officerId, oldValue: oldStatus, newValue: status });
-  emitToUser(officer.userId.toString(), 'police:officer:status', { status });
+  eventBusService.emitToUser(officer.userId.toString(), 'police:officer:status', { status });
   return officer;
 }
 
@@ -341,7 +351,7 @@ export async function createDispatch(userId: string, data: Partial<IPoliceDispat
     updatedBy: ctx.performedBy,
   });
   await logPoliceAudit(userId, 'dispatch_created', 'PoliceDispatch', ctx, { entityId: dispatch._id.toString(), newValue: dispatch.dispatchNumber });
-  emitToUser(userId, 'police:dispatch:created', { dispatchId: dispatch._id.toString() });
+  eventBusService.emitToUser(userId, 'police:dispatch:created', { dispatchId: dispatch._id.toString() });
   return dispatch;
 }
 
@@ -364,7 +374,7 @@ export async function assignDispatch(userId: string, dispatchId: string, officer
   await logPoliceAudit(userId, 'dispatch_assigned', 'PoliceDispatch', ctx, { entityId: dispatchId, newValue: officerIds.join(',') });
   for (const oid of officerIds) {
     const officer = await PoliceOfficer.findById(oid);
-    if (officer) emitToUser(officer.userId.toString(), 'police:dispatch:assigned', { dispatchId });
+    if (officer) eventBusService.emitToUser(officer.userId.toString(), 'police:dispatch:assigned', { dispatchId });
   }
   return dispatch;
 }
@@ -378,7 +388,7 @@ export async function updateDispatchStatus(userId: string, dispatchId: string, s
   dispatch.updatedBy = new Types.ObjectId(ctx.performedBy);
   await dispatch.save();
   await logPoliceAudit(userId, 'dispatch_status_updated', 'PoliceDispatch', ctx, { entityId: dispatchId, oldValue: oldStatus, newValue: status });
-  emitToUser(userId, 'police:dispatch:updated', { dispatchId, status });
+  eventBusService.emitToUser(userId, 'police:dispatch:updated', { dispatchId, status });
   return dispatch;
 }
 
@@ -397,7 +407,7 @@ export async function createCase(userId: string, data: Partial<IPoliceCase>, ctx
     updatedBy: ctx.performedBy,
   });
   await logPoliceAudit(userId, 'case_created', 'PoliceCase', ctx, { entityId: policeCase._id.toString(), newValue: policeCase.caseNumber });
-  emitToUser(userId, 'police:case:created', { caseId: policeCase._id.toString() });
+  eventBusService.emitToUser(userId, 'police:case:created', { caseId: policeCase._id.toString() });
   return policeCase;
 }
 
@@ -494,7 +504,7 @@ export async function sendChatMessage(userId: string, officerId: string, channel
     encrypted: true,
   });
   await logPoliceAudit(userId, 'chat_message_sent', 'PoliceChat', ctx, { query: channel, newValue: message.slice(0, 50) });
-  emitToUser(userId, 'police:chat:message', { channel, messageId: msg._id.toString() });
+  eventBusService.emitToUser(userId, 'police:chat:message', { channel, messageId: msg._id.toString() });
   return msg;
 }
 

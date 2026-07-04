@@ -12,11 +12,16 @@ import { BlockedNumber } from '../database/models/BlockedNumber';
 import { SIMAuditLog } from '../database/models/SIMAuditLog';
 import { SIMPermission, SIMPermissionName, USER_DEFAULT_PERMISSIONS, ADMIN_PERMISSIONS } from '../database/models/SIMPermission';
 import { SIMSecuritySettings, generatePUK } from '../database/models/SIMSecuritySettings';
-import { Notification } from '../database/models/Notification';
 import { User } from '../database/models/User';
-import { emitToUser } from './socketService';
+import {
+  auditService,
+  eventBusService,
+  notificationService,
+  permissionEngineService,
+  BANANAOS_APP_IDS,
+} from '../platform';
 
-const SIM_APP_ID = 'com.bananaos.sim';
+const SIM_APP_ID = BANANAOS_APP_IDS.SIM;
 const DEFAULT_CARRIER_CODE = 'banana-mobile';
 
 export interface AuditContext {
@@ -33,9 +38,8 @@ export async function hasPermission(
   permission: SIMPermissionName,
   userRole: 'user' | 'admin'
 ): Promise<boolean> {
-  if (userRole === 'admin') return true;
-  const perm = await SIMPermission.findOne({ userId, permission, granted: true });
-  return !!perm;
+  const result = await permissionEngineService.hasPermission(SIM_APP_ID, userId, permission, userRole);
+  return result.granted;
 }
 
 export async function requirePermission(
@@ -48,23 +52,11 @@ export async function requirePermission(
 }
 
 export async function grantDefaultPermissions(userId: string, grantedBy: string): Promise<void> {
-  for (const permission of USER_DEFAULT_PERMISSIONS) {
-    await SIMPermission.findOneAndUpdate(
-      { userId, permission },
-      { granted: true, grantedBy, grantedAt: new Date(), revokedAt: undefined },
-      { upsert: true }
-    );
-  }
+  await permissionEngineService.grantPermissions(SIM_APP_ID, userId, [...USER_DEFAULT_PERMISSIONS], grantedBy);
 }
 
 export async function grantAdminPermissions(userId: string): Promise<void> {
-  for (const permission of ADMIN_PERMISSIONS) {
-    await SIMPermission.findOneAndUpdate(
-      { userId, permission },
-      { granted: true, grantedBy: userId, grantedAt: new Date() },
-      { upsert: true }
-    );
-  }
+  await permissionEngineService.grantPermissions(SIM_APP_ID, userId, [...ADMIN_PERMISSIONS], userId);
 }
 
 export async function logSimAudit(
@@ -77,6 +69,18 @@ export async function logSimAudit(
   newValue?: string,
   reason?: string
 ): Promise<void> {
+  await auditService.log({
+    appId: SIM_APP_ID,
+    userId: targetUserId,
+    action,
+    entityType,
+    entityId,
+    ctx,
+    oldValue,
+    newValue,
+    reason,
+  });
+
   await SIMAuditLog.create({
     userId: targetUserId,
     action,
@@ -99,25 +103,7 @@ export async function sendSimNotification(
   body: string,
   priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'
 ): Promise<void> {
-  const notification = await Notification.create({
-    userId,
-    appId: SIM_APP_ID,
-    title,
-    body,
-    icon: '📶',
-    priority,
-  });
-  emitToUser(userId, 'notification:new', {
-    id: notification._id.toString(),
-    appId: SIM_APP_ID,
-    title,
-    body,
-    icon: '📶',
-    priority,
-    read: false,
-    createdAt: notification.createdAt.toISOString(),
-  });
-  emitToUser(userId, 'sim:notification', { title, body, priority });
+  await notificationService.send({ userId, appId: SIM_APP_ID, title, body, priority });
 }
 
 async function ensureDefaultCarrier() {
@@ -237,7 +223,7 @@ export async function provisionSIM(userId: string, ctx: AuditContext): Promise<I
 
   await logSimAudit(userId, 'sim_provisioned', 'SIMProfile', ctx, sim._id.toString(), undefined, phoneNumber.number);
   await sendSimNotification(userId, 'SIM Activated', `Your number ${phoneNumber.number} is now active on Banana Mobile.`, 'high');
-  emitToUser(userId, 'sim:activated', { simProfileId: sim._id.toString(), phoneNumber: phoneNumber.number });
+  eventBusService.emitToUser(userId, 'sim:activated', { simProfileId: sim._id.toString(), phoneNumber: phoneNumber.number });
 
   return sim;
 }
@@ -281,7 +267,7 @@ export async function activateSIM(userId: string, simId: string, ctx: AuditConte
   await sim.save();
   await logSimAudit(userId, 'sim_activated', 'SIMProfile', ctx, simId, oldStatus, 'active');
   await sendSimNotification(userId, 'SIM Activated', 'Your SIM is now active.', 'normal');
-  emitToUser(userId, 'sim:activated', { simProfileId: simId });
+  eventBusService.emitToUser(userId, 'sim:activated', { simProfileId: simId });
   return sim;
 }
 
@@ -294,7 +280,7 @@ export async function deactivateSIM(userId: string, simId: string, ctx: AuditCon
   sim.deactivatedAt = new Date();
   await sim.save();
   await logSimAudit(userId, 'sim_deactivated', 'SIMProfile', ctx, simId, oldStatus, 'deactivated', ctx.reason);
-  emitToUser(userId, 'sim:deactivated', { simProfileId: simId });
+  eventBusService.emitToUser(userId, 'sim:deactivated', { simProfileId: simId });
   return sim;
 }
 
@@ -308,7 +294,7 @@ export async function suspendSIM(userId: string, simId: string, ctx: AuditContex
   await sim.save();
   await logSimAudit(userId, 'sim_suspended', 'SIMProfile', ctx, simId, oldStatus, 'suspended', ctx.reason);
   await sendSimNotification(userId, 'SIM Suspended', ctx.reason ?? 'Your SIM has been suspended.', 'high');
-  emitToUser(userId, 'sim:suspended', { simProfileId: simId });
+  eventBusService.emitToUser(userId, 'sim:suspended', { simProfileId: simId });
   return sim;
 }
 
@@ -338,7 +324,7 @@ export async function replaceSIM(userId: string, simId: string, ctx: AuditContex
 
   await logSimAudit(userId, 'sim_replaced', 'SIMProfile', ctx, newSim._id.toString(), oldSerial, newSim.simSerial, ctx.reason);
   await sendSimNotification(userId, 'SIM Replaced', 'Your SIM has been replaced with a new profile.', 'high');
-  emitToUser(userId, 'sim:replaced', { oldSimId: simId, newSimId: newSim._id.toString() });
+  eventBusService.emitToUser(userId, 'sim:replaced', { oldSimId: simId, newSimId: newSim._id.toString() });
   return newSim;
 }
 
@@ -374,7 +360,7 @@ export async function changeNumber(userId: string, simId: string, newNumberId: s
 
   await logSimAudit(userId, 'number_changed', 'PhoneNumber', ctx, newNumberId, oldNumStr, newNumber.number, ctx.reason);
   await sendSimNotification(userId, 'Number Changed', `Your new number is ${newNumber.number}`, 'high');
-  emitToUser(userId, 'sim:number:changed', { phoneNumber: newNumber.number });
+  eventBusService.emitToUser(userId, 'sim:number:changed', { phoneNumber: newNumber.number });
   return sim;
 }
 
@@ -414,7 +400,7 @@ export async function runNetworkDiagnostic(userId: string) {
   network.lastDiagnosticAt = new Date();
   await network.save();
 
-  emitToUser(userId, 'sim:signal:updated', { signalStrength, signalBars });
+  eventBusService.emitToUser(userId, 'sim:signal:updated', { signalStrength, signalBars });
   return network;
 }
 

@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { Notification } from '../../database/models/Notification';
 import { AuthRequest } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { emitToUser } from '../../services/socketService';
+import { eventBusService } from '../../platform';
 
 export const getNotifications = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { limit = '50', unreadOnly } = req.query;
@@ -37,7 +37,7 @@ export const createNotification = asyncHandler(async (req: AuthRequest, res: Res
   });
 
   const formatted = formatNotification(notification);
-  emitToUser(req.user!.userId, 'notification:new', formatted);
+  eventBusService.emitToUser(req.user!.userId, 'notification:new', formatted);
 
   res.status(201).json({ success: true, data: formatted });
 });
@@ -54,7 +54,7 @@ export const markAsRead = asyncHandler(async (req: AuthRequest, res: Response) =
     throw new AppError(404, 'Notification not found');
   }
 
-  emitToUser(req.user!.userId, 'notification:read', { id });
+  eventBusService.emitToUser(req.user!.userId, 'notification:read', { id });
 
   res.json({ success: true, data: formatNotification(notification) });
 });
