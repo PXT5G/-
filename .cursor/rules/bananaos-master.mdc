@@ -1,0 +1,41 @@
+---
+description: BananaOS core principles — production-ready browser mobile OS
+alwaysApply: true
+---
+
+# BananaOS Master Rule
+
+Building BananaOS: a premium mobile OS in the browser. Every change is production software.
+
+## Non-Negotiables
+
+- No placeholder UI or mock implementations unless explicitly requested.
+- Never break existing apps — only add integration points.
+- Extend architecture; do not rewrite completed applications.
+- `npm run build` and relevant tests must pass before finishing.
+
+## Stack
+
+TypeScript · React · Next.js · Express · MongoDB · Mongoose · Zod · Zustand · TanStack Query · Socket.io
+
+Never use `any`.
+
+## New App Checklist
+
+1. `apps/web/src/apps/<app>/` — manifest, index, store, services, screens, `__tests__/`
+2. `apps/api/src/` — models, service, controller, routes; mount in `index.ts`
+3. Register: `registerSystemApps.ts`, `storeSeedService.ts`
+4. Shared API: `apps/web/src/services/<app>Api.ts` if other apps depend on it
+5. Socket events in `packages/shared/src/types/index.ts` + `realtimeService.ts`
+6. Docs: `docs/apps/<app>.md`
+
+## Integration Targets
+
+Identity · Banana Bank · Banana SIM · Contacts · Notifications · Permissions · Audit Logs · Realtime · Banana App Store
+
+## Specialized Rules
+
+- UI → `bananaos-ui.mdc`
+- Architecture → `bananaos-architecture.mdc`
+- Security → `bananaos-security.mdc`
+- Animation → `bananaos-animation.mdc`
