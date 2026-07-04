@@ -14,6 +14,7 @@ import settingsRoutes from './api/routes/settings';
 import filesystemRoutes from './api/routes/filesystem';
 import adminRoutes from './api/routes/admin';
 import storeRoutes from './api/routes/store';
+import identityRoutes from './api/routes/identity';
 
 const app = express();
 const httpServer = createServer(app);
@@ -41,6 +42,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/filesystem', filesystemRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/store', storeRoutes);
+app.use('/api/identity', identityRoutes);
 
 app.use(errorHandler);
 
