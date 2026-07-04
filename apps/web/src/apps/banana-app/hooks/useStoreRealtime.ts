@@ -37,6 +37,8 @@ export function useStoreRealtime() {
         downloadId: string;
         progress: number;
         status: string;
+        downloadedBytes?: number;
+        totalBytes?: number;
         downloadSpeed?: number;
         etaSeconds?: number;
         installStep?: string;
@@ -46,6 +48,8 @@ export function useStoreRealtime() {
         downloadSpeed: data.downloadSpeed,
         etaSeconds: data.etaSeconds,
         installStep: data.installStep,
+        downloadedBytes: data.downloadedBytes,
+        size: data.totalBytes,
       });
 
       const current = useBananaAppStore.getState().activeInstall;
@@ -57,6 +61,8 @@ export function useStoreRealtime() {
           downloadSpeed: data.downloadSpeed,
           etaSeconds: data.etaSeconds,
           installStep: data.installStep,
+          downloadedBytes: data.downloadedBytes,
+          size: data.totalBytes,
         });
         if (data.status === 'downloading' || data.status === 'installing') {
           islandSetProgress(data.progress);

@@ -10,11 +10,12 @@ import { InstalledApp } from '../../database/models/InstalledApp';
 import { UserStoreSettings } from '../../database/models/UserStoreSettings';
 import { AuthRequest } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { enqueueDownload } from '../../services/downloadManager';
+import { enqueueDownload, prepareDownloadStorage } from '../../services/downloadManager';
 import { getPackageManifest, getStorageRequired } from '../../services/packageService';
 import { getAppStorage, clearAppCache, clearAppData } from '../../services/storageService';
 import { getUserRegistry, getRegistryEntry } from '../../services/appRegistryService';
 import { checkForUpdates, getChangelog, startUpdate, setAutoUpdate } from '../../services/updateService';
+import { checkAvailableStorage } from '../../services/deviceStorageService';
 import { executeUninstall } from '../../services/installService';
 import {
   pauseDownload,
@@ -326,6 +327,22 @@ export const installApp = asyncHandler(async (req: AuthRequest, res: Response) =
   const existing = await InstalledApp.findOne({ userId: req.user!.userId, bundleId });
   if (existing) throw new AppError(409, 'App already installed');
 
+  const required = listing.storageSize;
+  const storageCheck = await checkAvailableStorage(req.user!.userId, required);
+  if (!storageCheck.available) {
+    res.status(507).json({
+      success: false,
+      error: 'INSUFFICIENT_STORAGE',
+      message: 'Not enough storage.',
+      data: {
+        required,
+        free: storageCheck.free,
+        breakdown: storageCheck.breakdown,
+      },
+    });
+    return;
+  }
+
   const download = await StoreDownload.create({
     userId: req.user!.userId,
     bundleId,
@@ -337,6 +354,21 @@ export const installApp = asyncHandler(async (req: AuthRequest, res: Response) =
     size: listing.storageSize,
     approvedPermissions: body.approvedPermissions ?? listing.permissions ?? [],
   });
+
+  try {
+    await prepareDownloadStorage(
+      req.user!.userId,
+      param(bundleId),
+      app.version,
+      download._id.toString()
+    );
+  } catch (err) {
+    await StoreDownload.findByIdAndDelete(download._id);
+    if (err instanceof Error && err.message === 'INSUFFICIENT_STORAGE') {
+      throw new AppError(507, 'Not enough storage.');
+    }
+    throw err;
+  }
 
   await enqueueDownload(download._id.toString(), req.user!.userId);
 
@@ -401,16 +433,25 @@ export const completeInstall = asyncHandler(async (req: AuthRequest, res: Respon
   });
 });
 
-const uninstallBodySchema = z.object({ keepData: z.boolean().optional() });
+const uninstallBodySchema = z.object({
+  keepData: z.boolean().optional(),
+  keepUserData: z.boolean().optional(),
+  keepSettings: z.boolean().optional(),
+  keepSession: z.boolean().optional(),
+});
 
 export const uninstallApp = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { bundleId } = req.params;
   const body = uninstallBodySchema.parse(req.body ?? {});
 
-  const installed = await InstalledApp.findOne({ userId: req.user!.userId, bundleId });
+  const installed = await InstalledApp.findOne({ userId: req.user!.userId, bundleId: param(bundleId) });
   if (!installed) throw new AppError(404, 'App not installed');
 
-  await executeUninstall(req.user!.userId, param(bundleId), body.keepData ?? false);
+  await executeUninstall(req.user!.userId, param(bundleId), {
+    keepUserData: body.keepUserData ?? body.keepData ?? false,
+    keepSettings: body.keepSettings ?? false,
+    keepSession: body.keepSession ?? false,
+  });
   res.json({ success: true, message: 'App uninstalled' });
 });
 
@@ -428,6 +469,18 @@ export const updateApp = asyncHandler(async (req: AuthRequest, res: Response) =>
     throw new AppError(400, 'App is already up to date');
   }
 
+  const required = listing.storageSize;
+  const storageCheck = await checkAvailableStorage(req.user!.userId, required);
+  if (!storageCheck.available) {
+    res.status(507).json({
+      success: false,
+      error: 'INSUFFICIENT_STORAGE',
+      message: 'Not enough storage.',
+      data: { required, free: storageCheck.free, breakdown: storageCheck.breakdown },
+    });
+    return;
+  }
+
   const download = await StoreDownload.create({
     userId: req.user!.userId,
     bundleId,
@@ -441,6 +494,21 @@ export const updateApp = asyncHandler(async (req: AuthRequest, res: Response) =>
     approvedPermissions: body.approvedPermissions ?? listing.permissions ?? [],
     previousVersion: installed.installedVersion,
   });
+
+  try {
+    await prepareDownloadStorage(
+      req.user!.userId,
+      param(bundleId),
+      app.version,
+      download._id.toString()
+    );
+  } catch (err) {
+    await StoreDownload.findByIdAndDelete(download._id);
+    if (err instanceof Error && err.message === 'INSUFFICIENT_STORAGE') {
+      throw new AppError(507, 'Not enough storage.');
+    }
+    throw err;
+  }
 
   await enqueueDownload(download._id.toString(), req.user!.userId);
 

@@ -125,12 +125,19 @@ export const bananaAppService = {
     await apiRequest(`/api/store/downloads/${downloadId}/complete`, { method: 'POST', token });
   },
 
-  async uninstall(bundleId: string, keepData = false): Promise<void> {
+  async uninstall(
+    bundleId: string,
+    options: { keepUserData?: boolean; keepSettings?: boolean; keepSession?: boolean; keepData?: boolean } = {}
+  ): Promise<void> {
     const token = getToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/apps/${bundleId}/uninstall`, {
       method: 'DELETE',
-      body: JSON.stringify({ keepData }),
+      body: JSON.stringify({
+        keepUserData: options.keepUserData ?? options.keepData ?? false,
+        keepSettings: options.keepSettings ?? false,
+        keepSession: options.keepSession ?? false,
+      }),
       token,
     });
   },

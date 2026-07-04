@@ -13,6 +13,12 @@ interface InstallOverlayProps {
   onRetry?: () => void;
 }
 
+function formatBytes(bytes?: number): string {
+  if (!bytes) return '—';
+  if (bytes >= 1_000_000_000) return `${(bytes / 1_000_000_000).toFixed(1)} GB`;
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)} MB`;
+  return `${(bytes / 1_000).toFixed(0)} KB`;
+}
 function formatSpeed(bytesPerSec?: number): string {
   if (!bytesPerSec || bytesPerSec <= 0) return '—';
   if (bytesPerSec < 1_000_000) return `${(bytesPerSec / 1000).toFixed(0)} KB/s`;
@@ -90,10 +96,20 @@ export function InstallOverlay({
           </div>
 
           {install.status === 'downloading' && (
-            <div className="w-full flex justify-between text-xs text-white/40 mb-4">
-              <span>{formatSpeed(install.downloadSpeed)}</span>
-              <span>{formatEta(install.etaSeconds)}</span>
-            </div>
+            <>
+              <div className="w-full flex justify-between text-xs text-white/40 mb-1">
+                <span>{formatSpeed(install.downloadSpeed)}</span>
+                <span>{formatEta(install.etaSeconds)}</span>
+              </div>
+              {install.size != null && (
+                <p className="w-full text-[10px] text-white/30 mb-4 text-center">
+                  {formatBytes(install.downloadedBytes)} of {formatBytes(install.size)}
+                  {install.size > (install.downloadedBytes ?? 0)
+                    ? ` · ${formatBytes(install.size - (install.downloadedBytes ?? 0))} remaining`
+                    : ''}
+                </p>
+              )}
+            </>
           )}
 
           {install.status === 'installing' && install.installStep && (

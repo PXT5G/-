@@ -10,8 +10,16 @@ import {
   BANANAOS_VERSION,
   type PackageManifest,
 } from './packageService';
-import { ensureAppStorageDir, initAppStorage } from './storageService';
+import { ensureAppStorageDir, initAppStorage, getAppStorage } from './storageService';
 import { registerApp, unregisterApp, setAppState, formatInstalledAppPayload } from './appRegistryService';
+import {
+  checkAvailableStorage,
+  commitReservation,
+  releaseReservation,
+  freeStorageOnUninstall,
+  addSystemUpdateSize,
+} from './deviceStorageService';
+import { registerInstalledPackage, updateInstalledPackage, removeInstalledPackage } from './installedPackageService';
 import { emitToUser } from './socketService';
 
 const GRID_COLS = 4;
@@ -59,7 +67,8 @@ const INSTALL_STEPS = [
 
 export async function verifyInstallPrerequisites(
   manifest: PackageManifest,
-  approvedPermissions: string[]
+  approvedPermissions: string[],
+  userId?: string
 ): Promise<void> {
   if (!isVersionCompatible(BANANAOS_VERSION, manifest.requiredBananaOSVersion)) {
     throw new Error(`Requires BananaOS ${manifest.requiredBananaOSVersion} or later`);
@@ -73,6 +82,13 @@ export async function verifyInstallPrerequisites(
   const valid = await verifyPackageIntegrity(manifest.bundleId, manifest.version);
   if (!valid) {
     throw new Error('Package integrity verification failed');
+  }
+
+  if (userId) {
+    const check = await checkAvailableStorage(userId, manifest.storageRequired);
+    if (!check.available) {
+      throw new Error('INSUFFICIENT_STORAGE');
+    }
   }
 }
 
@@ -88,7 +104,7 @@ export async function executeInstall(
   if (!app || !listing) throw new Error('App not found');
 
   const manifest = await getPackageManifest(bundleId, version);
-  await verifyInstallPrerequisites(manifest, approvedPermissions);
+  await verifyInstallPrerequisites(manifest, approvedPermissions, userId);
 
   for (let i = 0; i < INSTALL_STEPS.length; i++) {
     onProgress?.({ step: INSTALL_STEPS[i], progress: Math.floor(((i + 1) / INSTALL_STEPS.length) * 100) });
@@ -97,6 +113,9 @@ export async function executeInstall(
 
   const storagePath = await ensureAppStorageDir(userId, bundleId);
   await initAppStorage(userId, bundleId, manifest.storageRequired);
+  const storage = await getAppStorage(userId, bundleId);
+  await commitReservation(userId, bundleId);
+  await registerInstalledPackage(userId, manifest, storage.totalSize);
 
   const registry = await registerApp(userId, manifest, storagePath, approvedPermissions);
   const grid = await findNextGridPosition(userId);
@@ -106,7 +125,7 @@ export async function executeInstall(
 
   if (existing) {
     existing.installedVersion = version;
-    existing.storageBytes = manifest.storageRequired;
+    existing.storageBytes = storage.totalSize;
     existing.updatedAt = new Date();
     await existing.save();
     installed = existing;
@@ -116,7 +135,7 @@ export async function executeInstall(
       appId: app._id,
       bundleId,
       installedVersion: version,
-      storageBytes: manifest.storageRequired,
+      storageBytes: storage.totalSize,
       pageIndex: grid.pageIndex,
       position: grid.position,
     });
@@ -154,20 +173,32 @@ export async function executeUpdate(
 
   try {
     const manifest = await getPackageManifest(bundleId, toVersion);
-    await verifyInstallPrerequisites(manifest, approvedPermissions);
+    await verifyInstallPrerequisites(manifest, approvedPermissions, userId);
+    const sizeDelta = Math.max(0, manifest.storageRequired - (await getAppStorage(userId, bundleId)).appSize);
+    if (sizeDelta > 0) {
+      await addSystemUpdateSize(userId, Math.floor(sizeDelta * 0.3));
+    }
     await executeInstall(userId, bundleId, toVersion, approvedPermissions);
+    await updateInstalledPackage(userId, bundleId, manifest, (await getAppStorage(userId, bundleId)).totalSize);
     await setAppState(userId, bundleId, 'installed');
   } catch (err) {
     await InstalledApp.findOneAndUpdate({ userId, bundleId }, { installedVersion: fromVersion });
+    await releaseReservation(userId, bundleId);
     await setAppState(userId, bundleId, 'installed');
     throw err;
   }
 }
 
+export interface UninstallOptions {
+  keepUserData?: boolean;
+  keepSettings?: boolean;
+  keepSession?: boolean;
+}
+
 export async function executeUninstall(
   userId: string,
   bundleId: string,
-  keepData: boolean
+  options: UninstallOptions = {}
 ): Promise<void> {
   const app = await App.findOne({ bundleId });
   if (app?.isSystemApp) throw new Error('Cannot uninstall system app');
@@ -175,16 +206,19 @@ export async function executeUninstall(
   await setAppState(userId, bundleId, 'uninstalling');
 
   const { removeAppStorage } = await import('./storageService');
-  await removeAppStorage(userId, bundleId, keepData);
+  const freedBytes = await removeAppStorage(userId, bundleId, options);
+  await removeInstalledPackage(userId, bundleId);
   await unregisterApp(userId, bundleId);
   await InstalledApp.deleteOne({ userId, bundleId });
+  await freeStorageOnUninstall(userId, bundleId, freedBytes);
 
+  const keepAny = options.keepUserData || options.keepSettings || options.keepSession;
   emitToUser(userId, 'app:uninstalled', { bundleId });
   emitToUser(userId, 'notification:new' as never, {
     id: `uninstall-${bundleId}-${Date.now()}`,
     appId: 'com.bananaos.store',
     title: `${app?.name ?? bundleId} Removed`,
-    body: keepData ? 'App removed. Your data was kept.' : 'App and data removed.',
+    body: keepAny ? 'App removed. Your data was kept.' : 'App and data removed. Storage freed.',
     priority: 'low',
     timestamp: new Date().toISOString(),
     read: false,

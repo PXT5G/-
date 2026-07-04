@@ -50,6 +50,9 @@ export const register = asyncHandler(async (req: AuthRequest, res: Response) => 
 
   await UserSettings.create({ userId: user._id });
 
+  const { ensureDeviceProfile } = await import('../../services/deviceStorageService');
+  await ensureDeviceProfile(user._id.toString());
+
   const deviceId = uuidv4();
   const sessionId = uuidv4();
   const refreshToken = generateRefreshToken(user._id.toString(), sessionId);

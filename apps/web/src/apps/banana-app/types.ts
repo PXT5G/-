@@ -133,7 +133,11 @@ export interface InstalledStoreApp {
 
 export interface AppStorageInfo {
   appSize: number;
+  userDataSize: number;
   cacheSize: number;
+  tempSize: number;
+  downloadsSize: number;
+  logsSize: number;
   documentsSize: number;
   mediaSize: number;
   totalSize: number;

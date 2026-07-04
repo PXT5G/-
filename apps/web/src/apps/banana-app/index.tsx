@@ -17,7 +17,15 @@ import { DeveloperScreen } from './screens/DeveloperScreen';
 import { useStoreRealtime } from './hooks/useStoreRealtime';
 import { useHaptic, useSound } from '@/hooks/useSound';
 import { useDynamicIslandStore } from '@/stores/dynamicIslandStore';
+import { InsufficientStorageModal } from './components/InsufficientStorageModal';
+import { deviceStorageService } from '@/services/deviceStorageService';
+import { ApiError } from '@/utils/api';
 import type { PendingInstall } from './types';
+
+interface StorageError {
+  required: number;
+  free: number;
+}
 
 export function BananaApp() {
   const {
@@ -31,6 +39,7 @@ export function BananaApp() {
   const [detailBundleId, setDetailBundleId] = useState<string | null>(null);
   const [developerSlug, setDeveloperSlug] = useState<string | null>(null);
   const [pendingInstall, setPendingInstall] = useState<PendingInstall | null>(null);
+  const [storageError, setStorageError] = useState<StorageError | null>(null);
   const { tap, success } = useHaptic();
   const { playTap } = useSound();
   const queryClient = useQueryClient();
@@ -53,6 +62,11 @@ export function BananaApp() {
   const beginInstallFlow = useCallback(async (bundleId: string, type: 'install' | 'update') => {
     try {
       playTap();
+      const check = await deviceStorageService.checkInstall(bundleId);
+      if (!check.available) {
+        setStorageError({ required: check.required, free: check.free });
+        return;
+      }
       const app = await bananaAppService.getAppDetail(bundleId);
       const { manifest } = await bananaAppService.getPackageManifest(bundleId, app.version);
       setPendingInstall({
@@ -93,6 +107,8 @@ export function BananaApp() {
         type,
         progress: 0,
         status: 'queued',
+        size: pendingInstall.manifest.storageRequired,
+        downloadedBytes: 0,
       });
 
       islandShow({
@@ -102,10 +118,22 @@ export function BananaApp() {
         progress: 0,
       });
     } catch (err) {
+      if (err instanceof ApiError && err.statusCode === 507) {
+        setStorageError({
+          required: pendingInstall.manifest.storageRequired,
+          free: 0,
+        });
+      }
       console.error('[BananaApp] Install failed:', err);
       setPendingInstall(null);
     }
   }, [pendingInstall, setActiveInstall, islandShow]);
+
+  const handleClearCache = useCallback(async () => {
+    await deviceStorageService.clearAllCache();
+    setStorageError(null);
+    queryClient.invalidateQueries({ queryKey: ['device'] });
+  }, [queryClient]);
 
   const handlePause = useCallback(async () => {
     if (!activeInstall) return;
@@ -140,6 +168,18 @@ export function BananaApp() {
 
   const overlay = (
     <>
+      {storageError && (
+        <InsufficientStorageModal
+          required={storageError.required}
+          free={storageError.free}
+          onClearCache={handleClearCache}
+          onOpenStorageManager={() => {
+            setStorageError(null);
+            setTab('library');
+          }}
+          onCancel={() => setStorageError(null)}
+        />
+      )}
       {pendingInstall && (
         <PermissionApprovalModal
           manifest={pendingInstall.manifest}

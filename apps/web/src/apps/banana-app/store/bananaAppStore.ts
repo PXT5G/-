@@ -52,7 +52,13 @@ interface BananaAppState {
     downloadId: string,
     progress: number,
     status: string,
-    extra?: { downloadSpeed?: number; etaSeconds?: number; installStep?: string }
+    extra?: {
+      downloadSpeed?: number;
+      etaSeconds?: number;
+      installStep?: string;
+      downloadedBytes?: number;
+      size?: number;
+    }
   ) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -107,6 +113,8 @@ export const useBananaAppStore = create<BananaAppState>((set) => ({
               downloadSpeed: extra?.downloadSpeed ?? s.activeInstall.downloadSpeed,
               etaSeconds: extra?.etaSeconds ?? s.activeInstall.etaSeconds,
               installStep: extra?.installStep ?? s.activeInstall.installStep,
+              downloadedBytes: extra?.downloadedBytes ?? s.activeInstall.downloadedBytes,
+              size: extra?.size ?? s.activeInstall.size,
             }
           : s.activeInstall,
       downloads: s.downloads.map((d) =>

@@ -6,6 +6,9 @@ import { useBananaAppStore } from '../store/bananaAppStore';
 import { bananaAppService } from '../services/bananaAppService';
 import { Button, EmptyState, ProgressBar } from '@/components/shared';
 import { useHaptic } from '@/hooks/useSound';
+import { UninstallConfirmModal } from '../components/UninstallConfirmModal';
+import { formatBytes } from '@/services/deviceStorageService';
+import { useDeviceStorage } from '@/hooks/useDeviceStorage';
 import type { AppStorageInfo } from '../types';
 
 function formatSize(bytes: number) {
@@ -30,6 +33,14 @@ export function LibraryScreen({
   const { tap } = useHaptic();
   const queryClient = useQueryClient();
   const [expandedBundleId, setExpandedBundleId] = useState<string | null>(null);
+  const [uninstallTarget, setUninstallTarget] = useState<{
+    bundleId: string;
+    name: string;
+    icon: string;
+    storageBytes: number;
+  } | null>(null);
+
+  const { data: deviceStorage } = useDeviceStorage();
   const [storageInfo, setStorageInfo] = useState<AppStorageInfo | null>(null);
 
   const { data: installedData, isLoading } = useQuery({
@@ -52,10 +63,17 @@ export function LibraryScreen({
   }, [downloadsData, setDownloads]);
 
   const uninstallMutation = useMutation({
-    mutationFn: ({ bundleId, keepData }: { bundleId: string; keepData: boolean }) =>
-      bananaAppService.uninstall(bundleId, keepData),
+    mutationFn: ({
+      bundleId,
+      options,
+    }: {
+      bundleId: string;
+      options: { keepUserData: boolean; keepSettings: boolean; keepSession: boolean };
+    }) => bananaAppService.uninstall(bundleId, options),
     onSuccess: () => {
+      setUninstallTarget(null);
       queryClient.invalidateQueries({ queryKey: ['store', 'installed'] });
+      queryClient.invalidateQueries({ queryKey: ['device', 'storage'] });
     },
   });
 
@@ -93,7 +111,10 @@ export function LibraryScreen({
     (d) => ['downloading', 'installing', 'queued', 'paused'].includes(d.status)
   );
 
-  const totalStorage = installed.reduce((sum, a) => sum + a.storageBytes, 0);
+  const totalStorage = deviceStorage?.used ?? installed.reduce((sum, a) => sum + a.storageBytes, 0);
+  const capacityLabel = deviceStorage
+    ? `${formatBytes(deviceStorage.used)} of ${formatBytes(deviceStorage.total)}`
+    : `${formatSize(totalStorage)} used`;
 
   const toggleStorage = async (bundleId: string) => {
     tap();
@@ -112,7 +133,7 @@ export function LibraryScreen({
       <div className="px-4 pt-2 pb-4">
         <h1 className="text-2xl font-bold text-white mb-2">Library</h1>
         <p className="text-xs text-white/50 mb-4">
-          {installed.length} apps · {formatSize(totalStorage)} used
+          {installed.length} apps · {capacityLabel}
         </p>
 
         {activeDownloads.length > 0 && (
@@ -195,8 +216,12 @@ export function LibraryScreen({
                       size="sm"
                       onClick={() => {
                         tap();
-                        uninstallMutation.mutate({ bundleId: app.bundleId, keepData: false });
-                        onUninstall(app.bundleId);
+                        setUninstallTarget({
+                          bundleId: app.bundleId,
+                          name: app.name,
+                          icon: app.icon,
+                          storageBytes: app.storageBytes,
+                        });
                       }}
                     />
                   )}
@@ -205,14 +230,18 @@ export function LibraryScreen({
                 {expandedBundleId === app.bundleId && storageInfo && (
                   <div className="px-3 pb-3 border-t border-white/5 pt-3 space-y-2">
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="text-white/50">App Size</div>
+                      <div className="text-white/50">Application</div>
                       <div className="text-white text-right">{formatSize(storageInfo.appSize)}</div>
+                      <div className="text-white/50">User Data</div>
+                      <div className="text-white text-right">{formatSize(storageInfo.userDataSize)}</div>
                       <div className="text-white/50">Cache</div>
                       <div className="text-white text-right">{formatSize(storageInfo.cacheSize)}</div>
-                      <div className="text-white/50">Documents</div>
-                      <div className="text-white text-right">{formatSize(storageInfo.documentsSize)}</div>
-                      <div className="text-white/50">Media</div>
-                      <div className="text-white text-right">{formatSize(storageInfo.mediaSize)}</div>
+                      <div className="text-white/50">Temp Files</div>
+                      <div className="text-white text-right">{formatSize(storageInfo.tempSize)}</div>
+                      <div className="text-white/50">Downloads</div>
+                      <div className="text-white text-right">{formatSize(storageInfo.downloadsSize)}</div>
+                      <div className="text-white/50">Logs</div>
+                      <div className="text-white text-right">{formatSize(storageInfo.logsSize)}</div>
                       <div className="text-white/50 font-medium">Total</div>
                       <div className="text-banana-gold text-right font-medium">{formatSize(storageInfo.totalSize)}</div>
                     </div>
@@ -239,6 +268,19 @@ export function LibraryScreen({
           </div>
         )}
       </div>
+
+      {uninstallTarget && (
+        <UninstallConfirmModal
+          appName={uninstallTarget.name}
+          appIcon={uninstallTarget.icon}
+          storageBytes={uninstallTarget.storageBytes}
+          onConfirm={(options) => {
+            uninstallMutation.mutate({ bundleId: uninstallTarget.bundleId, options });
+            onUninstall(uninstallTarget.bundleId);
+          }}
+          onCancel={() => setUninstallTarget(null)}
+        />
+      )}
     </div>
   );
 }

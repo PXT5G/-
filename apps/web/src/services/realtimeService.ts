@@ -41,6 +41,7 @@ class RealtimeService {
       'store:download:paused',
       'store:download:resumed',
       'store:update:complete',
+      'device:storage:updated',
     ];
 
     events.forEach((event) => {

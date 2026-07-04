@@ -5,6 +5,7 @@ import { App } from '../database/models/App';
 import { AppPackage, IAppPackage } from '../database/models/AppPackage';
 import { AppVersion } from '../database/models/AppVersion';
 import { StoreListing } from '../database/models/StoreListing';
+import { getAppPackageSize } from '../constants/appSizes';
 
 const PACKAGES_DIR = path.join(process.cwd(), 'data', 'packages');
 const BANANAOS_VERSION = '1.0.0';
@@ -73,18 +74,19 @@ export async function buildPackageForApp(bundleId: string, version: string): Pro
   const listing = await StoreListing.findOne({ bundleId });
   const appVersion = await AppVersion.findOne({ bundleId, version });
 
+  const packageSize = getAppPackageSize(bundleId, listing?.storageSize ?? appVersion?.size ?? 80_000_000);
   const dir = await ensurePackageDir(bundleId, version);
   const manifest: PackageManifest = {
     bundleId,
     version,
     checksum: '',
-    size: listing?.storageSize ?? appVersion?.size ?? 50_000_000,
+    size: packageSize,
     minOSVersion: listing?.minOSVersion ?? app.minOSVersion,
     requiredBananaOSVersion: BANANAOS_VERSION,
     dependencies: [],
     requiredPermissions: (listing?.permissions ?? app.permissions).slice(0, 4),
     optionalPermissions: (listing?.permissions ?? app.permissions).slice(4),
-    storageRequired: listing?.storageSize ?? 50_000_000,
+    storageRequired: packageSize,
     internetRequired: true,
     backgroundActivity: ['communication', 'social'].includes(listing?.category ?? app.category),
     icons: [app.icon],

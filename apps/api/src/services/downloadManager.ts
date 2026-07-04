@@ -4,6 +4,8 @@ import { InstalledApp } from '../database/models/InstalledApp';
 import { getPackage, readPackageBytes } from './packageService';
 import { executeInstall, executeUpdate } from './installService';
 import { emitToUser } from './socketService';
+import { reserveStorage, releaseReservationByDownload } from './deviceStorageService';
+import { getStorageRequired } from './packageService';
 
 const CHUNK_SIZE = 262_144; // 256 KB
 const TICK_MS = 100;
@@ -29,6 +31,7 @@ function emitProgress(
     progress: number;
     status: string;
     downloadedBytes: number;
+    totalBytes?: number;
     downloadSpeed?: number;
     etaSeconds?: number;
     installStep?: string;
@@ -87,6 +90,7 @@ async function startDownloadJob(downloadId: string, userId: string): Promise<voi
     progress: 0,
     status: 'downloading',
     downloadedBytes: 0,
+    totalBytes: totalSize,
     downloadSpeed: 0,
     etaSeconds: Math.ceil(totalSize / 500_000),
   });
@@ -144,6 +148,7 @@ async function startDownloadJob(downloadId: string, userId: string): Promise<voi
         progress,
         status: 'downloading',
         downloadedBytes,
+        totalBytes: totalSize,
         downloadSpeed: Math.floor(speed),
         etaSeconds,
       });
@@ -230,6 +235,8 @@ async function finishDownload(downloadId: string, userId: string): Promise<void>
 }
 
 async function failDownload(downloadId: string, userId: string, error: string): Promise<void> {
+  await releaseReservationByDownload(userId, downloadId);
+
   const download = await StoreDownload.findByIdAndUpdate(
     downloadId,
     { status: 'failed', error, completedAt: new Date() },
@@ -290,6 +297,8 @@ export async function cancelDownload(downloadId: string, userId: string): Promis
 
   const queue = userQueues.get(userId) ?? [];
   userQueues.set(userId, queue.filter((id) => id !== downloadId));
+
+  await releaseReservationByDownload(userId, downloadId);
 
   await StoreDownload.findByIdAndUpdate(downloadId, {
     status: 'cancelled',
@@ -369,6 +378,16 @@ export function cancelAllUserJobs(userId: string): void {
     }
   }
   userQueues.delete(userId);
+}
+
+export async function prepareDownloadStorage(
+  userId: string,
+  bundleId: string,
+  version: string,
+  downloadId: string
+): Promise<void> {
+  const required = await getStorageRequired(bundleId, version);
+  await reserveStorage(userId, bundleId, required, downloadId);
 }
 
 /** @deprecated Use enqueueDownload instead */
