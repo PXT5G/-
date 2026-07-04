@@ -1,3 +1,15 @@
+export type AppLifecycleState =
+  | 'not_installed'
+  | 'downloading'
+  | 'paused'
+  | 'installing'
+  | 'installed'
+  | 'update_available'
+  | 'updating'
+  | 'uninstalling'
+  | 'disabled'
+  | 'failed';
+
 export interface StoreDeveloper {
   id: string;
   name: string;
@@ -70,6 +82,39 @@ export interface StoreCategory {
   count: number;
 }
 
+export interface PackageManifest {
+  bundleId: string;
+  version: string;
+  checksum: string;
+  size: number;
+  minOSVersion: string;
+  requiredBananaOSVersion: string;
+  dependencies: string[];
+  requiredPermissions: string[];
+  optionalPermissions: string[];
+  storageRequired: number;
+  internetRequired: boolean;
+  backgroundActivity: boolean;
+  icons: string[];
+  screenshots: string[];
+  changelog: string;
+  hasRuntime: boolean;
+}
+
+export interface RegistryEntry {
+  bundleId: string;
+  name: string;
+  icon: string;
+  version: string;
+  state: AppLifecycleState;
+  category: string;
+  permissions: string[];
+  hasRuntime: boolean;
+  isSystemApp: boolean;
+  installedAt?: string;
+  route?: string;
+}
+
 export interface InstalledStoreApp {
   bundleId: string;
   name: string;
@@ -83,6 +128,15 @@ export interface InstalledStoreApp {
   lastUsedAt: string;
   isSystemApp: boolean;
   permissions: string[];
+  state?: AppLifecycleState;
+}
+
+export interface AppStorageInfo {
+  appSize: number;
+  cacheSize: number;
+  documentsSize: number;
+  mediaSize: number;
+  totalSize: number;
 }
 
 export interface StoreDownload {
@@ -91,12 +145,17 @@ export interface StoreDownload {
   appName: string;
   appIcon: string;
   type: 'install' | 'update';
-  status: 'queued' | 'downloading' | 'installing' | 'completed' | 'failed' | 'cancelled';
+  status: 'queued' | 'downloading' | 'paused' | 'installing' | 'completed' | 'failed' | 'cancelled';
   progress: number;
   version: string;
   targetVersion: string;
   size: number;
   downloadedBytes: number;
+  downloadSpeed?: number;
+  etaSeconds?: number;
+  queuePosition?: number;
+  installStep?: string;
+  error?: string;
   startedAt: string;
   completedAt?: string;
 }
@@ -117,4 +176,17 @@ export interface ActiveInstall {
   type: 'install' | 'update';
   progress: number;
   status: string;
+  downloadSpeed?: number;
+  etaSeconds?: number;
+  installStep?: string;
+  size?: number;
+  downloadedBytes?: number;
+}
+
+export interface PendingInstall {
+  bundleId: string;
+  appName: string;
+  appIcon: string;
+  type: 'install' | 'update';
+  manifest: PackageManifest;
 }

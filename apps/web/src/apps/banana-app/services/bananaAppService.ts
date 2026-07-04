@@ -1,3 +1,5 @@
+'use client';
+
 import { apiRequest } from '@/utils/api';
 import type {
   StoreApp,
@@ -6,6 +8,9 @@ import type {
   InstalledStoreApp,
   StoreDownload,
   StoreSettings,
+  PackageManifest,
+  RegistryEntry,
+  AppStorageInfo,
 } from '../types';
 
 function getToken(): string | undefined {
@@ -78,6 +83,15 @@ export const bananaAppService = {
     return res.data!;
   },
 
+  async getPackageManifest(bundleId: string, version?: string): Promise<{ manifest: PackageManifest; storageRequired: number }> {
+    const qs = version ? `?version=${encodeURIComponent(version)}` : '';
+    const res = await apiRequest<{ success: boolean; data: { manifest: PackageManifest; storageRequired: number } }>(
+      `/api/store/apps/${bundleId}/manifest${qs}`,
+      { token: getToken() }
+    );
+    return res.data!;
+  },
+
   async getDeveloper(slug: string): Promise<StoreDeveloper> {
     const res = await apiRequest<{ success: boolean; data: StoreDeveloper }>(
       `/api/store/developers/${slug}`
@@ -95,12 +109,12 @@ export const bananaAppService = {
     });
   },
 
-  async install(bundleId: string): Promise<{ downloadId: string }> {
+  async install(bundleId: string, approvedPermissions: string[]): Promise<{ downloadId: string }> {
     const token = getToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { downloadId: string } }>(
       `/api/store/apps/${bundleId}/install`,
-      { method: 'POST', token }
+      { method: 'POST', body: JSON.stringify({ approvedPermissions }), token }
     );
     return res.data!;
   },
@@ -111,18 +125,22 @@ export const bananaAppService = {
     await apiRequest(`/api/store/downloads/${downloadId}/complete`, { method: 'POST', token });
   },
 
-  async uninstall(bundleId: string): Promise<void> {
+  async uninstall(bundleId: string, keepData = false): Promise<void> {
     const token = getToken();
     if (!token) throw new Error('Authentication required');
-    await apiRequest(`/api/store/apps/${bundleId}/uninstall`, { method: 'DELETE', token });
+    await apiRequest(`/api/store/apps/${bundleId}/uninstall`, {
+      method: 'DELETE',
+      body: JSON.stringify({ keepData }),
+      token,
+    });
   },
 
-  async update(bundleId: string): Promise<{ downloadId: string }> {
+  async update(bundleId: string, approvedPermissions: string[]): Promise<{ downloadId: string }> {
     const token = getToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { downloadId: string } }>(
       `/api/store/apps/${bundleId}/update`,
-      { method: 'POST', token }
+      { method: 'POST', body: JSON.stringify({ approvedPermissions }), token }
     );
     return res.data!;
   },
@@ -133,14 +151,98 @@ export const bananaAppService = {
     await apiRequest(`/api/store/downloads/${downloadId}/complete-update`, { method: 'POST', token });
   },
 
-  async getInstalled(): Promise<InstalledStoreApp[]> {
+  async pauseDownload(downloadId: string): Promise<void> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    await apiRequest(`/api/store/downloads/${downloadId}/pause`, { method: 'POST', token });
+  },
+
+  async resumeDownload(downloadId: string): Promise<void> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    await apiRequest(`/api/store/downloads/${downloadId}/resume`, { method: 'POST', token });
+  },
+
+  async cancelDownload(downloadId: string): Promise<void> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    await apiRequest(`/api/store/downloads/${downloadId}/cancel`, { method: 'POST', token });
+  },
+
+  async retryDownload(downloadId: string): Promise<void> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    await apiRequest(`/api/store/downloads/${downloadId}/retry`, { method: 'POST', token });
+  },
+
+  async getDownloadQueue(): Promise<StoreDownload[]> {
     const token = getToken();
     if (!token) return [];
-    const res = await apiRequest<{ success: boolean; data: InstalledStoreApp[] }>(
-      '/api/store/installed',
+    const res = await apiRequest<{ success: boolean; data: StoreDownload[] }>(
+      '/api/store/downloads/queue',
       { token }
     );
     return res.data ?? [];
+  },
+
+  async getInstalled(): Promise<{ apps: InstalledStoreApp[]; registry: RegistryEntry[] }> {
+    const token = getToken();
+    if (!token) return { apps: [], registry: [] };
+    const res = await apiRequest<{ success: boolean; data: InstalledStoreApp[]; registry: RegistryEntry[] }>(
+      '/api/store/installed',
+      { token }
+    );
+    return { apps: res.data ?? [], registry: res.registry ?? [] };
+  },
+
+  async getRegistry(): Promise<RegistryEntry[]> {
+    const token = getToken();
+    if (!token) return [];
+    const res = await apiRequest<{ success: boolean; data: RegistryEntry[] }>(
+      '/api/store/registry',
+      { token }
+    );
+    return res.data ?? [];
+  },
+
+  async getAppStorage(bundleId: string): Promise<AppStorageInfo> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: AppStorageInfo }>(
+      `/api/store/apps/${bundleId}/storage`,
+      { token }
+    );
+    return res.data!;
+  },
+
+  async clearCache(bundleId: string): Promise<AppStorageInfo> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: AppStorageInfo }>(
+      `/api/store/apps/${bundleId}/clear-cache`,
+      { method: 'POST', token }
+    );
+    return res.data!;
+  },
+
+  async clearData(bundleId: string): Promise<AppStorageInfo> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: AppStorageInfo }>(
+      `/api/store/apps/${bundleId}/clear-data`,
+      { method: 'POST', token }
+    );
+    return res.data!;
+  },
+
+  async getChangelog(bundleId: string, from: string, to: string): Promise<string> {
+    const token = getToken();
+    if (!token) throw new Error('Authentication required');
+    const res = await apiRequest<{ success: boolean; data: { changelog: string } }>(
+      `/api/store/apps/${bundleId}/changelog?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      { token }
+    );
+    return res.data?.changelog ?? '';
   },
 
   async getDownloads(): Promise<StoreDownload[]> {

@@ -1,6 +1,14 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-export type DownloadStatus = 'queued' | 'downloading' | 'installing' | 'completed' | 'failed' | 'cancelled';
+export type DownloadStatus =
+  | 'queued'
+  | 'downloading'
+  | 'paused'
+  | 'installing'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
+
 export type DownloadType = 'install' | 'update';
 
 export interface IStoreDownload extends Document {
@@ -15,7 +23,14 @@ export interface IStoreDownload extends Document {
   targetVersion: string;
   size: number;
   downloadedBytes: number;
+  downloadSpeed: number;
+  etaSeconds: number;
+  queuePosition: number;
+  approvedPermissions: string[];
+  installStep?: string;
+  previousVersion?: string;
   error?: string;
+  pausedAt?: Date;
   startedAt: Date;
   completedAt?: Date;
   createdAt: Date;
@@ -30,7 +45,7 @@ const storeDownloadSchema = new Schema<IStoreDownload>(
     type: { type: String, enum: ['install', 'update'], required: true },
     status: {
       type: String,
-      enum: ['queued', 'downloading', 'installing', 'completed', 'failed', 'cancelled'],
+      enum: ['queued', 'downloading', 'paused', 'installing', 'completed', 'failed', 'cancelled'],
       default: 'queued',
     },
     progress: { type: Number, default: 0, min: 0, max: 100 },
@@ -38,7 +53,14 @@ const storeDownloadSchema = new Schema<IStoreDownload>(
     targetVersion: { type: String, required: true },
     size: { type: Number, default: 0 },
     downloadedBytes: { type: Number, default: 0 },
+    downloadSpeed: { type: Number, default: 0 },
+    etaSeconds: { type: Number, default: 0 },
+    queuePosition: { type: Number, default: 0 },
+    approvedPermissions: [{ type: String }],
+    installStep: { type: String },
+    previousVersion: { type: String },
     error: { type: String },
+    pausedAt: { type: Date },
     startedAt: { type: Date, default: Date.now },
     completedAt: { type: Date },
   },

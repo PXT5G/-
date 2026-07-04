@@ -164,7 +164,7 @@ const STORE_APPS = [
   },
 ];
 
-export async function seedBananaStore(): Promise<{ apps: number; developers: number; reviews: number }> {
+export async function seedBananaStore(): Promise<{ apps: number; developers: number; reviews: number; packages: number }> {
   let developerCount = 0;
   const developerMap = new Map<string, string>();
 
@@ -276,5 +276,9 @@ export async function seedBananaStore(): Promise<{ apps: number; developers: num
     apps: STORE_APPS.length,
     developers: developerMap.size,
     reviews: 3,
+    packages: await (async () => {
+      const { seedAllPackages } = await import('./packageService');
+      return seedAllPackages();
+    })(),
   };
 }

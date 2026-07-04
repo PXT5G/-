@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/stores/settingsStore';
 import { useThemeStore } from '@/stores/themeStore';
 import { SettingsSection } from './SettingsSection';
 import { SettingsRow } from './SettingsRow';
+import { InstalledAppsSettings } from './InstalledAppsSettings';
 import { Toggle } from '@/components/ui/Toggle';
 import { Slider } from '@/components/ui/Slider';
 import { useHaptic } from '@/hooks/useSound';
@@ -21,6 +22,10 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
   const { mode, accentColor, setMode, setAccentColor } = useThemeStore();
   const { tap } = useHaptic();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+
+  if (activeSection === 'installed-apps') {
+    return <InstalledAppsSettings onBack={() => setActiveSection(null)} />;
+  }
 
   if (activeSection === 'wallpaper') {
     return (
@@ -150,6 +155,14 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
               label="Haptics"
             />
           </SettingsRow>
+        </SettingsSection>
+
+        <SettingsSection title="Apps">
+          <SettingsRow
+            label="Installed Apps"
+            chevron
+            onClick={() => setActiveSection('installed-apps')}
+          />
         </SettingsSection>
 
         <SettingsSection title="Privacy & Security">

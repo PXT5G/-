@@ -6,6 +6,7 @@ import { useBananaAppStore } from './store/bananaAppStore';
 import { bananaAppService } from './services/bananaAppService';
 import { StoreTabBar } from './components/StoreTabBar';
 import { InstallOverlay } from './components/InstallOverlay';
+import { PermissionApprovalModal } from './components/PermissionApprovalModal';
 import { TodayScreen } from './screens/TodayScreen';
 import { AppsScreen } from './screens/AppsScreen';
 import { SearchScreen } from './screens/SearchScreen';
@@ -16,6 +17,7 @@ import { DeveloperScreen } from './screens/DeveloperScreen';
 import { useStoreRealtime } from './hooks/useStoreRealtime';
 import { useHaptic, useSound } from '@/hooks/useSound';
 import { useDynamicIslandStore } from '@/stores/dynamicIslandStore';
+import type { PendingInstall } from './types';
 
 export function BananaApp() {
   const {
@@ -28,6 +30,7 @@ export function BananaApp() {
 
   const [detailBundleId, setDetailBundleId] = useState<string | null>(null);
   const [developerSlug, setDeveloperSlug] = useState<string | null>(null);
+  const [pendingInstall, setPendingInstall] = useState<PendingInstall | null>(null);
   const { tap, success } = useHaptic();
   const { playTap } = useSound();
   const queryClient = useQueryClient();
@@ -47,59 +50,85 @@ export function BananaApp() {
     setDeveloperSlug(slug);
   }, [tap]);
 
-  const handleInstall = useCallback(async (bundleId: string) => {
+  const beginInstallFlow = useCallback(async (bundleId: string, type: 'install' | 'update') => {
     try {
       playTap();
       const app = await bananaAppService.getAppDetail(bundleId);
-      const { downloadId } = await bananaAppService.install(bundleId);
-
-      setActiveInstall({
-        downloadId,
+      const { manifest } = await bananaAppService.getPackageManifest(bundleId, app.version);
+      setPendingInstall({
         bundleId,
         appName: app.name,
         appIcon: app.icon,
-        type: 'install',
+        type,
+        manifest,
+      });
+    } catch (err) {
+      console.error('[BananaApp] Failed to load package manifest:', err);
+    }
+  }, [playTap]);
+
+  const handleInstall = useCallback((bundleId: string) => {
+    beginInstallFlow(bundleId, 'install');
+  }, [beginInstallFlow]);
+
+  const handleUpdate = useCallback((bundleId: string) => {
+    beginInstallFlow(bundleId, 'update');
+  }, [beginInstallFlow]);
+
+  const startDownload = useCallback(async (approvedPermissions: string[]) => {
+    if (!pendingInstall) return;
+    try {
+      const { bundleId, appName, appIcon, type } = pendingInstall;
+      const result =
+        type === 'update'
+          ? await bananaAppService.update(bundleId, approvedPermissions)
+          : await bananaAppService.install(bundleId, approvedPermissions);
+
+      setPendingInstall(null);
+      setActiveInstall({
+        downloadId: result.downloadId,
+        bundleId,
+        appName,
+        appIcon,
+        type,
         progress: 0,
         status: 'queued',
       });
 
       islandShow({
         mode: 'activity',
-        title: `Installing ${app.name}`,
-        icon: app.icon,
+        title: `${type === 'update' ? 'Updating' : 'Installing'} ${appName}`,
+        icon: appIcon,
         progress: 0,
       });
     } catch (err) {
       console.error('[BananaApp] Install failed:', err);
+      setPendingInstall(null);
     }
-  }, [playTap, setActiveInstall, islandShow]);
+  }, [pendingInstall, setActiveInstall, islandShow]);
 
-  const handleUpdate = useCallback(async (bundleId: string) => {
-    try {
-      playTap();
-      const app = await bananaAppService.getAppDetail(bundleId);
-      const { downloadId } = await bananaAppService.update(bundleId);
+  const handlePause = useCallback(async () => {
+    if (!activeInstall) return;
+    await bananaAppService.pauseDownload(activeInstall.downloadId);
+  }, [activeInstall]);
 
-      setActiveInstall({
-        downloadId,
-        bundleId,
-        appName: app.name,
-        appIcon: app.icon,
-        type: 'update',
-        progress: 0,
-        status: 'queued',
-      });
+  const handleResume = useCallback(async () => {
+    if (!activeInstall) return;
+    await bananaAppService.resumeDownload(activeInstall.downloadId);
+  }, [activeInstall]);
 
-      islandShow({
-        mode: 'activity',
-        title: `Updating ${app.name}`,
-        icon: app.icon,
-        progress: 0,
-      });
-    } catch (err) {
-      console.error('[BananaApp] Update failed:', err);
-    }
-  }, [playTap, setActiveInstall, islandShow]);
+  const handleCancel = useCallback(async () => {
+    if (!activeInstall) return;
+    await bananaAppService.cancelDownload(activeInstall.downloadId);
+    setActiveInstall(null);
+    islandHide();
+  }, [activeInstall, setActiveInstall, islandHide]);
+
+  const handleRetry = useCallback(async () => {
+    if (!activeInstall) return;
+    await bananaAppService.retryDownload(activeInstall.downloadId);
+    setActiveInstall({ ...activeInstall, status: 'queued', progress: 0 });
+  }, [activeInstall, setActiveInstall]);
 
   const handleInstallComplete = useCallback(() => {
     success();
@@ -108,6 +137,29 @@ export function BananaApp() {
     setDetailBundleId(null);
     queryClient.invalidateQueries({ queryKey: ['store'] });
   }, [success, setActiveInstall, islandHide, queryClient]);
+
+  const overlay = (
+    <>
+      {pendingInstall && (
+        <PermissionApprovalModal
+          manifest={pendingInstall.manifest}
+          appName={pendingInstall.appName}
+          appIcon={pendingInstall.appIcon}
+          type={pendingInstall.type}
+          onApprove={startDownload}
+          onCancel={() => setPendingInstall(null)}
+        />
+      )}
+      <InstallOverlay
+        install={activeInstall}
+        onComplete={handleInstallComplete}
+        onPause={handlePause}
+        onResume={handleResume}
+        onCancel={handleCancel}
+        onRetry={handleRetry}
+      />
+    </>
+  );
 
   if (developerSlug) {
     return (
@@ -131,7 +183,7 @@ export function BananaApp() {
           onUpdate={handleUpdate}
           onDeveloper={openDeveloper}
         />
-        <InstallOverlay install={activeInstall} onComplete={handleInstallComplete} />
+        {overlay}
       </div>
     );
   }
@@ -149,7 +201,7 @@ export function BananaApp() {
       </div>
 
       <StoreTabBar active={activeTab} onChange={(t) => { tap(); setTab(t); }} updateCount={updates.length} />
-      <InstallOverlay install={activeInstall} onComplete={handleInstallComplete} />
+      {overlay}
     </div>
   );
 }

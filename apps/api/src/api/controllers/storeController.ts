@@ -10,8 +10,27 @@ import { InstalledApp } from '../../database/models/InstalledApp';
 import { UserStoreSettings } from '../../database/models/UserStoreSettings';
 import { AuthRequest } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
-import { emitToUser } from '../../services/socketService';
-import { startDownloadSimulation } from '../../services/downloadService';
+import { enqueueDownload } from '../../services/downloadManager';
+import { getPackageManifest, getStorageRequired } from '../../services/packageService';
+import { getAppStorage, clearAppCache, clearAppData } from '../../services/storageService';
+import { getUserRegistry, getRegistryEntry } from '../../services/appRegistryService';
+import { checkForUpdates, getChangelog, startUpdate, setAutoUpdate } from '../../services/updateService';
+import { executeUninstall } from '../../services/installService';
+import {
+  pauseDownload,
+  resumeDownload,
+  cancelDownload,
+  retryDownload,
+  getDownloadQueue,
+} from '../../services/downloadManager';
+
+function param(value: string | string[]): string {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+const installBodySchema = z.object({
+  approvedPermissions: z.array(z.string()).optional(),
+});
 
 const reviewSchema = z.object({
   rating: z.number().min(1).max(5),
@@ -299,6 +318,7 @@ export const postReview = asyncHandler(async (req: AuthRequest, res: Response) =
 
 export const installApp = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { bundleId } = req.params;
+  const body = installBodySchema.parse(req.body ?? {});
   const listing = await StoreListing.findOne({ bundleId }).populate('appId');
   if (!listing) throw new AppError(404, 'App not found');
 
@@ -315,9 +335,10 @@ export const installApp = asyncHandler(async (req: AuthRequest, res: Response) =
     status: 'queued',
     targetVersion: app.version,
     size: listing.storageSize,
+    approvedPermissions: body.approvedPermissions ?? listing.permissions ?? [],
   });
 
-  startDownloadSimulation(download._id.toString(), req.user!.userId);
+  await enqueueDownload(download._id.toString(), req.user!.userId);
 
   res.status(202).json({
     success: true,
@@ -335,9 +356,28 @@ export const completeInstall = asyncHandler(async (req: AuthRequest, res: Respon
   const download = await StoreDownload.findOne({
     _id: downloadId,
     userId: req.user!.userId,
-    status: 'completed',
   });
-  if (!download) throw new AppError(404, 'Download not found or not completed');
+  if (!download) throw new AppError(404, 'Download not found');
+
+  const existing = await InstalledApp.findOne({
+    userId: req.user!.userId,
+    bundleId: download.bundleId,
+  });
+  if (existing) {
+    res.json({
+      success: true,
+      data: {
+        bundleId: existing.bundleId,
+        installedVersion: existing.installedVersion,
+        installedAt: existing.installedAt.toISOString(),
+      },
+    });
+    return;
+  }
+
+  if (download.status !== 'completed') {
+    throw new AppError(400, 'Download not completed');
+  }
 
   const app = await App.findOne({ bundleId: download.bundleId });
   const listing = await StoreListing.findOne({ bundleId: download.bundleId });
@@ -351,14 +391,6 @@ export const completeInstall = asyncHandler(async (req: AuthRequest, res: Respon
     storageBytes: listing.storageSize,
   });
 
-  await StoreListing.findByIdAndUpdate(listing._id, { $inc: { downloadCount: 1 } });
-
-  emitToUser(req.user!.userId, 'app:installed', {
-    bundleId: download.bundleId,
-    name: app.name,
-    version: download.targetVersion,
-  });
-
   res.json({
     success: true,
     data: {
@@ -369,20 +401,22 @@ export const completeInstall = asyncHandler(async (req: AuthRequest, res: Respon
   });
 });
 
+const uninstallBodySchema = z.object({ keepData: z.boolean().optional() });
+
 export const uninstallApp = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { bundleId } = req.params;
-  const app = await App.findOne({ bundleId });
-  if (app?.isSystemApp) throw new AppError(403, 'Cannot uninstall system app');
+  const body = uninstallBodySchema.parse(req.body ?? {});
 
-  const result = await InstalledApp.deleteOne({ userId: req.user!.userId, bundleId });
-  if (result.deletedCount === 0) throw new AppError(404, 'App not installed');
+  const installed = await InstalledApp.findOne({ userId: req.user!.userId, bundleId });
+  if (!installed) throw new AppError(404, 'App not installed');
 
-  emitToUser(req.user!.userId, 'app:uninstalled', { bundleId });
+  await executeUninstall(req.user!.userId, param(bundleId), body.keepData ?? false);
   res.json({ success: true, message: 'App uninstalled' });
 });
 
 export const updateApp = asyncHandler(async (req: AuthRequest, res: Response) => {
   const { bundleId } = req.params;
+  const body = installBodySchema.parse(req.body ?? {});
   const installed = await InstalledApp.findOne({ userId: req.user!.userId, bundleId });
   if (!installed) throw new AppError(404, 'App not installed');
 
@@ -404,9 +438,11 @@ export const updateApp = asyncHandler(async (req: AuthRequest, res: Response) =>
     version: installed.installedVersion,
     targetVersion: app.version,
     size: listing.storageSize,
+    approvedPermissions: body.approvedPermissions ?? listing.permissions ?? [],
+    previousVersion: installed.installedVersion,
   });
 
-  startDownloadSimulation(download._id.toString(), req.user!.userId);
+  await enqueueDownload(download._id.toString(), req.user!.userId);
 
   res.status(202).json({
     success: true,
@@ -419,31 +455,40 @@ export const completeUpdate = asyncHandler(async (req: AuthRequest, res: Respons
   const download = await StoreDownload.findOne({
     _id: downloadId,
     userId: req.user!.userId,
-    status: 'completed',
     type: 'update',
   });
   if (!download) throw new AppError(404, 'Update not found');
+
+  const installed = await InstalledApp.findOne({
+    userId: req.user!.userId,
+    bundleId: download.bundleId,
+  });
+  if (installed?.installedVersion === download.targetVersion) {
+    res.json({ success: true, message: 'App already updated' });
+    return;
+  }
+
+  if (download.status !== 'completed') {
+    throw new AppError(400, 'Update not completed');
+  }
 
   await InstalledApp.findOneAndUpdate(
     { userId: req.user!.userId, bundleId: download.bundleId },
     { installedVersion: download.targetVersion, updatedAt: new Date() }
   );
 
-  emitToUser(req.user!.userId, 'store:update:complete' as never, {
-    bundleId: download.bundleId,
-    version: download.targetVersion,
-  });
-
   res.json({ success: true, message: 'App updated' });
 });
 
 export const getInstalled = asyncHandler(async (req: AuthRequest, res: Response) => {
   const installed = await InstalledApp.find({ userId: req.user!.userId }).populate('appId');
+  const registry = await getUserRegistry(req.user!.userId);
 
   const data = await Promise.all(
     installed.map(async (item) => {
       const app = item.appId as unknown as InstanceType<typeof App>;
       const listing = await StoreListing.findOne({ bundleId: item.bundleId });
+      const registryEntry = registry.find((r) => r.bundleId === item.bundleId);
       const hasUpdate = app.version !== item.installedVersion;
       return {
         bundleId: item.bundleId,
@@ -458,11 +503,12 @@ export const getInstalled = asyncHandler(async (req: AuthRequest, res: Response)
         lastUsedAt: item.lastUsedAt.toISOString(),
         isSystemApp: app.isSystemApp,
         permissions: listing?.permissions ?? app.permissions,
+        state: registryEntry?.state ?? 'installed',
       };
     })
   );
 
-  res.json({ success: true, data });
+  res.json({ success: true, data, registry });
 });
 
 export const getDownloads = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -484,6 +530,11 @@ export const getDownloads = asyncHandler(async (req: AuthRequest, res: Response)
       targetVersion: d.targetVersion,
       size: d.size,
       downloadedBytes: d.downloadedBytes,
+      downloadSpeed: d.downloadSpeed,
+      etaSeconds: d.etaSeconds,
+      queuePosition: d.queuePosition,
+      installStep: d.installStep,
+      error: d.error,
       startedAt: d.startedAt.toISOString(),
       completedAt: d.completedAt?.toISOString(),
     })),
@@ -491,24 +542,7 @@ export const getDownloads = asyncHandler(async (req: AuthRequest, res: Response)
 });
 
 export const getUpdates = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const installed = await InstalledApp.find({ userId: req.user!.userId }).populate('appId');
-  const updates = [];
-
-  for (const item of installed) {
-    const app = item.appId as unknown as InstanceType<typeof App>;
-    if (app.version !== item.installedVersion) {
-      const listing = await StoreListing.findOne({ bundleId: item.bundleId });
-      updates.push({
-        bundleId: item.bundleId,
-        name: app.name,
-        icon: app.icon,
-        installedVersion: item.installedVersion,
-        latestVersion: app.version,
-        size: listing?.storageSize ?? 0,
-      });
-    }
-  }
-
+  const updates = await checkForUpdates(req.user!.userId);
   res.json({ success: true, data: updates });
 });
 
@@ -591,4 +625,95 @@ export const seedStore = asyncHandler(async (_req: AuthRequest, res: Response) =
   const { seedBananaStore } = await import('../../services/storeSeedService');
   const result = await seedBananaStore();
   res.json({ success: true, data: result });
+});
+
+export const getPackageManifestHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { bundleId } = req.params;
+  const version = req.query.version as string | undefined;
+  const app = await App.findOne({ bundleId });
+  if (!app) throw new AppError(404, 'App not found');
+
+  const manifest = await getPackageManifest(param(bundleId), version ?? app.version);
+  const storageRequired = await getStorageRequired(param(bundleId), version ?? app.version);
+  res.json({ success: true, data: { manifest, storageRequired } });
+});
+
+export const pauseDownloadHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  await pauseDownload(param(req.params.downloadId), req.user!.userId);
+  res.json({ success: true });
+});
+
+export const resumeDownloadHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  await resumeDownload(param(req.params.downloadId), req.user!.userId);
+  res.json({ success: true });
+});
+
+export const cancelDownloadHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  await cancelDownload(param(req.params.downloadId), req.user!.userId);
+  res.json({ success: true });
+});
+
+export const retryDownloadHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  await retryDownload(param(req.params.downloadId), req.user!.userId);
+  res.json({ success: true });
+});
+
+export const getQueueHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const queue = await getDownloadQueue(req.user!.userId);
+  res.json({ success: true, data: queue });
+});
+
+export const getAppStorageHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const storage = await getAppStorage(req.user!.userId, param(req.params.bundleId));
+  res.json({ success: true, data: storage });
+});
+
+export const clearCacheHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const storage = await clearAppCache(req.user!.userId, param(req.params.bundleId));
+  res.json({ success: true, data: storage });
+});
+
+export const clearDataHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const storage = await clearAppData(req.user!.userId, param(req.params.bundleId));
+  res.json({ success: true, data: storage });
+});
+
+export const getRegistryHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const registry = await getUserRegistry(req.user!.userId);
+  res.json({ success: true, data: registry });
+});
+
+export const getRegistryEntryHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const entry = await getRegistryEntry(req.user!.userId, param(req.params.bundleId));
+  if (!entry) throw new AppError(404, 'App not registered');
+  res.json({ success: true, data: entry });
+});
+
+export const getChangelogHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const bundleId = param(req.params.bundleId);
+  const fromVersion = req.query.from as string;
+  const toVersion = req.query.to as string;
+  if (!fromVersion || !toVersion) throw new AppError(400, 'from and to version required');
+  const changelog = await getChangelog(bundleId, fromVersion, toVersion);
+  res.json({ success: true, data: { changelog } });
+});
+
+export const startUpdateHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = installBodySchema.parse(req.body ?? {});
+  const bundleId = param(req.params.bundleId);
+  const listing = await StoreListing.findOne({ bundleId });
+  const result = await startUpdate(
+    req.user!.userId,
+    bundleId,
+    body.approvedPermissions ?? listing?.permissions ?? []
+  );
+  res.json({ success: true, data: result });
+});
+
+const autoUpdateSchema = z.object({ enabled: z.boolean() });
+
+export const setAutoUpdateHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = autoUpdateSchema.parse(req.body);
+  const data = await setAutoUpdate(req.user!.userId, param(req.params.bundleId), body.enabled);
+  res.json({ success: true, data });
 });

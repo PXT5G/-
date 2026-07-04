@@ -48,7 +48,12 @@ interface BananaAppState {
   setDownloads: (downloads: StoreDownload[]) => void;
   setSettings: (settings: StoreSettings) => void;
   setActiveInstall: (install: ActiveInstall | null) => void;
-  updateDownloadProgress: (downloadId: string, progress: number, status: string) => void;
+  updateDownloadProgress: (
+    downloadId: string,
+    progress: number,
+    status: string,
+    extra?: { downloadSpeed?: number; etaSeconds?: number; installStep?: string }
+  ) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
@@ -91,14 +96,30 @@ export const useBananaAppStore = create<BananaAppState>((set) => ({
   setDownloads: (downloads) => set({ downloads }),
   setSettings: (settings) => set({ settings }),
   setActiveInstall: (activeInstall) => set({ activeInstall }),
-  updateDownloadProgress: (downloadId, progress, status) =>
+  updateDownloadProgress: (downloadId, progress, status, extra) =>
     set((s) => ({
       activeInstall:
         s.activeInstall?.downloadId === downloadId
-          ? { ...s.activeInstall, progress, status }
+          ? {
+              ...s.activeInstall,
+              progress,
+              status,
+              downloadSpeed: extra?.downloadSpeed ?? s.activeInstall.downloadSpeed,
+              etaSeconds: extra?.etaSeconds ?? s.activeInstall.etaSeconds,
+              installStep: extra?.installStep ?? s.activeInstall.installStep,
+            }
           : s.activeInstall,
       downloads: s.downloads.map((d) =>
-        d.id === downloadId ? { ...d, progress, status: status as StoreDownload['status'] } : d
+        d.id === downloadId
+          ? {
+              ...d,
+              progress,
+              status: status as StoreDownload['status'],
+              downloadSpeed: extra?.downloadSpeed ?? d.downloadSpeed,
+              etaSeconds: extra?.etaSeconds ?? d.etaSeconds,
+              installStep: extra?.installStep ?? d.installStep,
+            }
+          : d
       ),
     })),
   setLoading: (isLoading) => set({ isLoading }),
