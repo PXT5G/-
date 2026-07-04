@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useBananaAppStore } from '../store/bananaAppStore';
-import { bananaAppService } from '../services/bananaAppService';
+import { useGulfStoreStore } from '../store/gulfStoreStore';
+import { gulfStoreService } from '../services/gulfStoreService';
 import { Button, EmptyState } from '@/components/shared';
 import { useHaptic } from '@/hooks/useSound';
 
@@ -12,19 +12,19 @@ export function UpdatesScreen({
 }: {
   onUpdate: (bundleId: string) => void;
 }) {
-  const { updates, settings, setUpdates, setSettings } = useBananaAppStore();
+  const { updates, settings, setUpdates, setSettings } = useGulfStoreStore();
   const { tap } = useHaptic();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ['store', 'updates'],
-    queryFn: () => bananaAppService.getUpdates(),
+    queryFn: () => gulfStoreService.getUpdates(),
     refetchInterval: 30000,
   });
 
   const { data: storeSettings } = useQuery({
     queryKey: ['store', 'settings'],
-    queryFn: () => bananaAppService.getSettings(),
+    queryFn: () => gulfStoreService.getSettings(),
   });
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function UpdatesScreen({
 
   const toggleAutoUpdate = useMutation({
     mutationFn: () =>
-      bananaAppService.updateSettings({ autoUpdate: !settings.autoUpdate }),
+      gulfStoreService.updateSettings({ autoUpdate: !settings.autoUpdate }),
     onSuccess: (s) => {
       setSettings(s);
       queryClient.invalidateQueries({ queryKey: ['store', 'settings'] });
@@ -62,7 +62,7 @@ export function UpdatesScreen({
           <button
             type="button"
             onClick={() => { tap(); toggleAutoUpdate.mutate(); }}
-            className={`w-12 h-7 rounded-full transition-colors ${settings.autoUpdate ? 'bg-banana-gold' : 'bg-white/20'}`}
+            className={`w-12 h-7 rounded-full transition-colors ${settings.autoUpdate ? 'bg-gulf-gold' : 'bg-white/20'}`}
             aria-pressed={settings.autoUpdate}
           >
             <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform mx-1 ${settings.autoUpdate ? 'translate-x-5' : ''}`} />
@@ -73,7 +73,7 @@ export function UpdatesScreen({
       <div className="px-4 flex-1">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
           </div>
         ) : updates.length === 0 ? (
           <EmptyState icon="✅" title="All apps up to date" description="Check back later for new updates" />

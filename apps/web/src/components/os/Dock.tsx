@@ -8,10 +8,10 @@ import { useSound, useHaptic } from '@/hooks/useSound';
 import { useAppLaunch } from '@/hooks/useAppLaunch';
 
 const DOCK_APPS = [
-  { bundleId: 'com.bananaos.phone', name: 'Phone', icon: '📞' },
-  { bundleId: 'com.bananaos.messages', name: 'Messages', icon: '💬' },
-  { bundleId: 'com.bananaos.store', name: 'Banana App', icon: '🍌' },
-  { bundleId: 'com.bananaos.settings', name: 'Settings', icon: '⚙️' },
+  { bundleId: 'com.gulfos.phone', name: 'Phone', icon: '📞' },
+  { bundleId: 'com.gulfos.messages', name: 'Messages', icon: '💬' },
+  { bundleId: 'com.gulfos.store', name: 'GULF Store', icon: '🏬' },
+  { bundleId: 'com.gulfos.settings', name: 'Settings', icon: '⚙️' },
 ];
 
 export function Dock() {
@@ -21,7 +21,7 @@ export function Dock() {
   const { tap } = useHaptic();
 
   const handlePress = (app: typeof DOCK_APPS[0]) => {
-    if (app.bundleId === 'com.bananaos.search') {
+    if (app.bundleId === 'com.gulfos.search') {
       playTap();
       tap();
       openSearch();

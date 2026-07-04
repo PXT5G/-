@@ -22,7 +22,7 @@ export function BatterySettingsScreen({ onBack }: { onBack: () => void }) {
   if (isLoading || !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -30,11 +30,11 @@ export function BatterySettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ Settings</button>
         <h1 className="text-2xl font-bold text-white mb-6">Battery</h1>
 
         <div className="text-center mb-6">
-          <p className="text-5xl font-bold text-banana-gold">{batteryLevel}%</p>
+          <p className="text-5xl font-bold text-gulf-gold">{batteryLevel}%</p>
           <p className="text-sm text-white/50 mt-1">
             {isCharging ? 'Charging' : lowPowerMode ? 'Low Power Mode' : 'Discharging'}
           </p>

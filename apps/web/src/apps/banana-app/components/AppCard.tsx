@@ -20,7 +20,7 @@ export function AppCard({ app, onPress, variant = 'compact' }: AppCardProps) {
         whileTap={{ scale: 0.97 }}
         className="flex-shrink-0 w-72 rounded-2xl bg-white/5 border border-white/10 overflow-hidden text-left"
       >
-        <div className="h-32 bg-gradient-to-br from-banana-gold/20 to-transparent flex items-center justify-center text-5xl">
+        <div className="h-32 bg-gradient-to-br from-gulf-gold/20 to-transparent flex items-center justify-center text-5xl">
           {app.screenshots[0] ?? app.icon}
         </div>
         <div className="p-3">
@@ -29,7 +29,7 @@ export function AppCard({ app, onPress, variant = 'compact' }: AppCardProps) {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate flex items-center gap-1">
                 {app.name}
-                {app.verified && <span className="text-banana-gold text-xs">✓</span>}
+                {app.verified && <span className="text-gulf-gold text-xs">✓</span>}
               </p>
               <p className="text-xs text-white/50 truncate">{app.tagline}</p>
             </div>
@@ -58,8 +58,8 @@ export function AppCard({ app, onPress, variant = 'compact' }: AppCardProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-white truncate flex items-center gap-1">
           {app.name}
-          {app.verified && <span className="text-banana-gold text-[10px]">✓</span>}
-          {app.premium && <span className="text-[10px] bg-banana-gold/20 text-banana-gold px-1.5 rounded">PRO</span>}
+          {app.verified && <span className="text-gulf-gold text-[10px]">✓</span>}
+          {app.premium && <span className="text-[10px] bg-gulf-gold/20 text-gulf-gold px-1.5 rounded">PRO</span>}
         </p>
         <p className="text-xs text-white/50 truncate">{app.tagline}</p>
         <RatingStars rating={app.ratingAverage} size="sm" />

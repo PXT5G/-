@@ -55,7 +55,7 @@ export function UninstallConfirmModal({
                 type="checkbox"
                 checked={opt.state}
                 onChange={(e) => opt.set(e.target.checked)}
-                className="accent-banana-gold"
+                className="accent-gulf-gold"
               />
               <span className="text-sm text-white">{opt.label}</span>
             </label>

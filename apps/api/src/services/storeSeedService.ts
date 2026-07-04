@@ -6,7 +6,7 @@ import { StoreReview } from '../database/models/StoreReview';
 
 const STORE_APPS = [
   {
-    bundleId: 'com.bananaos.identity',
+    bundleId: 'com.gulfos.identity',
     name: 'Identity',
     version: '1.0.0',
     description: 'Digital identity card with verification',
@@ -14,7 +14,7 @@ const STORE_APPS = [
     category: 'utilities' as const,
     permissions: ['storage', 'camera'] as const,
     tagline: 'Your digital identity, verified.',
-    longDescription: 'Premium digital identity for BananaOS with QR verification, PDF export, and admin verification.',
+    longDescription: 'Premium digital identity for GULFOS with QR verification, PDF export, and admin verification.',
     screenshots: ['🪪', '📱', '✅'],
     featured: true,
     trending: true,
@@ -24,11 +24,11 @@ const STORE_APPS = [
     premium: false,
     storageSize: 180_000_000,
     trendingScore: 98,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
   },
   {
-    bundleId: 'com.bananaos.bank',
-    name: 'Banana Bank',
+    bundleId: 'com.gulfos.bank',
+    name: 'GULF Bank',
     version: '2.1.0',
     description: 'Advanced digital banking',
     icon: '🏦',
@@ -46,10 +46,10 @@ const STORE_APPS = [
     price: 0,
     storageSize: 480_000_000,
     trendingScore: 95,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
   },
   {
-    bundleId: 'com.bananaos.phone',
+    bundleId: 'com.gulfos.phone',
     name: 'Phone',
     version: '1.2.0',
     description: 'Calls, voicemail, and favorites',
@@ -65,10 +65,10 @@ const STORE_APPS = [
     verified: true,
     storageSize: 320_000_000,
     trendingScore: 92,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
   },
   {
-    bundleId: 'com.bananaos.messages',
+    bundleId: 'com.gulfos.messages',
     name: 'Messages',
     version: '1.1.0',
     description: 'SMS with attachments and read receipts',
@@ -84,11 +84,11 @@ const STORE_APPS = [
     verified: true,
     storageSize: 260_000_000,
     trendingScore: 88,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
   },
   {
-    bundleId: 'com.bananaos.police',
-    name: 'Police',
+    bundleId: 'com.gulfos.police',
+    name: 'GULF Police',
     version: '1.0.0',
     description: 'Professional police platform',
     icon: '🚔',
@@ -104,11 +104,11 @@ const STORE_APPS = [
     premium: true,
     storageSize: 1_400_000_000,
     trendingScore: 75,
-    developer: { slug: 'bananaos-gov', name: 'BananaOS Government', verified: true },
+    developer: { slug: 'gulfos-gov', name: 'GULFOS Government', verified: true },
   },
   {
-    bundleId: 'com.bananaos.social',
-    name: 'Banana Social',
+    bundleId: 'com.gulfos.social',
+    name: 'GULF Social',
     version: '1.0.0',
     description: 'Social feed and trending',
     icon: '🐦',
@@ -123,11 +123,11 @@ const STORE_APPS = [
     verified: true,
     storageSize: 340_000_000,
     trendingScore: 85,
-    developer: { slug: 'banana-studios', name: 'Banana Studios', verified: true },
+    developer: { slug: 'gulf-studios', name: 'Gulf Studios', verified: true },
   },
   {
-    bundleId: 'com.bananaos.camera',
-    name: 'Camera',
+    bundleId: 'com.gulfos.camera',
+    name: 'GULF Camera',
     version: '1.0.0',
     description: 'Photo and video capture',
     icon: '📷',
@@ -141,12 +141,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 620_000_000,
     trendingScore: 80,
-    developer: { slug: 'banana-studios', name: 'Banana Studios', verified: true },
+    developer: { slug: 'gulf-studios', name: 'Gulf Studios', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.gallery',
-    name: 'Gallery',
+    bundleId: 'com.gulfos.gallery',
+    name: 'GULF Gallery',
     version: '1.0.0',
     description: 'Photos, videos, albums, and memories',
     icon: '🖼️',
@@ -160,12 +160,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 400_000_000,
     trendingScore: 85,
-    developer: { slug: 'banana-studios', name: 'Banana Studios', verified: true },
+    developer: { slug: 'gulf-studios', name: 'Gulf Studios', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.maps',
-    name: 'Banana Maps',
+    bundleId: 'com.gulfos.maps',
+    name: 'GULF Maps',
     version: '1.0.0',
     description: 'GTA map navigation with live GPS',
     icon: '🗺️',
@@ -180,12 +180,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 520_000_000,
     trendingScore: 90,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.files',
-    name: 'Files',
+    bundleId: 'com.gulfos.files',
+    name: 'GULF Files',
     version: '1.0.0',
     description: 'Browse and manage device storage',
     icon: '📁',
@@ -199,12 +199,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 180_000_000,
     trendingScore: 78,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.calendar',
-    name: 'Calendar',
+    bundleId: 'com.gulfos.calendar',
+    name: 'GULF Calendar',
     version: '1.0.0',
     description: 'Events, reminders, and schedules',
     icon: '📅',
@@ -218,12 +218,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 210_000_000,
     trendingScore: 82,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.clock',
-    name: 'Clock',
+    bundleId: 'com.gulfos.clock',
+    name: 'GULF Clock',
     version: '1.0.0',
     description: 'Alarms, stopwatch, timer, world clock',
     icon: '⏰',
@@ -237,12 +237,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 95_000_000,
     trendingScore: 75,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.notes',
-    name: 'Notes',
+    bundleId: 'com.gulfos.notes',
+    name: 'GULF Notes',
     version: '1.0.0',
     description: 'Rich notes with checklists and voice',
     icon: '📝',
@@ -256,12 +256,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 150_000_000,
     trendingScore: 80,
-    developer: { slug: 'banana-studios', name: 'Banana Studios', verified: true },
+    developer: { slug: 'gulf-studios', name: 'Gulf Studios', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.voicerecorder',
-    name: 'Voice Recorder',
+    bundleId: 'com.gulfos.recorder',
+    name: 'GULF Recorder',
     version: '1.0.0',
     description: 'Record, trim, and share audio',
     icon: '🎙️',
@@ -275,12 +275,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 120_000_000,
     trendingScore: 65,
-    developer: { slug: 'banana-studios', name: 'Banana Studios', verified: true },
+    developer: { slug: 'gulf-studios', name: 'Gulf Studios', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.weather',
-    name: 'Weather',
+    bundleId: 'com.gulfos.weather',
+    name: 'GULF Weather',
     version: '1.0.0',
     description: 'Current, hourly, and weekly forecasts',
     icon: '🌤️',
@@ -294,12 +294,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 130_000_000,
     trendingScore: 88,
-    developer: { slug: 'bananaos-official', name: 'BananaOS Official', verified: true },
+    developer: { slug: 'gulfos-official', name: 'GULFOS Official', verified: true },
     isSystemApp: true,
   },
   {
-    bundleId: 'com.bananaos.calculator',
-    name: 'Calculator',
+    bundleId: 'com.gulfos.calculator',
+    name: 'GULF Calculator',
     version: '1.0.0',
     description: 'Standard and scientific calculator',
     icon: '🔢',
@@ -314,12 +314,12 @@ const STORE_APPS = [
     verified: true,
     storageSize: 45_000_000,
     trendingScore: 60,
-    developer: { slug: 'banana-studios', name: 'Banana Studios', verified: false },
+    developer: { slug: 'gulf-studios', name: 'Gulf Studios', verified: false },
     isSystemApp: true,
   },
 ];
 
-export async function seedBananaStore(): Promise<{ apps: number; developers: number; reviews: number; packages: number }> {
+export async function seedGulfStore(): Promise<{ apps: number; developers: number; reviews: number; packages: number }> {
   let developerCount = 0;
   const developerMap = new Map<string, string>();
 
@@ -332,7 +332,7 @@ export async function seedBananaStore(): Promise<{ apps: number; developers: num
           slug: devKey,
           name: appData.developer.name,
           description: `Official developer for ${appData.developer.name}`,
-          logo: '🍌',
+          logo: '🏬',
           verified: appData.developer.verified,
         },
         { upsert: true, new: true }
@@ -399,7 +399,7 @@ export async function seedBananaStore(): Promise<{ apps: number; developers: num
   }
 
   // Sample reviews for bank app
-  const bankListing = await StoreListing.findOne({ bundleId: 'com.bananaos.bank' });
+  const bankListing = await StoreListing.findOne({ bundleId: 'com.gulfos.bank' });
   if (bankListing) {
     const sampleReviews = [
       { username: 'alex_b', rating: 5, title: 'Best mobile bank', body: 'Incredibly smooth transfers and beautiful UI.' },
@@ -409,10 +409,10 @@ export async function seedBananaStore(): Promise<{ apps: number; developers: num
 
     for (const r of sampleReviews) {
       await StoreReview.findOneAndUpdate(
-        { bundleId: 'com.bananaos.bank', username: r.username },
+        { bundleId: 'com.gulfos.bank', username: r.username },
         {
           listingId: bankListing._id,
-          bundleId: 'com.bananaos.bank',
+          bundleId: 'com.gulfos.bank',
           userId: bankListing._id,
           ...r,
         },

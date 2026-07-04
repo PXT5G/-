@@ -1,4 +1,4 @@
-# BananaOS — App Roadmap
+# GULFOS — App Roadmap
 
 > Phase 2 Design Document  
 > Detailed specification for every application.  
@@ -10,36 +10,36 @@
 
 | Order | App | Bundle ID | Rationale |
 |-------|-----|-----------|-----------|
-| 1 | Identity | `com.bananaos.identity` | Core digital ID — other apps depend on it |
-| 2 | Profile | `com.bananaos.profile` | User account management |
-| 3 | Contacts | `com.bananaos.contacts` | Required by Phone & Messages |
-| 4 | SIM Card | `com.bananaos.simcard` | Telephony foundation |
-| 5 | Phone | `com.bananaos.phone` | Core communication |
-| 6 | Messages | `com.bananaos.messages` | Core communication |
-| 7 | Settings | `com.bananaos.settings` | Enhance Phase 1 version |
-| 8 | Files | `com.bananaos.files` | System utility |
-| 9 | Gallery | `com.bananaos.gallery` | Media access |
-| 10 | Camera | `com.bananaos.camera` | Media capture |
-| 11 | Downloads | `com.bananaos.downloads` | System utility |
-| 12 | Clock | `com.bananaos.clock` | Standalone + widget |
-| 13 | Weather | `com.bananaos.weather` | Widget + standalone |
-| 14 | Calculator | `com.bananaos.calculator` | Utility |
-| 15 | Calendar | `com.bananaos.calendar` | Productivity |
-| 16 | Browser | `com.bananaos.browser` | Web access |
-| 17 | Music | `com.bananaos.music` | Media |
-| 18 | Bank | `com.bananaos.bank` | Finance |
-| 19 | Store | `com.bananaos.store` | App distribution |
-| 20 | Community | `com.bananaos.community` | Social |
-| 21 | Announcements | `com.bananaos.announcements` | System broadcasts |
-| 22 | Police | `com.bananaos.police` | Government |
-| 23 | EMS | `com.bananaos.ems` | Emergency services |
+| 1 | Identity | `com.gulfos.identity` | Core digital ID — other apps depend on it |
+| 2 | Profile | `com.gulfos.profile` | User account management |
+| 3 | Contacts | `com.gulfos.contacts` | Required by Phone & Messages |
+| 4 | SIM Card | `com.gulfos.sim` | Telephony foundation |
+| 5 | Phone | `com.gulfos.phone` | Core communication |
+| 6 | Messages | `com.gulfos.messages` | Core communication |
+| 7 | Settings | `com.gulfos.settings` | Enhance Phase 1 version |
+| 8 | Files | `com.gulfos.files` | System utility |
+| 9 | Gallery | `com.gulfos.gallery` | Media access |
+| 10 | Camera | `com.gulfos.camera` | Media capture |
+| 11 | Downloads | `com.gulfos.downloads` | System utility |
+| 12 | Clock | `com.gulfos.clock` | Standalone + widget |
+| 13 | Weather | `com.gulfos.weather` | Widget + standalone |
+| 14 | Calculator | `com.gulfos.calculator` | Utility |
+| 15 | Calendar | `com.gulfos.calendar` | Productivity |
+| 16 | Browser | `com.gulfos.browser` | Web access |
+| 17 | Music | `com.gulfos.music` | Media |
+| 18 | Bank | `com.gulfos.bank` | Finance |
+| 19 | Store | `com.gulfos.store` | App distribution |
+| 20 | Community | `com.gulfos.community` | Social |
+| 21 | Announcements | `com.gulfos.announcements` | System broadcasts |
+| 22 | Police | `com.gulfos.police` | Government |
+| 23 | EMS | `com.gulfos.ems` | Emergency services |
 
 ---
 
 ## App 01 — Identity
 
 ### Purpose
-Premium digital identity card for BananaOS users. Serves as official identification within the ecosystem with verification, sharing, and document export.
+Premium digital identity card for GULFOS users. Serves as official identification within the ecosystem with verification, sharing, and document export.
 
 ### Features
 | Feature | Description |
@@ -58,7 +58,7 @@ Premium digital identity card for BananaOS users. Serves as official identificat
 | Country | Issuing country |
 | Copy Button | Copy National ID to clipboard |
 | Download PDF | Export identity card as PDF |
-| Share | Share via BananaDrop, link, or messaging |
+| Share | Share via GulfDrop, link, or messaging |
 | Print | Browser print dialog with card layout |
 | Verification API | `GET /api/identity/verify/:id` for third parties |
 | Admin Verification | Admin panel to approve/revoke verification |
@@ -121,7 +121,7 @@ Premium digital identity card for BananaOS users. Serves as official identificat
 2. **Edit Profile** — form for name, username, country
 3. **Photo Capture** — camera or gallery picker
 4. **QR Full Screen** — large QR with scan instructions
-5. **Share Sheet** — BananaDrop, copy, PDF, print options
+5. **Share Sheet** — GulfDrop, copy, PDF, print options
 6. **Verification Status** — pending/verified/revoked states
 
 ### Future Upgrades
@@ -143,7 +143,7 @@ Manage cellular connectivity, phone number, carrier information, and telephony s
 ### Features
 | Feature | Description |
 |---------|-------------|
-| Phone Number | Assigned BananaOS number |
+| Phone Number | Assigned GULFOS number |
 | Carrier | Virtual carrier name and logo |
 | Signal | Signal strength indicator (simulated) |
 | Voicemail | Voicemail inbox with playback |
@@ -734,7 +734,7 @@ Emergency medical services dispatch, patient reports, and ambulance tracking.
 ## App 09 — Community
 
 ### Purpose
-Social platform for BananaOS users — posts, groups, events.
+Social platform for GULFOS users — posts, groups, events.
 
 ### Features
 - Feed with posts, images, videos
@@ -789,7 +789,7 @@ System-wide and targeted announcements from administrators.
 ## App 11 — Store
 
 ### Purpose
-BananaOS application marketplace for discovering and installing apps.
+GULFOS application marketplace for discovering and installing apps.
 
 ### Features
 - App catalog with categories
@@ -848,7 +848,7 @@ Virtual filesystem browser and manager.
 - Search files
 - Sort by name, date, size
 - Storage usage indicator
-- Share via BananaDrop
+- Share via GulfDrop
 
 ### Database
 Extends `FileNode` model from Phase 1

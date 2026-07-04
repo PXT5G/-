@@ -59,7 +59,7 @@ function param(value: string | string[]): string {
   return Array.isArray(value) ? value[0] : value;
 }
 
-const appIdSchema = z.object({ appId: z.string().default('com.bananaos.system') });
+const appIdSchema = z.object({ appId: z.string().default('com.gulfos.system') });
 
 function mapError(err: unknown): never {
   if (!(err instanceof Error)) throw err;

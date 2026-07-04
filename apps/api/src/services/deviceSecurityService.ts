@@ -138,7 +138,7 @@ export async function addTrustedDevice(userId: string, deviceId: string, deviceN
 export async function remoteLock(userId: string, actorId: string, appId: string) {
   if (actorId !== userId) {
     const allowed = await checkPermission(actorId, appId, 'biometrics');
-    if (!allowed && appId !== 'com.bananaos.system') throw new Error('PERMISSION_DENIED');
+    if (!allowed && appId !== 'com.gulfos.system') throw new Error('PERMISSION_DENIED');
   }
 
   const config = await ensureSecurity(userId);
@@ -154,7 +154,7 @@ export async function remoteLock(userId: string, actorId: string, appId: string)
 export async function remoteWipe(userId: string, actorId: string, appId: string) {
   if (actorId !== userId) {
     const allowed = await checkPermission(actorId, appId, 'biometrics');
-    if (!allowed && appId !== 'com.bananaos.system') throw new Error('PERMISSION_DENIED');
+    if (!allowed && appId !== 'com.gulfos.system') throw new Error('PERMISSION_DENIED');
   }
 
   const config = await ensureSecurity(userId);
@@ -167,7 +167,7 @@ export async function remoteWipe(userId: string, actorId: string, appId: string)
   const { InstalledApp } = await import('../database/models/InstalledApp');
   const apps = await InstalledApp.find({ userId, deletedAt: null });
   for (const app of apps) {
-    if (!app.bundleId.startsWith('com.bananaos.system')) {
+    if (!app.bundleId.startsWith('com.gulfos.system')) {
       await clearAppCache(userId, app.bundleId).catch(() => {});
     }
   }

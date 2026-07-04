@@ -16,7 +16,7 @@ export function RatingStars({ rating, size = 'sm', showValue, count }: RatingSta
   return (
     <div className={cn('flex items-center gap-1', textSize)}>
       {stars.map((star) => (
-        <span key={star} className={star <= Math.round(rating) ? 'text-banana-gold' : 'text-white/20'}>
+        <span key={star} className={star <= Math.round(rating) ? 'text-gulf-gold' : 'text-white/20'}>
           ★
         </span>
       ))}

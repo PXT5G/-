@@ -1,10 +1,10 @@
-# BananaOS — Phone Sections
+# GULFOS — Phone Sections
 
 > Phase 2 Design Document  
 > Status: Planning  
 > Base System: Phase 1 (Complete — do not rebuild)
 
-This document describes every OS-level screen in BananaOS. Each section maps to existing Phase 1 components and defines Phase 2 enhancements.
+This document describes every OS-level screen in GULFOS. Each section maps to existing Phase 1 components and defines Phase 2 enhancements.
 
 ---
 
@@ -16,7 +16,7 @@ This document describes every OS-level screen in BananaOS. Each section maps to 
 | 02 | Lock Screen | ✅ Partial | Emergency, shortcuts |
 | 03 | Home Screen | ✅ Partial | Folders, drag-drop |
 | 04 | Notification Center | ✅ Partial | Grouping, priority |
-| 05 | Control Center | ✅ Partial | BananaDrop sharing |
+| 05 | Control Center | ✅ Partial | GulfDrop sharing |
 | 06 | Dynamic Island | ✅ Partial | Live Activities |
 | 07 | Search | ✅ Complete | App + content search |
 | 08 | App Window | ✅ Complete | Per-app chrome |
@@ -29,7 +29,7 @@ This document describes every OS-level screen in BananaOS. Each section maps to 
 ## 01. Boot Screen
 
 ### Purpose
-First visual contact with BananaOS. Establishes brand identity, masks initialization time, and transitions the user into the boot sequence.
+First visual contact with GULFOS. Establishes brand identity, masks initialization time, and transitions the user into the boot sequence.
 
 ### Phase 1 Implementation
 - `SplashScreen.tsx` — logo reveal, brand text
@@ -39,7 +39,7 @@ First visual contact with BananaOS. Establishes brand identity, masks initializa
 ### Components
 | Component | Location | Role |
 |-----------|----------|------|
-| `BananaLogo` | `assets/BananaLogo.tsx` | SVG brand mark |
+| `GulfLogo` | `assets/GulfLogo.tsx` | SVG brand mark |
 | `SplashScreen` | `components/os/SplashScreen.tsx` | Initial fade-in |
 | `BootAnimation` | `components/os/BootAnimation.tsx` | Progress animation |
 
@@ -211,7 +211,7 @@ Primary workspace. App grid, widgets, dock, and wallpaper create the personalize
 
 ### Wallpaper
 - `Wallpaper.tsx` — gradient, animated, or image
-- Animated: `wallpaper-banana` CSS keyframe
+- Animated: `wallpaper-gulf` CSS keyframe
 - Controlled by `settingsStore.wallpaper`
 - Phase 2: User-uploaded wallpapers via Files app
 
@@ -346,8 +346,8 @@ Quick-access system toggles and sliders without entering Settings.
 - `settingsStore.rotationLock`
 - Locks viewport orientation via CSS (Phase 2: Screen Orientation API)
 
-### BananaDrop (AirDrop-inspired, Original)
-- **Phase 2 new** — original BananaOS sharing protocol
+### GulfDrop (AirDrop-inspired, Original)
+- **Phase 2 new** — original GULFOS sharing protocol
 - Proximity-based device discovery via WebRTC data channels
 - Share: photos, contacts, identity card, files
 - UI: radar animation with nearby device avatars
@@ -360,7 +360,7 @@ Quick-access system toggles and sliders without entering Settings.
 | Tile press | 150ms | scale 0.95 |
 | Tile active glow | 200ms | gold border fade-in |
 | Slider thumb | spring 500/15 | on drag |
-| BananaDrop radar | 3s loop | rotate + pulse |
+| GulfDrop radar | 3s loop | rotate + pulse |
 
 ### Gestures
 | Gesture | Action |
@@ -372,8 +372,8 @@ Quick-access system toggles and sliders without entering Settings.
 ### Future APIs
 | Endpoint | Purpose |
 |----------|---------|
-| `POST /api/share/bananadrop` | Generate share session |
-| `Socket: bananadrop:discover` | Nearby device broadcast |
+| `POST /api/share/gulfdrop` | Generate share session |
+| `Socket: gulfdrop:discover` | Nearby device broadcast |
 | `WebRTC` | P2P file transfer |
 
 ---
@@ -381,9 +381,9 @@ Quick-access system toggles and sliders without entering Settings.
 ## 06. Dynamic Island (Original)
 
 ### Purpose
-BananaOS signature status capsule. Displays live system activity without leaving the current screen.
+GULFOS signature status capsule. Displays live system activity without leaving the current screen.
 
-> **Original design** — not Apple Dynamic Island. BananaOS pill shape with gold accent ring.
+> **Original design** — not Apple Dynamic Island. GULFOS pill shape with gold accent ring.
 
 ### Modes (Phase 1)
 | Mode | Size | Use |
@@ -556,6 +556,6 @@ System modal requesting app permission grants.
 1. Lock Screen shortcuts (Emergency, Camera, Flashlight)
 2. Home Screen folders + drag-and-drop
 3. Notification grouping + swipe dismiss
-4. BananaDrop sharing panel
+4. GulfDrop sharing panel
 5. Dynamic Island live activities (Calls, Music, Downloads)
 6. Multitasking live previews

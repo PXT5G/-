@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import type { NotificationPriority } from '@bananaos/shared';
+import type { NotificationPriority } from '@gulfos/shared';
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;

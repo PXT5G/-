@@ -1,20 +1,22 @@
 import { Types } from 'mongoose';
-import type { SystemPermissionType } from '@bananaos/shared';
+import type { SystemPermissionType } from '@gulfos/shared';
+import { resolveBundleId } from '../utils/bundleIdMigration';
 import { PermissionGrant } from '../database/models/PermissionGrant';
 import { emitToUser } from './socketService';
 import { logAudit } from './auditService';
 import { publishEvent } from './eventBusService';
 
-const SYSTEM_APP = 'com.bananaos.system';
+const SYSTEM_APP = 'com.gulfos.system';
 
 export async function checkPermission(
   userId: string,
   appId: string,
   permission: SystemPermissionType
 ): Promise<boolean> {
+  const canonicalId = resolveBundleId(appId);
   const grant = await PermissionGrant.findOne({
     userId,
-    appId,
+    appId: { $in: [canonicalId, appId] },
     permission,
     granted: true,
     deletedAt: null,

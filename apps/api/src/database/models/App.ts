@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import type { AppCategory, PermissionType } from '@bananaos/shared';
+import type { AppCategory, PermissionType } from '@gulfos/shared';
 
 export interface IApp extends Document {
   bundleId: string;

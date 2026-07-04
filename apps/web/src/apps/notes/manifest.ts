@@ -1,8 +1,8 @@
 import type { AppManifest } from '@/types';
 
 export const notesManifest: AppManifest = {
-  id: 'com.bananaos.notes',
-  bundleId: 'com.bananaos.notes',
+  id: 'com.gulfos.notes',
+  bundleId: 'com.gulfos.notes',
   name: 'Notes',
   version: '1.0.0',
   description: 'Rich notes with checklists and voice',

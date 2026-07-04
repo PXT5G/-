@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { z } from 'zod';
-import type { SystemPermissionType } from '@bananaos/shared';
+import type { SystemPermissionType } from '@gulfos/shared';
 import { AuthRequest } from '../middleware/auth';
 import { AppError, asyncHandler } from '../middleware/errorHandler';
 import { getActorId } from '../../services/rbacService';
@@ -53,7 +53,7 @@ function param(value: string | string[]): string {
   return Array.isArray(value) ? value[0] : value;
 }
 
-const appIdSchema = z.object({ appId: z.string().default('com.bananaos.system') });
+const appIdSchema = z.object({ appId: z.string().default('com.gulfos.system') });
 
 // ─── Location ───────────────────────────────────────────────────────────────
 
@@ -357,7 +357,7 @@ export async function initializeSystemServices(userId: string): Promise<void> {
   await initializeSystemApps(userId);
   const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone'] as const;
   for (const permission of commPerms) {
-    await grantPermission(userId, 'com.bananaos.communication', permission, userId);
+    await grantPermission(userId, 'com.gulfos.communication', permission, userId);
   }
   emitToUser(userId, 'system:ready', {
     services: getRegisteredTasks(),

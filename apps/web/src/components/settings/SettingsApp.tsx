@@ -37,7 +37,7 @@ import { Toggle } from '@/components/ui/Toggle';
 import { useHaptic } from '@/hooks/useSound';
 
 const WALLPAPERS = [
-  { id: 'banana-gradient', name: 'Banana Gradient', type: 'animated' as const },
+  { id: 'gulf-gradient', name: 'Gulf Gradient', type: 'animated' as const },
   { id: 'midnight', name: 'Midnight', type: 'gradient' as const, dark: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' },
   { id: 'aurora', name: 'Aurora', type: 'gradient' as const, dark: 'linear-gradient(135deg, #000428, #004e92)' },
   { id: 'gold-luxury', name: 'Gold Luxury', type: 'gradient' as const, dark: 'linear-gradient(135deg, #1a1a1a, #2d2d2d, #D4AF37)' },
@@ -89,7 +89,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
   if (activeSection === 'wallpaper') {
     return (
       <div className="h-full overflow-y-auto bg-black p-4">
-        <button type="button" onClick={() => setActiveSection(null)} className="text-banana-gold text-sm mb-4">‹ {t('common.settings')}</button>
+        <button type="button" onClick={() => setActiveSection(null)} className="text-gulf-gold text-sm mb-4">‹ {t('common.settings')}</button>
         <h2 className="text-xl font-bold text-white mb-4">{t('settings.wallpaper')}</h2>
         <div className="grid grid-cols-2 gap-3">
           {WALLPAPERS.map((wp) => (
@@ -101,11 +101,11 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
                   id: wp.id,
                   type: wp.type,
                   dark: wp.dark,
-                  animatedClass: wp.type === 'animated' ? 'wallpaper-banana' : undefined,
+                  animatedClass: wp.type === 'animated' ? 'wallpaper-gulf' : undefined,
                 },
               })}
               className={`aspect-[9/16] rounded-2xl overflow-hidden border-2 ${
-                settings.wallpaper.id === wp.id ? 'border-banana-gold' : 'border-transparent'
+                settings.wallpaper.id === wp.id ? 'border-gulf-gold' : 'border-transparent'
               }`}
               style={{ background: wp.dark ?? 'linear-gradient(135deg, #0a0a0a, #1a1a2e)' }}
             >

@@ -7,7 +7,7 @@ export interface IAppPackage extends Document {
   checksum: string;
   size: number;
   minOSVersion: string;
-  requiredBananaOSVersion: string;
+  requiredGULFOSVersion: string;
   dependencies: string[];
   requiredPermissions: string[];
   optionalPermissions: string[];
@@ -30,7 +30,7 @@ const appPackageSchema = new Schema<IAppPackage>(
     checksum: { type: String, required: true },
     size: { type: Number, required: true },
     minOSVersion: { type: String, default: '1.0.0' },
-    requiredBananaOSVersion: { type: String, default: '1.0.0' },
+    requiredGULFOSVersion: { type: String, default: '1.0.0' },
     dependencies: [{ type: String }],
     requiredPermissions: [{ type: String }],
     optionalPermissions: [{ type: String }],

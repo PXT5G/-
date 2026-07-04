@@ -63,7 +63,7 @@ export function MapsApp() {
         {tab === 'map' && (
           <>
             <GlassPanel className="p-4 mb-4" intensity="low">
-              <p className="text-banana-gold text-xs uppercase tracking-wider mb-2">Live Position</p>
+              <p className="text-gulf-gold text-xs uppercase tracking-wider mb-2">Live Position</p>
               <p className="text-white text-lg font-semibold">{String(world?.district ?? '—')}</p>
               <p className="text-white/60 text-sm">{String(world?.street ?? '')}</p>
               <p className="text-white/40 text-xs font-mono mt-1">
@@ -72,16 +72,16 @@ export function MapsApp() {
               <p className="text-white/50 text-xs mt-2">Weather: {String(world?.weather ?? 'clear')} · Speed: {Number(world?.speed ?? 0).toFixed(0)} km/h</p>
             </GlassPanel>
 
-            <div className="relative h-48 rounded-2xl bg-gradient-to-br from-emerald-900/40 via-black to-banana-gold/10 border border-white/10 mb-4 overflow-hidden">
+            <div className="relative h-48 rounded-2xl bg-gradient-to-br from-emerald-900/40 via-black to-gulf-gold/10 border border-white/10 mb-4 overflow-hidden">
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-banana-gold shadow-lg shadow-banana-gold/50 animate-pulse" />
+                <div className="w-4 h-4 rounded-full bg-gulf-gold shadow-lg shadow-gulf-gold/50 animate-pulse" />
               </div>
               <p className="absolute bottom-2 left-3 text-[10px] text-white/40">GTA Map · World Engine</p>
             </div>
 
             {gps?.navigating ? (
-              <GlassPanel className="p-4 mb-4 border-banana-gold/30" intensity="low">
-                <p className="text-banana-gold text-sm font-semibold">Navigating</p>
+              <GlassPanel className="p-4 mb-4 border-gulf-gold/30" intensity="low">
+                <p className="text-gulf-gold text-sm font-semibold">Navigating</p>
                 <p className="text-white text-sm">{(gps.destination as Record<string, unknown>)?.name as string}</p>
                 <p className="text-white/50 text-xs">{Number(gps.distanceRemainingM ?? 0).toFixed(0)}m · ETA {Math.round(Number(gps.etaSeconds ?? 0) / 60)}min</p>
                 <button type="button" onClick={() => { tap(); stopNav.mutate(); }} className="mt-2 text-xs text-red-400">Stop Navigation</button>
@@ -154,8 +154,8 @@ export function MapsApp() {
             ))}
             <p className="text-xs text-white/40 uppercase mt-4 mb-2">Cached</p>
             {(offlineMaps ?? []).map((c) => (
-              <div key={String(c.cacheId)} className="p-3 mb-2 rounded-xl bg-banana-gold/10 border border-banana-gold/20">
-                <p className="text-banana-gold text-sm">{String(c.district)}</p>
+              <div key={String(c.cacheId)} className="p-3 mb-2 rounded-xl bg-gulf-gold/10 border border-gulf-gold/20">
+                <p className="text-gulf-gold text-sm">{String(c.district)}</p>
                 <p className="text-white/40 text-xs">{Number(c.tileCount)} tiles · expires {new Date(String(c.expiresAt)).toLocaleDateString()}</p>
               </div>
             ))}
@@ -165,7 +165,7 @@ export function MapsApp() {
 
       <nav className="flex border-t border-white/10 bg-black/90">
         {(['map', 'search', 'saved', 'offline'] as Tab[]).map((t) => (
-          <button key={t} type="button" onClick={() => { tap(); setTab(t); }} className={`flex-1 py-3 text-xs capitalize ${tab === t ? 'text-banana-gold' : 'text-white/40'}`}>
+          <button key={t} type="button" onClick={() => { tap(); setTab(t); }} className={`flex-1 py-3 text-xs capitalize ${tab === t ? 'text-gulf-gold' : 'text-white/40'}`}>
             {t}
           </button>
         ))}

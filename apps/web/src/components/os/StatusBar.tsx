@@ -90,7 +90,7 @@ export function StatusBar() {
         )}
         {silentMode && <span className="text-[10px]" aria-label="Silent mode">🔇</span>}
         {unreadCount > 0 && (
-          <span className="text-[10px] bg-banana-gold text-black rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-label={`${unreadCount} notifications`}>
+          <span className="text-[10px] bg-gulf-gold text-black rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-label={`${unreadCount} notifications`}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

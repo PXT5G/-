@@ -10,7 +10,7 @@ import type {
   StoreDeveloper,
 } from '../types';
 
-interface BananaAppState {
+interface GulfStoreState {
   activeTab: StoreTab;
   selectedCategory: string | null;
   selectedApp: StoreApp | null;
@@ -64,7 +64,7 @@ interface BananaAppState {
   setError: (error: string | null) => void;
 }
 
-export const useBananaAppStore = create<BananaAppState>((set) => ({
+export const useGulfStoreStore = create<GulfStoreState>((set) => ({
   activeTab: 'today',
   selectedCategory: null,
   selectedApp: null,

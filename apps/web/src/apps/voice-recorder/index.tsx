@@ -59,7 +59,7 @@ export function VoiceRecorderApp() {
           type="button"
           onClick={toggleRecord}
           disabled={save.isPending}
-          className={`w-20 h-20 rounded-full flex items-center justify-center ${recording ? 'bg-red-500' : 'bg-banana-gold'}`}
+          className={`w-20 h-20 rounded-full flex items-center justify-center ${recording ? 'bg-red-500' : 'bg-gulf-gold'}`}
         >
           <div className={`${recording ? 'w-6 h-6 rounded-sm bg-white' : 'w-0 h-0 border-l-[20px] border-l-black border-y-[12px] border-y-transparent ml-1'}`} />
         </button>

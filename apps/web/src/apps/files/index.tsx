@@ -74,12 +74,12 @@ export function FilesApp() {
         {tab === 'categories' && (
           <div className="flex gap-2 flex-wrap mb-4">
             {CATEGORIES.map((c) => (
-              <button key={c} type="button" onClick={() => setCategory(c)} className={`px-3 py-1 rounded-full text-xs capitalize ${category === c ? 'bg-banana-gold text-black' : 'bg-white/10 text-white'}`}>{c}</button>
+              <button key={c} type="button" onClick={() => setCategory(c)} className={`px-3 py-1 rounded-full text-xs capitalize ${category === c ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white'}`}>{c}</button>
             ))}
           </div>
         )}
         {tab === 'browse' && parentId && (
-          <button type="button" onClick={() => setParentId(null)} className="text-banana-gold text-sm mb-4">‹ Back</button>
+          <button type="button" onClick={() => setParentId(null)} className="text-gulf-gold text-sm mb-4">‹ Back</button>
         )}
         {(displayFiles ?? []).length === 0 ? (
           <p className="text-white/40 text-center py-12">No files</p>
@@ -107,7 +107,7 @@ export function FilesApp() {
       </div>
       <nav className="flex border-t border-white/10">
         {(['browse', 'recent', 'categories', 'search'] as Tab[]).map((t) => (
-          <button key={t} type="button" onClick={() => { tap(); setTab(t); }} className={`flex-1 py-3 text-xs capitalize ${tab === t ? 'text-banana-gold' : 'text-white/40'}`}>{t}</button>
+          <button key={t} type="button" onClick={() => { tap(); setTab(t); }} className={`flex-1 py-3 text-xs capitalize ${tab === t ? 'text-gulf-gold' : 'text-white/40'}`}>{t}</button>
         ))}
       </nav>
     </div>

@@ -1,11 +1,11 @@
-# BananaOS
+# GULFOS
 
-**BananaOS** is a premium mobile web operating system that runs entirely inside the browser. Phase 1 delivers the complete base system — boot sequence, lock screen, home screen, system overlays, frameworks, and backend API — without any standalone applications.
+**GULFOS** is a premium mobile web operating system that runs entirely inside the browser. Phase 1 delivers the complete base system — boot sequence, lock screen, home screen, system overlays, frameworks, and backend API — without any standalone applications.
 
 ## Architecture
 
 ```
-bananaos/
+gulfos/
 ├── apps/
 │   ├── web/          # Next.js 15 + React 19 frontend (OS shell)
 │   └── api/          # Express + MongoDB + Socket.io backend
@@ -140,7 +140,7 @@ apps/api/src/
 ### API (`apps/api/.env`)
 ```
 PORT=4000
-MONGODB_URI=mongodb://localhost:27017/bananaos
+MONGODB_URI=mongodb://localhost:27017/gulfos
 JWT_SECRET=your-secret-min-16-chars
 JWT_REFRESH_SECRET=your-refresh-secret-min-16-chars
 CORS_ORIGIN=http://localhost:3000
@@ -168,4 +168,4 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 
 ## License
 
-Proprietary — BananaOS Phase 1 Base System
+Proprietary — GULFOS Phase 1 Base System

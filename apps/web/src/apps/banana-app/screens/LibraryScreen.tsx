@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useBananaAppStore } from '../store/bananaAppStore';
-import { bananaAppService } from '../services/bananaAppService';
+import { useGulfStoreStore } from '../store/gulfStoreStore';
+import { gulfStoreService } from '../services/gulfStoreService';
 import { Button, EmptyState, ProgressBar } from '@/components/shared';
 import { useHaptic } from '@/hooks/useSound';
 import { UninstallConfirmModal } from '../components/UninstallConfirmModal';
@@ -29,7 +29,7 @@ export function LibraryScreen({
   onAppPress: (bundleId: string) => void;
   onUninstall: (bundleId: string) => void;
 }) {
-  const { installed, downloads, setInstalled, setDownloads } = useBananaAppStore();
+  const { installed, downloads, setInstalled, setDownloads } = useGulfStoreStore();
   const { tap } = useHaptic();
   const queryClient = useQueryClient();
   const [expandedBundleId, setExpandedBundleId] = useState<string | null>(null);
@@ -45,12 +45,12 @@ export function LibraryScreen({
 
   const { data: installedData, isLoading } = useQuery({
     queryKey: ['store', 'installed'],
-    queryFn: () => bananaAppService.getInstalled(),
+    queryFn: () => gulfStoreService.getInstalled(),
   });
 
   const { data: downloadsData } = useQuery({
     queryKey: ['store', 'downloads'],
-    queryFn: () => bananaAppService.getDownloads(),
+    queryFn: () => gulfStoreService.getDownloads(),
     refetchInterval: 3000,
   });
 
@@ -69,7 +69,7 @@ export function LibraryScreen({
     }: {
       bundleId: string;
       options: { keepUserData: boolean; keepSettings: boolean; keepSession: boolean };
-    }) => bananaAppService.uninstall(bundleId, options),
+    }) => gulfStoreService.uninstall(bundleId, options),
     onSuccess: () => {
       setUninstallTarget(null);
       queryClient.invalidateQueries({ queryKey: ['store', 'installed'] });
@@ -78,32 +78,32 @@ export function LibraryScreen({
   });
 
   const clearCacheMutation = useMutation({
-    mutationFn: (bundleId: string) => bananaAppService.clearCache(bundleId),
+    mutationFn: (bundleId: string) => gulfStoreService.clearCache(bundleId),
     onSuccess: (data) => setStorageInfo(data),
   });
 
   const clearDataMutation = useMutation({
-    mutationFn: (bundleId: string) => bananaAppService.clearData(bundleId),
+    mutationFn: (bundleId: string) => gulfStoreService.clearData(bundleId),
     onSuccess: (data) => setStorageInfo(data),
   });
 
   const pauseMutation = useMutation({
-    mutationFn: (downloadId: string) => bananaAppService.pauseDownload(downloadId),
+    mutationFn: (downloadId: string) => gulfStoreService.pauseDownload(downloadId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store', 'downloads'] }),
   });
 
   const resumeMutation = useMutation({
-    mutationFn: (downloadId: string) => bananaAppService.resumeDownload(downloadId),
+    mutationFn: (downloadId: string) => gulfStoreService.resumeDownload(downloadId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store', 'downloads'] }),
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (downloadId: string) => bananaAppService.cancelDownload(downloadId),
+    mutationFn: (downloadId: string) => gulfStoreService.cancelDownload(downloadId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store', 'downloads'] }),
   });
 
   const retryMutation = useMutation({
-    mutationFn: (downloadId: string) => bananaAppService.retryDownload(downloadId),
+    mutationFn: (downloadId: string) => gulfStoreService.retryDownload(downloadId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['store', 'downloads'] }),
   });
 
@@ -124,7 +124,7 @@ export function LibraryScreen({
       return;
     }
     setExpandedBundleId(bundleId);
-    const info = await bananaAppService.getAppStorage(bundleId);
+    const info = await gulfStoreService.getAppStorage(bundleId);
     setStorageInfo(info);
   };
 
@@ -150,7 +150,7 @@ export function LibraryScreen({
                       {d.queuePosition ? ` · Queue #${d.queuePosition}` : ''}
                     </p>
                   </div>
-                  <span className="text-xs text-banana-gold">{d.progress}%</span>
+                  <span className="text-xs text-gulf-gold">{d.progress}%</span>
                 </div>
                 <ProgressBar value={d.progress} />
                 {d.status === 'downloading' && (
@@ -182,7 +182,7 @@ export function LibraryScreen({
       <div className="px-4 flex-1 pb-4">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
           </div>
         ) : installed.length === 0 ? (
           <EmptyState icon="📚" title="No installed apps" description="Browse the store to find apps" />
@@ -197,7 +197,7 @@ export function LibraryScreen({
                       <p className="text-sm font-semibold text-white flex items-center gap-2">
                         {app.name}
                         {app.hasUpdate && (
-                          <span className="text-[10px] bg-banana-gold/20 text-banana-gold px-1.5 rounded">UPDATE</span>
+                          <span className="text-[10px] bg-gulf-gold/20 text-gulf-gold px-1.5 rounded">UPDATE</span>
                         )}
                       </p>
                       <p className="text-xs text-white/50">
@@ -206,7 +206,7 @@ export function LibraryScreen({
                       </p>
                     </div>
                   </button>
-                  <button type="button" onClick={() => toggleStorage(app.bundleId)} className="text-xs text-banana-gold px-2">
+                  <button type="button" onClick={() => toggleStorage(app.bundleId)} className="text-xs text-gulf-gold px-2">
                     Storage
                   </button>
                   {!app.isSystemApp && (
@@ -243,7 +243,7 @@ export function LibraryScreen({
                       <div className="text-white/50">Logs</div>
                       <div className="text-white text-right">{formatSize(storageInfo.logsSize)}</div>
                       <div className="text-white/50 font-medium">Total</div>
-                      <div className="text-banana-gold text-right font-medium">{formatSize(storageInfo.totalSize)}</div>
+                      <div className="text-gulf-gold text-right font-medium">{formatSize(storageInfo.totalSize)}</div>
                     </div>
                     <div className="flex gap-2">
                       <Button

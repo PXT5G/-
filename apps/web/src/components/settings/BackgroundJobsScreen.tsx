@@ -29,7 +29,7 @@ export function BackgroundJobsScreen({ onBack }: { onBack: () => void }) {
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function BackgroundJobsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ Settings</button>
         <h1 className="text-2xl font-bold text-white mb-1">Background Jobs</h1>
         <p className="text-xs text-white/50 mb-6">System scheduler tasks</p>
 
@@ -64,7 +64,7 @@ export function BackgroundJobsScreen({ onBack }: { onBack: () => void }) {
               <p className="text-xs text-white/40 mb-2">{job.type} · {job.priority}</p>
               {job.status === 'running' && (
                 <div className="h-1.5 rounded-full bg-white/5 mb-2">
-                  <div className="h-full rounded-full bg-banana-gold" style={{ width: `${job.progress}%` }} />
+                  <div className="h-full rounded-full bg-gulf-gold" style={{ width: `${job.progress}%` }} />
                 </div>
               )}
               {job.error && <p className="text-xs text-red-400 mb-2">{job.error}</p>}

@@ -1,4 +1,4 @@
-# BananaOS — UI Flow
+# GULFOS — UI Flow
 
 > Phase 2 Design Document  
 > Defines user journeys, state transitions, and interaction flows across the OS.
@@ -199,7 +199,7 @@ controlCenterStore.open()
     │
     ├── toggle tile → settingsStore.updateSettings()
     ├── adjust slider → settingsStore.updateSettings()
-    ├── tap BananaDrop → [BananaDrop Panel] (Phase 2)
+    ├── tap GulfDrop → [GulfDrop Panel] (Phase 2)
     └── tap outside / swipe up → close()
 ```
 
@@ -413,7 +413,7 @@ Identity App → view card → tap Share
     │
     ▼
 [Share Sheet]
-    ├── BananaDrop → P2P transfer
+    ├── GulfDrop → P2P transfer
     ├── Copy Link → clipboard
     ├── Download PDF → GET /api/identity/pdf
     └── Print → window.print()

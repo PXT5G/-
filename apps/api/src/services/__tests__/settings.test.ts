@@ -9,15 +9,15 @@ import {
   RTL_LANGUAGES,
 } from '../../constants/settings';
 import { settingsUpdateSchema } from '../../services/settingsService';
-import { getTranslations, isRTL, SUPPORTED_LANGUAGE_CODES } from '@bananaos/shared';
+import { getTranslations, isRTL, SUPPORTED_LANGUAGE_CODES } from '@gulfos/shared';
 
 describe('settings constants', () => {
   it('defines Gulf Phone V1 device info', () => {
     assert.equal(DEVICE_INFO.defaultDeviceName, 'Gulf Phone V1');
     assert.equal(DEVICE_INFO.developer, 'Abu Sharaf');
-    assert.equal(DEVICE_INFO.manufacturer, 'Banana Technologies');
-    assert.equal(DEVICE_INFO.operatingSystem, 'BananaOS');
-    assert.equal(DEVICE_INFO.kernel, 'Banana Core');
+    assert.equal(DEVICE_INFO.manufacturer, 'Gulf Technologies');
+    assert.equal(DEVICE_INFO.operatingSystem, 'GULFOS');
+    assert.equal(DEVICE_INFO.kernel, 'GULF Core');
     assert.equal(DEVICE_INFO.buildNumber, '3.7.0');
   });
 

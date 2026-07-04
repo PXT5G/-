@@ -1,4 +1,4 @@
-# BananaOS Essential System Applications
+# GULFOS Essential System Applications
 
 Phase 3.6 delivers 10 production-ready core system apps that every smartphone ships with. All apps integrate with Identity, Bank, SIM, Phone, Contacts, Communication Core, World Engine, Device Ecosystem, Notification Broker, and Permission Broker.
 
@@ -6,16 +6,16 @@ Phase 3.6 delivers 10 production-ready core system apps that every smartphone sh
 
 | App | Bundle ID | Backend | Key Features |
 |-----|-----------|---------|--------------|
-| Banana Maps | `com.bananaos.maps` | `/api/system-apps/maps/*` + World Engine | GTA map, GPS, navigation, favorites, offline cache, traffic, police roadblocks |
-| Camera | `com.bananaos.camera` | `/api/system-apps/camera/*` | Photo, portrait, video, slow-mo, time lapse, night mode, flash, HDR, grid, zoom, burst, RAW |
-| Gallery | `com.bananaos.gallery` | `/api/system-apps/gallery/*` | Albums, favorites, hidden, trash, AI categories, memory timeline, storage analysis |
-| Files | `com.bananaos.files` | `/api/system-apps/files/*` + `/api/filesystem` | Browse, recent, categories, search, PDF/ZIP preview |
-| Calendar | `com.bananaos.calendar` | `/api/system-apps/calendar/*` | Events, reminders, birthdays, government, police shifts, justice hearings, bank payments |
-| Clock | `com.bananaos.clock` | `/api/system-apps/clock/*` | Alarms, stopwatch, timer, world clocks, sleep schedule |
-| Calculator | `com.bananaos.calculator` | Client-only | Basic, scientific, history, currency/unit conversion |
-| Notes | `com.bananaos.notes` | `/api/system-apps/notes` | Rich text, pin, lock, search, folders |
-| Voice Recorder | `com.bananaos.voicerecorder` | `/api/system-apps/voice-recorder` | Recording, noise reduction, bookmarks, trim |
-| Weather | `com.bananaos.weather` | `/api/system-apps/weather` | Current, hourly, weekly, rain, wind, visibility (World Engine) |
+| GULF Maps | `com.gulfos.maps` | `/api/system-apps/maps/*` + World Engine | GTA map, GPS, navigation, favorites, offline cache, traffic, police roadblocks |
+| Camera | `com.gulfos.camera` | `/api/system-apps/camera/*` | Photo, portrait, video, slow-mo, time lapse, night mode, flash, HDR, grid, zoom, burst, RAW |
+| Gallery | `com.gulfos.gallery` | `/api/system-apps/gallery/*` | Albums, favorites, hidden, trash, AI categories, memory timeline, storage analysis |
+| Files | `com.gulfos.files` | `/api/system-apps/files/*` + `/api/filesystem` | Browse, recent, categories, search, PDF/ZIP preview |
+| Calendar | `com.gulfos.calendar` | `/api/system-apps/calendar/*` | Events, reminders, birthdays, government, police shifts, justice hearings, bank payments |
+| Clock | `com.gulfos.clock` | `/api/system-apps/clock/*` | Alarms, stopwatch, timer, world clocks, sleep schedule |
+| Calculator | `com.gulfos.calculator` | Client-only | Basic, scientific, history, currency/unit conversion |
+| Notes | `com.gulfos.notes` | `/api/system-apps/notes` | Rich text, pin, lock, search, folders |
+| Voice Recorder | `com.gulfos.recorder` | `/api/system-apps/voice-recorder` | Recording, noise reduction, bookmarks, trim |
+| Weather | `com.gulfos.weather` | `/api/system-apps/weather` | Current, hourly, weekly, rain, wind, visibility (World Engine) |
 
 ## Architecture
 

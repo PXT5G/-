@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
-import type { AppCategory, PermissionType } from '@bananaos/shared';
+import type { AppCategory, PermissionType } from '@gulfos/shared';
 
 export interface IStoreListing extends Document {
   appId: Types.ObjectId;

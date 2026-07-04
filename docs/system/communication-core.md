@@ -1,4 +1,4 @@
-# BananaOS Communication Core
+# GULFOS Communication Core
 
 Phase 3.4 global communication infrastructure. Every messaging and calling application routes through this engine — no app may send messages directly.
 
@@ -145,7 +145,7 @@ Base path: `/api/communication` (JWT required)
 - `storage` — Required for attachments
 - `notifications` — Delivered via Notification Broker
 - `phone`, `microphone` — For future voice/video apps
-- `com.bananaos.communication` — Core app seeded with all permissions on system init
+- `com.gulfos.communication` — Core app seeded with all permissions on system init
 
 ## Encryption
 
@@ -183,7 +183,7 @@ Initialized via `useCommunicationInit()` in `OSProvider`.
 - Phone app (voice/video calls via `voiceService` / `videoService`)
 - SMS app consuming `messageType: 'sms'`
 - WhatsApp-style app on `private_chat` / `group_chat`
-- Bank transfer messages with Banana Bank integration
+- Bank transfer messages with GULF Bank integration
 - Identity verification messages with Identity app
 - Police/Justice secure channels with enhanced RBAC
 - Full Signal-protocol E2E key exchange

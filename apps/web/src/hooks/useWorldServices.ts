@@ -154,7 +154,7 @@ export function useSignal() {
   return {
     signalBars: signal?.signalBars ?? network?.signalBars ?? network?.signalStrength ?? 0,
     generation: signal?.generation ?? (network?.generation as SignalSnapshot['generation']) ?? 'none',
-    carrier: signal?.carrier ?? network?.carrier ?? 'Banana Mobile',
+    carrier: signal?.carrier ?? network?.carrier ?? 'GULF Mobile',
     signalDbm: signal?.signalDbm ?? network?.signalDbm,
   };
 }

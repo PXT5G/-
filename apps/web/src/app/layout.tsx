@@ -5,13 +5,13 @@ import { OSProvider } from '@/providers/OSProvider';
 import { OSLayout } from '@/layouts/OSLayout';
 
 export const metadata: Metadata = {
-  title: 'BananaOS',
+  title: 'GULFOS',
   description: 'Premium Mobile Web Operating System',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'BananaOS',
+    title: 'GULFOS',
   },
   icons: {
     icon: '/icons/icon-192.png',

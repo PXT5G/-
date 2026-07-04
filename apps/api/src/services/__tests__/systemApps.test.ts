@@ -6,16 +6,16 @@ describe('system apps constants', () => {
   it('defines all 10 essential system app bundles', () => {
     const bundles = Object.values(SYSTEM_APP_BUNDLES);
     assert.equal(bundles.length, 10);
-    assert.ok(bundles.includes('com.bananaos.maps'));
-    assert.ok(bundles.includes('com.bananaos.camera'));
-    assert.ok(bundles.includes('com.bananaos.gallery'));
-    assert.ok(bundles.includes('com.bananaos.files'));
-    assert.ok(bundles.includes('com.bananaos.calendar'));
-    assert.ok(bundles.includes('com.bananaos.clock'));
-    assert.ok(bundles.includes('com.bananaos.calculator'));
-    assert.ok(bundles.includes('com.bananaos.notes'));
-    assert.ok(bundles.includes('com.bananaos.voicerecorder'));
-    assert.ok(bundles.includes('com.bananaos.weather'));
+    assert.ok(bundles.includes('com.gulfos.maps'));
+    assert.ok(bundles.includes('com.gulfos.camera'));
+    assert.ok(bundles.includes('com.gulfos.gallery'));
+    assert.ok(bundles.includes('com.gulfos.files'));
+    assert.ok(bundles.includes('com.gulfos.calendar'));
+    assert.ok(bundles.includes('com.gulfos.clock'));
+    assert.ok(bundles.includes('com.gulfos.calculator'));
+    assert.ok(bundles.includes('com.gulfos.notes'));
+    assert.ok(bundles.includes('com.gulfos.recorder'));
+    assert.ok(bundles.includes('com.gulfos.weather'));
   });
 
   it('defines camera modes', () => {

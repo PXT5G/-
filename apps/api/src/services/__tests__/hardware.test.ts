@@ -12,12 +12,12 @@ import {
 
 describe('hardware RAM profiles', () => {
   it('assigns realistic RAM to key apps', () => {
-    assert.equal(getAppRamProfile('com.bananaos.phone').active, 120_000_000);
-    assert.equal(getAppRamProfile('com.bananaos.messages').active, 90_000_000);
-    assert.equal(getAppRamProfile('com.bananaos.bank').active, 180_000_000);
-    assert.equal(getAppRamProfile('com.bananaos.police').active, 350_000_000);
-    assert.equal(getAppRamProfile('com.bananaos.camera').active, 450_000_000);
-    assert.equal(getAppRamProfile('com.bananaos.gallery').active, 220_000_000);
+    assert.equal(getAppRamProfile('com.gulfos.phone').active, 120_000_000);
+    assert.equal(getAppRamProfile('com.gulfos.messages').active, 90_000_000);
+    assert.equal(getAppRamProfile('com.gulfos.bank').active, 180_000_000);
+    assert.equal(getAppRamProfile('com.gulfos.police').active, 350_000_000);
+    assert.equal(getAppRamProfile('com.gulfos.camera').active, 450_000_000);
+    assert.equal(getAppRamProfile('com.gulfos.gallery').active, 220_000_000);
   });
 
   it('uses fallback for unknown apps', () => {
@@ -95,7 +95,7 @@ describe('memory pressure logic', () => {
     const total = 8_000_000_000;
     const used = 7_600_000_000;
     const pressure = used / total;
-    const cameraActive = getAppRamProfile('com.bananaos.camera').active;
+    const cameraActive = getAppRamProfile('com.gulfos.camera').active;
     const free = total - used;
     assert.ok(pressure >= 0.85);
     assert.equal(free < cameraActive, true);

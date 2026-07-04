@@ -25,7 +25,7 @@ export function DiagnosticsSettingsScreen({ onBack }: { onBack: () => void }) {
   if (isLoading || !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -33,7 +33,7 @@ export function DiagnosticsSettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ Settings</button>
         <h1 className="text-2xl font-bold text-white mb-2">Diagnostics</h1>
         <p className="text-xs text-white/40 mb-6">Collected {new Date(data.collectedAt).toLocaleString()}</p>
 

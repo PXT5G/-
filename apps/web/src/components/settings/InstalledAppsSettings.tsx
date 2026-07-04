@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { bananaAppService } from '@/apps/banana-app/services/bananaAppService';
+import { gulfStoreService } from '@/apps/banana-app/services/gulfStoreService';
 
 function formatSize(bytes: number) {
   if (bytes < 1_000_000) return `${(bytes / 1000).toFixed(0)} KB`;
@@ -11,19 +11,19 @@ function formatSize(bytes: number) {
 export function InstalledAppsSettings({ onBack }: { onBack: () => void }) {
   const { data, isLoading } = useQuery({
     queryKey: ['store', 'installed'],
-    queryFn: () => bananaAppService.getInstalled(),
+    queryFn: () => gulfStoreService.getInstalled(),
   });
 
   const apps = data?.apps ?? [];
 
   return (
     <div className="h-full overflow-y-auto bg-black p-4">
-      <button type="button" onClick={onBack} className="text-banana-gold text-sm mb-4">‹ Settings</button>
+      <button type="button" onClick={onBack} className="text-gulf-gold text-sm mb-4">‹ Settings</button>
       <h2 className="text-xl font-bold text-white mb-4">Installed Apps</h2>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
         </div>
       ) : apps.length === 0 ? (
         <p className="text-sm text-white/50 text-center py-8">No apps installed yet.</p>

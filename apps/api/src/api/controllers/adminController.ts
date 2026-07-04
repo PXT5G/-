@@ -70,7 +70,7 @@ export const broadcast = asyncHandler(async (req: AuthRequest, res: Response) =>
 export const seedSystemApps = asyncHandler(async (_req: AuthRequest, res: Response) => {
   const systemApps = [
     {
-      bundleId: 'com.bananaos.settings',
+      bundleId: 'com.gulfos.settings',
       name: 'Settings',
       version: '1.0.0',
       description: 'System settings and preferences',

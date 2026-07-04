@@ -27,7 +27,7 @@ const networkSessionSchema = new Schema<INetworkSession>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     towerUuid: { type: String, required: true },
-    carrier: { type: String, default: 'Banana Mobile' },
+    carrier: { type: String, default: 'GULF Mobile' },
     generation: { type: String, default: '5g' },
     signalBars: { type: Number, default: 0 },
     connectionType: { type: String, default: 'cellular' },

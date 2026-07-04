@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import type { ThemeMode, AccentColor, WallpaperConfig } from '@bananaos/shared';
+import type { ThemeMode, AccentColor, WallpaperConfig } from '@gulfos/shared';
 import { DEFAULT_USER_SETTINGS } from '../../constants/settings';
 
 export interface IUserSettings extends Document {
@@ -67,12 +67,12 @@ const userSettingsSchema = new Schema<IUserSettings>(
     theme: { type: String, enum: ['light', 'dark', 'system'], default: DEFAULT_USER_SETTINGS.theme },
     accentColor: { type: String, enum: ['gold', 'white', 'black'], default: DEFAULT_USER_SETTINGS.accentColor },
     wallpaper: {
-      id: { type: String, default: 'banana-gradient' },
+      id: { type: String, default: 'gulf-gradient' },
       type: { type: String, enum: ['gradient', 'image', 'animated'], default: 'animated' },
       light: { type: String },
       dark: { type: String },
       url: { type: String },
-      animatedClass: { type: String, default: 'wallpaper-banana' },
+      animatedClass: { type: String, default: 'wallpaper-gulf' },
     },
     language: { type: String, default: DEFAULT_USER_SETTINGS.language },
     region: { type: String, default: DEFAULT_USER_SETTINGS.region },

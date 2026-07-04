@@ -41,7 +41,7 @@ export function HardwareSettingsScreen({ onBack }: { onBack: () => void }) {
   if (isLoading || !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -54,12 +54,12 @@ export function HardwareSettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">
           ‹ Settings
         </button>
 
         <div className="text-center mb-6">
-          <div className="w-20 h-20 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-banana-gold/30 to-banana-gold/5 flex items-center justify-center text-4xl">
+          <div className="w-20 h-20 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-gulf-gold/30 to-gulf-gold/5 flex items-center justify-center text-4xl">
             📱
           </div>
           <h1 className="text-xl font-bold text-white">{data.deviceName}</h1>

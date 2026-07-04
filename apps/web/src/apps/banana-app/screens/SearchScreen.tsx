@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { useBananaAppStore } from '../store/bananaAppStore';
-import { bananaAppService } from '../services/bananaAppService';
+import { useGulfStoreStore } from '../store/gulfStoreStore';
+import { gulfStoreService } from '../services/gulfStoreService';
 import { SearchBar } from '@/components/shared';
 import { AppCard } from '../components/AppCard';
 
 export function SearchScreen({ onAppPress }: { onAppPress: (bundleId: string) => void }) {
-  const { searchQuery, searchResults, setSearchQuery, setSearchResults } = useBananaAppStore();
+  const { searchQuery, searchResults, setSearchQuery, setSearchResults } = useGulfStoreStore();
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = useCallback(
@@ -19,7 +19,7 @@ export function SearchScreen({ onAppPress }: { onAppPress: (bundleId: string) =>
       }
       setIsSearching(true);
       try {
-        const results = await bananaAppService.search(q);
+        const results = await gulfStoreService.search(q);
         setSearchResults(results);
       } catch {
         setSearchResults([]);
@@ -46,7 +46,7 @@ export function SearchScreen({ onAppPress }: { onAppPress: (bundleId: string) =>
       <div className="flex-1 overflow-y-auto px-4">
         {isSearching ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
           </div>
         ) : searchResults.length > 0 ? (
           <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
@@ -57,7 +57,7 @@ export function SearchScreen({ onAppPress }: { onAppPress: (bundleId: string) =>
         ) : searchQuery ? (
           <p className="text-center text-white/40 py-16 text-sm">No results for &quot;{searchQuery}&quot;</p>
         ) : (
-          <p className="text-center text-white/40 py-16 text-sm">Search the Banana App Store</p>
+          <p className="text-center text-white/40 py-16 text-sm">Search the GULF Store Store</p>
         )}
       </div>
     </div>

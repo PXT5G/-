@@ -1,10 +1,10 @@
-# BananaOS Core Operating System Services
+# GULFOS Core Operating System Services
 
 > Phase 3.2 — Centralized OS Services Layer
 
 ## Overview
 
-Phase 3.2 transforms BananaOS from a collection of apps into a real browser-based operating system with centralized services. Every application must consume these services — nothing may bypass them.
+Phase 3.2 transforms GULFOS from a collection of apps into a real browser-based operating system with centralized services. Every application must consume these services — nothing may bypass them.
 
 ## Architecture
 
@@ -232,7 +232,7 @@ await systemService.replayEvents({ namespace: 'app.phone', limit: 10 });
 ### Requesting a permission
 
 ```typescript
-await systemService.grantPermission('com.bananaos.phone', 'location');
+await systemService.grantPermission('com.gulfos.phone', 'location');
 ```
 
 ### Enqueueing a notification

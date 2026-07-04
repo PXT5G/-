@@ -1,8 +1,8 @@
-/** Los Santos map constants — BananaOS World Engine coordinate space */
+/** Los Santos map constants — GULFOS World Engine coordinate space */
 
 export const WORLD_REGION = 'San Andreas';
 export const WORLD_CITY = 'Los Santos';
-export const DEFAULT_CARRIER = 'Banana Mobile';
+export const DEFAULT_CARRIER = 'GULF Mobile';
 
 export const MAP_BOUNDS = {
   minLat: 33.95,
@@ -62,7 +62,7 @@ export const LANDMARKS = [
   { id: 'vinewood-sign', name: 'Vinewood Sign', district: 'vinewood', lat: 34.128, lng: -118.290, category: 'landmark' },
   { id: 'del-perro-pier', name: 'Del Perro Pier', district: 'del-perro', lat: 34.045, lng: -118.330, category: 'landmark' },
   { id: 'legion-square', name: 'Legion Square', district: 'downtown', lat: 34.055, lng: -118.245, category: 'park' },
-  { id: 'banana-hq', name: 'Banana Mobile HQ', district: 'downtown', lat: 34.053, lng: -118.240, category: 'business' },
+  { id: 'gulf-hq', name: 'GULF Mobile HQ', district: 'downtown', lat: 34.053, lng: -118.240, category: 'business' },
   { id: 'mirror-park', name: 'Mirror Park', district: 'la-mesa', lat: 34.025, lng: -118.195, category: 'park' },
 ];
 

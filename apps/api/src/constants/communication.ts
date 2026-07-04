@@ -1,6 +1,6 @@
-/** BananaOS Communication Core — shared enums and limits */
+/** GULFOS Communication Core — shared enums and limits */
 
-export const COMMUNICATION_APP = 'com.bananaos.communication';
+export const COMMUNICATION_APP = 'com.gulfos.communication';
 
 export const MESSAGE_TYPES = [
   'sms',

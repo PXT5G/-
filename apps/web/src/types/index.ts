@@ -59,7 +59,7 @@ export type {
   RecoveryStateSnapshot,
   MaintenanceRecordSnapshot,
   ExtendedDiagnosticsReport,
-} from '@bananaos/shared';
+} from '@gulfos/shared';
 
 export interface AppFolder {
   id: string;
@@ -115,4 +115,4 @@ export interface PermissionGrant {
   grantedAt?: string;
 }
 
-import type { GridPosition, PermissionType } from '@bananaos/shared';
+import type { GridPosition, PermissionType } from '@gulfos/shared';

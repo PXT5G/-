@@ -13,7 +13,7 @@ export function WeatherApp() {
   if (isLoading || !weather) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-b from-sky-900 to-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

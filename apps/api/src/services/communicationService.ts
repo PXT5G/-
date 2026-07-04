@@ -80,12 +80,12 @@ async function assertCanSend(userId: string, conversationId: string, appId: stri
   }
 
   const allowed = await checkPermission(userId, appId, 'contacts');
-  if (!allowed && appId !== 'com.bananaos.system' && appId !== 'com.bananaos.communication') {
+  if (!allowed && appId !== 'com.gulfos.system' && appId !== 'com.gulfos.communication') {
     throw new Error('PERMISSION_DENIED');
   }
 
   const net = await getNetwork(userId);
-  if (!net.internetConnected && appId !== 'com.bananaos.system') {
+  if (!net.internetConnected && appId !== 'com.gulfos.system') {
     throw new Error('NO_NETWORK');
   }
 

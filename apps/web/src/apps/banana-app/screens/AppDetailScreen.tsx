@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { bananaAppService } from '../services/bananaAppService';
+import { gulfStoreService } from '../services/gulfStoreService';
 import type { AppVersionInfo, StoreReview } from '../types';
 import { Button, RatingStars } from '@/components/shared';
 import { useHaptic, useSound } from '@/hooks/useSound';
@@ -35,12 +35,12 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
 
   const { data: app, isLoading } = useQuery({
     queryKey: ['store', 'app', bundleId],
-    queryFn: () => bananaAppService.getAppDetail(bundleId),
+    queryFn: () => gulfStoreService.getAppDetail(bundleId),
   });
 
   const reviewMutation = useMutation({
     mutationFn: () =>
-      bananaAppService.postReview(bundleId, {
+      gulfStoreService.postReview(bundleId, {
         rating: reviewRating,
         title: reviewTitle,
         body: reviewBody,
@@ -90,7 +90,7 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
   if (isLoading || !app) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -98,7 +98,7 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-black/90 backdrop-blur-xl border-b border-white/5">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm">
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm">
           ‹ Back
         </button>
         <h1 className="text-sm font-semibold text-white flex-1 truncate">{app.name}</h1>
@@ -113,9 +113,9 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
           <div className="flex-1">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               {app.name}
-              {app.verified && <span className="text-banana-gold text-sm">✓ Official</span>}
+              {app.verified && <span className="text-gulf-gold text-sm">✓ Official</span>}
             </h2>
-            <p className="text-sm text-banana-gold">{app.tagline}</p>
+            <p className="text-sm text-gulf-gold">{app.tagline}</p>
             <div className="mt-1">
               <RatingStars rating={app.ratingAverage} showValue count={app.ratingCount} />
             </div>
@@ -174,7 +174,7 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
               <p className="text-sm font-medium text-white">{app.developer.name}</p>
               <p className="text-xs text-white/50">Developer</p>
             </div>
-            {app.developer.verified && <span className="text-banana-gold text-xs">✓</span>}
+            {app.developer.verified && <span className="text-gulf-gold text-xs">✓</span>}
             <span className="text-white/30">›</span>
           </button>
         )}
@@ -217,7 +217,7 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
               <button
                 type="button"
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="text-xs text-banana-gold"
+                className="text-xs text-gulf-gold"
               >
                 Write Review
               </button>
@@ -228,7 +228,7 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
             <div className="p-3 rounded-xl bg-white/5 border border-white/10 mb-4 space-y-3">
               <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <button key={s} type="button" onClick={() => setReviewRating(s)} className={s <= reviewRating ? 'text-banana-gold' : 'text-white/20'}>
+                  <button key={s} type="button" onClick={() => setReviewRating(s)} className={s <= reviewRating ? 'text-gulf-gold' : 'text-white/20'}>
                     ★
                   </button>
                 ))}
@@ -312,7 +312,7 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
             <button
               type="button"
               onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-              className="w-full mt-3 text-sm text-banana-gold text-center"
+              className="w-full mt-3 text-sm text-gulf-gold text-center"
             >
               {authMode === 'login' ? 'Create an account' : 'Already have an account?'}
             </button>

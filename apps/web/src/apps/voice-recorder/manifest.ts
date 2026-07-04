@@ -1,9 +1,9 @@
 import type { AppManifest } from '@/types';
 
 export const voiceRecorderManifest: AppManifest = {
-  id: 'com.bananaos.voicerecorder',
-  bundleId: 'com.bananaos.voicerecorder',
-  name: 'Voice Recorder',
+  id: 'com.gulfos.recorder',
+  bundleId: 'com.gulfos.recorder',
+  name: 'GULF Recorder',
   version: '1.0.0',
   description: 'Record, trim, and share audio',
   icon: '🎙️',

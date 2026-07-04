@@ -27,7 +27,7 @@ export function DeviceSyncSettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ Settings</button>
         <h1 className="text-2xl font-bold text-white mb-6">Device Sync</h1>
 
         <section className="mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
@@ -54,7 +54,7 @@ export function DeviceSyncSettingsScreen({ onBack }: { onBack: () => void }) {
             type="button"
             onClick={() => { tap(); syncMutation.mutate(); }}
             disabled={syncMutation.isPending || syncStatus?.syncing}
-            className="w-full py-2 rounded-lg bg-banana-gold text-black text-sm font-semibold disabled:opacity-50"
+            className="w-full py-2 rounded-lg bg-gulf-gold text-black text-sm font-semibold disabled:opacity-50"
           >
             {syncMutation.isPending ? 'Starting…' : 'Start Sync'}
           </button>

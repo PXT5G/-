@@ -54,7 +54,7 @@ export function PermissionDialog() {
               grantPermission(pending.appId, pending.permission);
               setPending(null);
             }}
-            className="flex-1 py-3 rounded-xl bg-banana-gold text-black text-sm font-medium"
+            className="flex-1 py-3 rounded-xl bg-gulf-gold text-black text-sm font-medium"
           >
             Allow
           </button>

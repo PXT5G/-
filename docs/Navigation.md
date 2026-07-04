@@ -1,4 +1,4 @@
-# BananaOS — Navigation
+# GULFOS — Navigation
 
 > Phase 2 Design Document  
 > Defines navigation architecture, routing, and transition patterns.
@@ -7,7 +7,7 @@
 
 ## 1. Navigation Layers
 
-BananaOS uses a **layered navigation model** with four distinct levels:
+GULFOS uses a **layered navigation model** with four distinct levels:
 
 ```
 Layer 0: OS Shell (always present)
@@ -94,7 +94,7 @@ registerApp(manifest: AppManifest, component: AppComponent);
 
 | Field | Purpose |
 |-------|---------|
-| `bundleId` | Unique identifier (e.g., `com.bananaos.phone`) |
+| `bundleId` | Unique identifier (e.g., `com.gulfos.phone`) |
 | `route` | Deep link path (e.g., `/phone`) |
 | `entryPoint` | Component export name |
 | `permissions` | Required permission types |
@@ -116,13 +116,13 @@ AppWindow renders:
 ### 3.3 Deep Linking (Phase 2)
 
 ```
-URL: bananaos://phone/dial?number=+1234567890
+URL: gulfos://phone/dial?number=+1234567890
     │
     ▼
 Parse URL → bundleId + path + params
     │
     ▼
-openWindow({ appId: 'com.bananaos.phone', ... })
+openWindow({ appId: 'com.gulfos.phone', ... })
     │
     ▼
 App receives initialRoute + params via context
@@ -132,29 +132,29 @@ App receives initialRoute + params via context
 
 | App | Bundle ID |
 |-----|-----------|
-| Identity | `com.bananaos.identity` |
-| SIM Card | `com.bananaos.simcard` |
-| Phone | `com.bananaos.phone` |
-| Messages | `com.bananaos.messages` |
-| Contacts | `com.bananaos.contacts` |
-| Bank | `com.bananaos.bank` |
-| Police | `com.bananaos.police` |
-| EMS | `com.bananaos.ems` |
-| Community | `com.bananaos.community` |
-| Announcements | `com.bananaos.announcements` |
-| Store | `com.bananaos.store` |
-| Settings | `com.bananaos.settings` |
-| Files | `com.bananaos.files` |
-| Gallery | `com.bananaos.gallery` |
-| Camera | `com.bananaos.camera` |
-| Browser | `com.bananaos.browser` |
-| Music | `com.bananaos.music` |
-| Calendar | `com.bananaos.calendar` |
-| Calculator | `com.bananaos.calculator` |
-| Clock | `com.bananaos.clock` |
-| Weather | `com.bananaos.weather` |
-| Downloads | `com.bananaos.downloads` |
-| Profile | `com.bananaos.profile` |
+| Identity | `com.gulfos.identity` |
+| SIM Card | `com.gulfos.sim` |
+| Phone | `com.gulfos.phone` |
+| Messages | `com.gulfos.messages` |
+| Contacts | `com.gulfos.contacts` |
+| Bank | `com.gulfos.bank` |
+| Police | `com.gulfos.police` |
+| EMS | `com.gulfos.ems` |
+| Community | `com.gulfos.community` |
+| Announcements | `com.gulfos.announcements` |
+| Store | `com.gulfos.store` |
+| Settings | `com.gulfos.settings` |
+| Files | `com.gulfos.files` |
+| Gallery | `com.gulfos.gallery` |
+| Camera | `com.gulfos.camera` |
+| Browser | `com.gulfos.browser` |
+| Music | `com.gulfos.music` |
+| Calendar | `com.gulfos.calendar` |
+| Calculator | `com.gulfos.calculator` |
+| Clock | `com.gulfos.clock` |
+| Weather | `com.gulfos.weather` |
+| Downloads | `com.gulfos.downloads` |
+| Profile | `com.gulfos.profile` |
 
 ---
 
@@ -293,10 +293,10 @@ Priority (first match wins):
 ### Default Dock Layout
 | Position | App | Bundle ID |
 |----------|-----|-----------|
-| 1 | Phone | `com.bananaos.phone` |
-| 2 | Messages | `com.bananaos.messages` |
-| 3 | Browser | `com.bananaos.browser` |
-| 4 | Settings | `com.bananaos.settings` |
+| 1 | Phone | `com.gulfos.phone` |
+| 2 | Messages | `com.gulfos.messages` |
+| 3 | Browser | `com.gulfos.browser` |
+| 4 | Settings | `com.gulfos.settings` |
 
 ### Dock Rules
 - Max 4 apps

@@ -1,4 +1,4 @@
-import type { NotificationPriority } from '@bananaos/shared';
+import type { NotificationPriority } from '@gulfos/shared';
 import type { MessageType } from '../constants/communication';
 import { enqueueNotification } from './notificationBrokerService';
 
@@ -44,7 +44,7 @@ export async function dispatchMessageNotification(params: {
       lockScreen: false,
       dynamicIsland: false,
       groupId: params.conversationId,
-      deepLink: `bananaos://communication/${params.conversationId}/${params.messageId}`,
+      deepLink: `gulfos://communication/${params.conversationId}/${params.messageId}`,
       actorId: params.actorId,
     });
   }
@@ -63,7 +63,7 @@ export async function dispatchMessageNotification(params: {
     lockScreen: true,
     dynamicIsland: priority !== 'low',
     groupId: params.conversationId,
-    deepLink: `bananaos://communication/${params.conversationId}/${params.messageId}`,
+    deepLink: `gulfos://communication/${params.conversationId}/${params.messageId}`,
     actorId: params.actorId,
   });
 }
@@ -87,7 +87,7 @@ export async function dispatchEmergencyNotification(params: {
     lockScreen: true,
     dynamicIsland: true,
     groupId: params.conversationId,
-    deepLink: `bananaos://communication/${params.conversationId}`,
+    deepLink: `gulfos://communication/${params.conversationId}`,
     actorId: params.actorId,
   });
 }

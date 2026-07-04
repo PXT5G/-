@@ -1,12 +1,13 @@
 {
-  "name": "@bananaos/shared",
+  "name": "@gulfos/shared",
   "version": "1.0.0",
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "test": "node --import tsx --test src/migration/__tests__/bundleIds.test.ts"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

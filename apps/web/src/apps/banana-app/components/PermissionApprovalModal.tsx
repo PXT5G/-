@@ -43,7 +43,7 @@ export function PermissionApprovalModal({
           <span className="text-4xl">{appIcon}</span>
           <div>
             <h3 className="text-lg font-semibold text-white">{type === 'update' ? 'Update' : 'Install'} {appName}</h3>
-            <p className="text-xs text-white/50">v{manifest.version} · Requires BananaOS {manifest.requiredBananaOSVersion}+</p>
+            <p className="text-xs text-white/50">v{manifest.version} · Requires GULFOS {manifest.requiredGULFOSVersion}+</p>
           </div>
         </div>
 
@@ -53,7 +53,7 @@ export function PermissionApprovalModal({
             <div className="space-y-1">
               {manifest.requiredPermissions.map((p) => (
                 <div key={p} className="flex items-center gap-2 text-sm text-white/80">
-                  <span className="text-banana-gold">●</span>
+                  <span className="text-gulf-gold">●</span>
                   <span className="capitalize">{p}</span>
                 </div>
               ))}

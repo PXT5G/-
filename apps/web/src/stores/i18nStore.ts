@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getTranslations, isRTL, t, type TranslationDict, type TranslationKey } from '@bananaos/shared';
+import { getTranslations, isRTL, t, type TranslationDict, type TranslationKey } from '@gulfos/shared';
 
 interface I18nState {
   language: string;

@@ -150,7 +150,7 @@ export async function triggerEmergencyShutdown(userId: string) {
   await DeviceState.findOneAndUpdate({ userId }, { emergencyMode: true, screenState: 'off', lockState: 'locked' });
   await enqueueNotification({
     userId,
-    appId: 'com.bananaos.system',
+    appId: 'com.gulfos.system',
     title: 'Emergency Shutdown',
     body: 'Device shut down due to critical battery level',
     priority: 'critical',

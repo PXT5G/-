@@ -1,11 +1,11 @@
-# Banana App — Application Marketplace & Package Manager
+# GULF Store — Application Marketplace & Package Manager
 
 > Phase 3 — Real Installation System  
-> Bundle ID: `com.bananaos.store`
+> Bundle ID: `com.gulfos.store`
 
 ## Overview
 
-Banana App is the official package manager for BananaOS. It provides real application lifecycle management: download, verify, install, update, and uninstall — with a central application registry that syncs installed apps across Home Screen, Search, App Library, and Settings.
+GULF Store is the official package manager for GULFOS. It provides real application lifecycle management: download, verify, install, update, and uninstall — with a central application registry that syncs installed apps across Home Screen, Search, App Library, and Settings.
 
 ## Application Lifecycle States
 
@@ -28,9 +28,9 @@ When the user approves permissions and taps Install:
 
 1. Download application package (`.bpkg`)
 2. Verify package integrity (SHA-256 checksum)
-3. Verify version compatibility (BananaOS version)
+3. Verify version compatibility (GULFOS version)
 4. Verify permissions (required vs approved)
-5. Register application with BananaOS (`AppRegistry`)
+5. Register application with GULFOS (`AppRegistry`)
 6. Create application storage (`data/app-storage/{userId}/{bundleId}/`)
 7. Register routes
 8. Register icons
@@ -95,7 +95,7 @@ Package manifest (`.bpkg.json`) includes:
 
 - Version, checksum, size
 - Dependencies
-- Required BananaOS version
+- Required GULFOS version
 - Required / optional permissions
 - Icons, screenshots
 - Changelog
@@ -120,7 +120,7 @@ apps/web/src/apps/banana-app/
 │   ├── PermissionApprovalModal.tsx
 │   └── InstallOverlay.tsx   # Real progress (no fake animation)
 ├── hooks/useStoreRealtime.ts
-└── services/bananaAppService.ts
+└── services/gulfStoreService.ts
 ```
 
 ## API Endpoints
@@ -158,10 +158,10 @@ apps/web/src/apps/banana-app/
 
 ```bash
 # API install system tests
-npm run test --workspace=@bananaos/api
+npm run test --workspace=@gulfos/api
 
 # Frontend install tests
-npm run test --workspace=@bananaos/web
+npm run test --workspace=@gulfos/web
 ```
 
 Tests cover: installation pipeline, version comparison, lifecycle states, failed download recovery, queue ordering, permission validation, and storage calculations.
@@ -185,7 +185,7 @@ Tests cover: installation pipeline, version comparison, lifecycle states, failed
 
 ## Device Storage System
 
-BananaOS devices have configurable internal storage (32 GB – 1 TB). Storage is tracked in realtime across:
+GULFOS devices have configurable internal storage (32 GB – 1 TB). Storage is tracked in realtime across:
 
 | Category | Tracked |
 |----------|---------|
@@ -230,7 +230,7 @@ Settings → Storage provides animated charts, category breakdown, system storag
 | Phone | 320 MB |
 | Messages | 260 MB |
 | Contacts | 120 MB |
-| Banana Bank | 480 MB |
+| GULF Bank | 480 MB |
 | Police | 1.4 GB |
 | Camera | 620 MB |
 | Gallery | 400 MB |
@@ -249,7 +249,7 @@ Every device receives a hardware profile on registration:
 |-------|-------------|
 | Device Name / Model / Color | User-facing identity |
 | Serial Number / UUID | Unique identifiers |
-| Generation | Banana Phone 15 / Pro / Pro Max |
+| Generation | Gulf Phone V1 15 / Pro / Pro Max |
 | CPU / GPU | Processor specs |
 | RAM | 8 GB total |
 | Internal Storage | Configurable tier (32 GB–1 TB) |

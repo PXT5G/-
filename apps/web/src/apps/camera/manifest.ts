@@ -1,8 +1,8 @@
 import type { AppManifest } from '@/types';
 
 export const cameraManifest: AppManifest = {
-  id: 'com.bananaos.camera',
-  bundleId: 'com.bananaos.camera',
+  id: 'com.gulfos.camera',
+  bundleId: 'com.gulfos.camera',
   name: 'Camera',
   version: '1.0.0',
   description: 'Professional camera with photo and video',

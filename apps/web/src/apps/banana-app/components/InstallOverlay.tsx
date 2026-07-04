@@ -113,7 +113,7 @@ export function InstallOverlay({
           )}
 
           {install.status === 'installing' && install.installStep && (
-            <p className="text-xs text-banana-gold mb-4 text-center">{install.installStep}</p>
+            <p className="text-xs text-gulf-gold mb-4 text-center">{install.installStep}</p>
           )}
 
           {install.status === 'failed' && (
@@ -141,7 +141,7 @@ export function InstallOverlay({
             <motion.button
               type="button"
               onClick={onComplete}
-              className="mt-4 px-6 py-2 rounded-xl bg-banana-gold text-black text-sm font-semibold w-full"
+              className="mt-4 px-6 py-2 rounded-xl bg-gulf-gold text-black text-sm font-semibold w-full"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >

@@ -3,11 +3,11 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/web/package.json ./apps/web/
-RUN npm install --workspace=@bananaos/web --workspace=@bananaos/shared
+RUN npm install --workspace=@gulfos/web --workspace=@gulfos/shared
 COPY packages/shared ./packages/shared
 COPY apps/web ./apps/web
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build --workspace=@bananaos/shared && npm run build --workspace=@bananaos/web
+RUN npm run build --workspace=@gulfos/shared && npm run build --workspace=@gulfos/web
 
 FROM node:20-alpine AS runner
 WORKDIR /app

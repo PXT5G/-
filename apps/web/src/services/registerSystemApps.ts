@@ -2,8 +2,8 @@
 
 import { registerApp } from '@/services/appRouter';
 import { SettingsApp } from '@/components/settings/SettingsApp';
-import { BananaApp } from '@/apps/banana-app';
-import { bananaAppManifest } from '@/apps/banana-app/manifest';
+import { GulfStoreApp } from '@/apps/banana-app';
+import { gulfStoreManifest } from '@/apps/banana-app/manifest';
 import { MapsApp } from '@/apps/maps';
 import { mapsManifest } from '@/apps/maps/manifest';
 import { CameraApp } from '@/apps/camera';
@@ -29,8 +29,8 @@ import { policeManifest } from '@/apps/police/manifest';
 
 registerApp(
   {
-    id: 'com.bananaos.settings',
-    bundleId: 'com.bananaos.settings',
+    id: 'com.gulfos.settings',
+    bundleId: 'com.gulfos.settings',
     name: 'Settings',
     version: '1.0.0',
     description: 'System settings and preferences',
@@ -44,7 +44,7 @@ registerApp(
   SettingsApp
 );
 
-registerApp(bananaAppManifest, BananaApp);
+registerApp(gulfStoreManifest, GulfStoreApp);
 
 const SYSTEM_APPS = [
   [mapsManifest, MapsApp],

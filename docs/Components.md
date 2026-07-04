@@ -1,4 +1,4 @@
-# BananaOS — Components
+# GULFOS — Components
 
 > Phase 2 Design Document  
 > Component library catalog and UI mock structure for all surfaces.
@@ -477,7 +477,7 @@ Wireframe layouts for every major screen. ASCII mockups define component placeme
 │  │ 🔊 ──────●────── 70%     │  │ ← Volume slider
 │  │                          │  │
 │  │ ┌──────────────────────┐ │  │
-│  │ │  🍌 BananaDrop      │ │  │ ← Sharing panel
+│  │ │  🏬 GulfDrop      │ │  │ ← Sharing panel
 │  │ │  Tap to share nearby │ │  │
 │  │ └──────────────────────┘ │  │
 │  └──────────────────────────┘  │
@@ -495,8 +495,8 @@ Wireframe layouts for every major screen. ASCII mockups define component placeme
 │  │      │ Photo  │          │  │ ← Avatar (xl)
 │  │      └────────┘          │  │
 │  │                          │  │
-│  │    Johnathan Banana      │  │ ← Full Name
-│  │    @jbanana        ✓     │  │ ← Username + verified badge
+│  │    Johnathan Gulf      │  │ ← Full Name
+│  │    @jgulf        ✓     │  │ ← Username + verified badge
 │  │                          │  │
 │  │  ┌────────────────────┐  │  │
 │  │  │  National ID       │  │  │
@@ -504,7 +504,7 @@ Wireframe layouts for every major screen. ASCII mockups define component placeme
 │  │  └────────────────────┘  │  │
 │  │                          │  │
 │  │  Membership: Gold        │  │
-│  │  Country: Banana Republic│  │
+│  │  Country: Gulf Republic│  │
 │  │  Issued: Jan 1, 2026    │  │
 │  │  Expires: Jan 1, 2031   │  │
 │  │                          │  │
@@ -689,7 +689,7 @@ components/shared/
 components/os/
 ├── LockScreenShortcuts.tsx   # NEW — emergency, camera, flashlight
 ├── FolderOverlay.tsx         # NEW — folder view
-├── BananaDrop.tsx            # NEW — sharing panel
+├── GulfDrop.tsx            # NEW — sharing panel
 ├── IslandActivities.tsx      # NEW — live activity renderers
 ├── NotificationGroup.tsx     # NEW — grouped notifications
 └── JiggleMode.tsx            # NEW — edit mode wrapper
@@ -715,6 +715,6 @@ components/os/
 3. **Feedback** — Toast, Alert, LoadingSpinner, Skeleton
 4. **Communication** — DialPad, ConversationBubble, ContactRow, CallButton
 5. **Media** — QRCode, BarcodeDisplay, ImageViewer
-6. **OS enhancements** — Lock shortcuts, folders, BananaDrop, island activities
+6. **OS enhancements** — Lock shortcuts, folders, GulfDrop, island activities
 
 Then per-app screens using these components.

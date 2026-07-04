@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
-import { bananaAppService } from '@/apps/banana-app/services/bananaAppService';
+import { gulfStoreService } from '@/apps/banana-app/services/gulfStoreService';
 import type { InstalledApp } from '@/types';
 
 export function useInstalledAppsHydration() {
@@ -18,7 +18,7 @@ export function useInstalledAppsHydration() {
 
     (async () => {
       try {
-        const { apps, registry } = await bananaAppService.getInstalled();
+        const { apps, registry } = await gulfStoreService.getInstalled();
         if (cancelled) return;
 
         const registryMap = new Map(registry.map((r) => [r.bundleId, r]));

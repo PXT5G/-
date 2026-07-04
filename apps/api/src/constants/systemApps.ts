@@ -1,16 +1,16 @@
-/** BananaOS Essential System Applications — Phase 3.6 */
+/** GULFOS Essential System Applications — Phase 3.6 */
 
 export const SYSTEM_APP_BUNDLES = {
-  maps: 'com.bananaos.maps',
-  camera: 'com.bananaos.camera',
-  gallery: 'com.bananaos.gallery',
-  files: 'com.bananaos.files',
-  calendar: 'com.bananaos.calendar',
-  clock: 'com.bananaos.clock',
-  calculator: 'com.bananaos.calculator',
-  notes: 'com.bananaos.notes',
-  voiceRecorder: 'com.bananaos.voicerecorder',
-  weather: 'com.bananaos.weather',
+  maps: 'com.gulfos.maps',
+  camera: 'com.gulfos.camera',
+  gallery: 'com.gulfos.gallery',
+  files: 'com.gulfos.files',
+  calendar: 'com.gulfos.calendar',
+  clock: 'com.gulfos.clock',
+  calculator: 'com.gulfos.calculator',
+  notes: 'com.gulfos.notes',
+  voiceRecorder: 'com.gulfos.recorder',
+  weather: 'com.gulfos.weather',
 } as const;
 
 export const CAMERA_MODES = ['photo', 'portrait', 'video', 'slow_motion', 'time_lapse', 'night'] as const;

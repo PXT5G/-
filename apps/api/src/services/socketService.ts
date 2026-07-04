@@ -2,7 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
-import type { SocketEvent, SocketPayload } from '@bananaos/shared';
+import type { SocketEvent, SocketPayload } from '@gulfos/shared';
 
 let io: Server | null = null;
 const userSockets = new Map<string, Set<string>>();

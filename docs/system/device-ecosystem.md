@@ -1,4 +1,4 @@
-# BananaOS Device Ecosystem
+# GULFOS Device Ecosystem
 
 Phase 3.5 extends the operating system with production-ready device management systems. All services integrate with Identity, Bank, SIM, Phone, Contacts, Communication Core, World Engine, Notification Broker, and Permission Broker.
 

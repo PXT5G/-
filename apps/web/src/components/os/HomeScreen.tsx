@@ -9,8 +9,8 @@ import { useGestures } from '@/hooks/useGestures';
 import { useAppLaunch } from '@/hooks/useAppLaunch';
 
 const SYSTEM_APPS = [
-  { bundleId: 'com.bananaos.store', name: 'Banana App', icon: '🍌', isSystemApp: true, route: '/store' },
-  { bundleId: 'com.bananaos.settings', name: 'Settings', icon: '⚙️', isSystemApp: true, route: '/settings' },
+  { bundleId: 'com.gulfos.store', name: 'GULF Store', icon: '🏬', isSystemApp: true, route: '/store' },
+  { bundleId: 'com.gulfos.settings', name: 'Settings', icon: '⚙️', isSystemApp: true, route: '/settings' },
 ];
 
 export function HomeScreen() {

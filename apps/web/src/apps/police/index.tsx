@@ -32,7 +32,7 @@ function GlassCard({ children, className }: { children: ReactNode; className?: s
 function StatBox({ label, value, alert }: { label: string; value: number; alert?: boolean }) {
   return (
     <GlassCard className={cn('p-3 text-center', alert && value > 0 && 'border-red-500/50')}>
-      <p className={cn('text-2xl font-bold', alert && value > 0 ? 'text-red-400' : 'text-banana-gold')}>{value}</p>
+      <p className={cn('text-2xl font-bold', alert && value > 0 ? 'text-red-400' : 'text-gulf-gold')}>{value}</p>
       <p className="text-[10px] text-white/50 uppercase tracking-wide">{label}</p>
     </GlassCard>
   );
@@ -55,7 +55,7 @@ function MdtDashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
       <GlassCard className="p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-banana-gold text-xs font-semibold uppercase tracking-wider">Officer</p>
+            <p className="text-gulf-gold text-xs font-semibold uppercase tracking-wider">Officer</p>
             <p className="text-white text-lg font-bold">{officer.displayName ?? 'Officer'}</p>
             <p className="text-white/50 text-sm">{officer.badgeNumber} · {officer.rank}</p>
           </div>
@@ -72,7 +72,7 @@ function MdtDashboard({ onNavigate }: { onNavigate: (s: string) => void }) {
               onClick={() => { tap(); updateStatus.mutate(s); }}
               className={cn(
                 'flex-1 py-2 rounded-xl text-xs font-medium capitalize transition-colors',
-                officer.status === s ? 'bg-banana-gold text-black' : 'bg-white/10 text-white'
+                officer.status === s ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white'
               )}
             >
               {s.replace('_', ' ')}
@@ -148,7 +148,7 @@ function UnitsScreen() {
         <GlassCard key={String(u.unitId)} className="p-4">
           <div className="flex justify-between">
             <div>
-              <p className="text-banana-gold font-semibold">{String(u.code)}</p>
+              <p className="text-gulf-gold font-semibold">{String(u.code)}</p>
               <p className="text-white text-sm">{String(u.name)}</p>
             </div>
             <span className="text-white/50 text-xs capitalize">{String(u.status)}</span>
@@ -217,7 +217,7 @@ function DispatchCard({ dispatch: d, onAssign }: { dispatch: Record<string, unkn
       <p className="text-white/50 text-xs mb-2">{String(d.description)}</p>
       <p className="text-white/40 text-xs">{String(d.address ?? d.district ?? '')}</p>
       {d.status === 'pending' && (
-        <button type="button" onClick={onAssign} className="mt-3 w-full py-2 rounded-xl bg-banana-gold/20 text-banana-gold text-xs font-semibold">
+        <button type="button" onClick={onAssign} className="mt-3 w-full py-2 rounded-xl bg-gulf-gold/20 text-gulf-gold text-xs font-semibold">
           Accept Dispatch
         </button>
       )}
@@ -246,7 +246,7 @@ function SearchScreen() {
             key={id}
             type="button"
             onClick={() => setSearchType(id)}
-            className={cn('px-3 py-1.5 rounded-full text-xs', searchType === id ? 'bg-banana-gold text-black' : 'bg-white/10 text-white')}
+            className={cn('px-3 py-1.5 rounded-full text-xs', searchType === id ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white')}
           >
             {label}
           </button>
@@ -262,7 +262,7 @@ function SearchScreen() {
         type="button"
         disabled={!query || search.isPending}
         onClick={() => { tap(); search.mutate({ searchType, query }); }}
-        className="w-full py-3 bg-banana-gold text-black rounded-xl font-semibold disabled:opacity-50"
+        className="w-full py-3 bg-gulf-gold text-black rounded-xl font-semibold disabled:opacity-50"
       >
         {search.isPending ? 'Searching...' : 'Search'}
       </button>
@@ -297,7 +297,7 @@ function ListScreen({ title, useHook }: { title: string; useHook: () => { data?:
 function LoadingState() {
   return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-10 h-10 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+      <div className="w-10 h-10 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }
@@ -335,7 +335,7 @@ export function PoliceApp() {
     };
     return (
       <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
-        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-banana-gold text-sm p-4">‹ MDT</button>
+        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-gulf-gold text-sm p-4">‹ MDT</button>
         <div className="flex-1 overflow-y-auto">{screens[subScreen] ?? <EmptyState message="Section coming soon" />}</div>
       </div>
     );
@@ -347,8 +347,8 @@ export function PoliceApp() {
         <div className="flex items-center gap-2">
           <span className="text-2xl">🚔</span>
           <div>
-            <h1 className="text-white font-bold text-lg leading-tight">Banana Police</h1>
-            <p className="text-banana-gold/80 text-[10px] uppercase tracking-widest">Mobile Data Terminal</p>
+            <h1 className="text-white font-bold text-lg leading-tight">GULF Police</h1>
+            <p className="text-gulf-gold/80 text-[10px] uppercase tracking-widest">Mobile Data Terminal</p>
           </div>
         </div>
       </header>
@@ -396,7 +396,7 @@ export function PoliceApp() {
             onClick={() => { tap(); setTab(t.id); }}
             className={cn(
               'flex-1 flex flex-col items-center py-2 rounded-xl transition-colors',
-              tab === t.id ? 'text-banana-gold' : 'text-white/40'
+              tab === t.id ? 'text-gulf-gold' : 'text-white/40'
             )}
           >
             <span className="text-lg">{t.icon}</span>
@@ -429,7 +429,7 @@ function AnalyticsScreen() {
         {(heatMap ?? []).map((h) => (
           <div key={h.district} className="flex justify-between py-2 border-b border-white/5">
             <span className="text-white text-sm">{h.district}</span>
-            <span className="text-banana-gold text-sm">{h.incidents}</span>
+            <span className="text-gulf-gold text-sm">{h.incidents}</span>
           </div>
         ))}
       </GlassCard>

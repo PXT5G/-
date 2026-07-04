@@ -52,7 +52,7 @@ function param(value: string | string[]): string {
   return Array.isArray(value) ? value[0] : value;
 }
 
-const appIdSchema = z.object({ appId: z.string().default('com.bananaos.communication') });
+const appIdSchema = z.object({ appId: z.string().default('com.gulfos.communication') });
 
 // ─── Init ───────────────────────────────────────────────────────────────────
 

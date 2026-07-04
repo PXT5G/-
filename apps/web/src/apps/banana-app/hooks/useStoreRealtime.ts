@@ -6,20 +6,20 @@ import { realtimeService } from '@/services/realtimeService';
 import { useAuthStore } from '@/stores/authStore';
 import { useDynamicIslandStore } from '@/stores/dynamicIslandStore';
 import { useNotificationStore } from '@/stores/notificationStore';
-import { useBananaAppStore } from '../store/bananaAppStore';
+import { useGulfStoreStore } from '../store/gulfStoreStore';
 
 export function useStoreRealtime() {
   const token = useAuthStore((s) => s.getAccessToken());
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const updateDownloadProgress = useBananaAppStore((s) => s.updateDownloadProgress);
-  const setActiveInstall = useBananaAppStore((s) => s.setActiveInstall);
+  const updateDownloadProgress = useGulfStoreStore((s) => s.updateDownloadProgress);
+  const setActiveInstall = useGulfStoreStore((s) => s.setActiveInstall);
   const queryClient = useQueryClient();
   const islandSetProgress = useDynamicIslandStore((s) => s.setProgress);
   const islandHide = useDynamicIslandStore((s) => s.hide);
 
   const handleDownloadComplete = useCallback(
     async (payload: { downloadId: string; bundleId: string; type: string }) => {
-      const current = useBananaAppStore.getState().activeInstall;
+      const current = useGulfStoreStore.getState().activeInstall;
       if (current?.downloadId === payload.downloadId) {
         setActiveInstall({ ...current, status: 'completed', progress: 100 });
         islandSetProgress(100);
@@ -52,7 +52,7 @@ export function useStoreRealtime() {
         size: data.totalBytes,
       });
 
-      const current = useBananaAppStore.getState().activeInstall;
+      const current = useGulfStoreStore.getState().activeInstall;
       if (current?.downloadId === data.downloadId) {
         setActiveInstall({
           ...current,
@@ -70,7 +70,7 @@ export function useStoreRealtime() {
         if (data.status === 'failed') {
           useNotificationStore.getState().addNotification({
             id: `download-failed-${data.downloadId}`,
-            appId: 'com.bananaos.store',
+            appId: 'com.gulfos.store',
             title: 'Installation Failed',
             body: data.error ?? 'Download or installation failed.',
             priority: 'high',
@@ -85,7 +85,7 @@ export function useStoreRealtime() {
       handleDownloadComplete(payload.data as { downloadId: string; bundleId: string; type: string });
       useNotificationStore.getState().addNotification({
         id: `download-complete-${Date.now()}`,
-        appId: 'com.bananaos.store',
+        appId: 'com.gulfos.store',
         title: 'Installation Complete',
         body: 'Your app is ready to use.',
         priority: 'normal',
@@ -96,7 +96,7 @@ export function useStoreRealtime() {
 
     const unsubPaused = realtimeService.on('store:download:paused', (payload) => {
       const { downloadId } = payload.data as { downloadId: string };
-      const current = useBananaAppStore.getState().activeInstall;
+      const current = useGulfStoreStore.getState().activeInstall;
       if (current?.downloadId === downloadId) {
         setActiveInstall({ ...current, status: 'paused' });
       }
@@ -104,7 +104,7 @@ export function useStoreRealtime() {
 
     const unsubResumed = realtimeService.on('store:download:resumed', (payload) => {
       const { downloadId } = payload.data as { downloadId: string };
-      const current = useBananaAppStore.getState().activeInstall;
+      const current = useGulfStoreStore.getState().activeInstall;
       if (current?.downloadId === downloadId) {
         setActiveInstall({ ...current, status: 'downloading' });
       }
@@ -112,7 +112,7 @@ export function useStoreRealtime() {
 
     const unsubCancelled = realtimeService.on('store:download:cancelled', (payload) => {
       const { downloadId } = payload.data as { downloadId: string };
-      const current = useBananaAppStore.getState().activeInstall;
+      const current = useGulfStoreStore.getState().activeInstall;
       if (current?.downloadId === downloadId) {
         setActiveInstall(null);
         islandHide();

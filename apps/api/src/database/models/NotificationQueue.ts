@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 import { auditSchemaFields } from '../baseSchema';
-import type { NotificationPriority } from '@bananaos/shared';
+import type { NotificationPriority } from '@gulfos/shared';
 
 export type NotificationDeliveryState = 'pending' | 'delivered' | 'failed' | 'dismissed';
 

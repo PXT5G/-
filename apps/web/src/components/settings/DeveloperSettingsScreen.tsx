@@ -36,7 +36,7 @@ export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ Settings</button>
         <h1 className="text-2xl font-bold text-white mb-6">Developer Mode</h1>
 
         <section className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
@@ -53,7 +53,7 @@ export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
             <p className="text-xs text-white/40">No API events</p>
           ) : (
             apiEvents.slice(0, 5).map((e, i) => (
-              <p key={i} className="text-[10px] text-banana-gold font-mono py-0.5">{e.namespace}:{e.event}</p>
+              <p key={i} className="text-[10px] text-gulf-gold font-mono py-0.5">{e.namespace}:{e.event}</p>
             ))
           )}
         </section>
@@ -85,7 +85,7 @@ export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
           ) : (
             (events ?? []).map((e) => (
               <div key={e.id} className="py-2 border-b border-white/5 last:border-0">
-                <p className="text-xs text-banana-gold font-mono">{e.namespace}:{e.event}</p>
+                <p className="text-xs text-gulf-gold font-mono">{e.namespace}:{e.event}</p>
                 <p className="text-[10px] text-white/40">{new Date(e.createdAt).toLocaleString()} · {e.source}</p>
               </div>
             ))

@@ -37,7 +37,7 @@ export function Slider({ value, onChange, min = 0, max = 100, label, icon, class
             [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:-mt-2
             [&::-webkit-slider-thumb]:cursor-pointer"
           style={{
-            background: `linear-gradient(to right, var(--color-banana-gold) ${percentage}%, transparent ${percentage}%)`,
+            background: `linear-gradient(to right, var(--color-gulf-gold) ${percentage}%, transparent ${percentage}%)`,
           }}
         />
       </div>

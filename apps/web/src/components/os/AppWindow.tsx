@@ -33,7 +33,7 @@ export function AppWindow({ window, isActive }: AppWindowProps) {
       <div className="flex items-center justify-between px-4 pt-12 pb-2 bg-black/80 backdrop-blur-xl border-b border-white/5">
         <button
           onClick={() => { tap(); backgroundApp(window.appId); minimizeWindow(window.id); }}
-          className="text-banana-gold text-sm font-medium"
+          className="text-gulf-gold text-sm font-medium"
         >
           ‹ Back
         </button>

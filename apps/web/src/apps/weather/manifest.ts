@@ -1,8 +1,8 @@
 import type { AppManifest } from '@/types';
 
 export const weatherManifest: AppManifest = {
-  id: 'com.bananaos.weather',
-  bundleId: 'com.bananaos.weather',
+  id: 'com.gulfos.weather',
+  bundleId: 'com.gulfos.weather',
   name: 'Weather',
   version: '1.0.0',
   description: 'Current, hourly, and weekly forecasts',

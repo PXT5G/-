@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BananaLogo } from '@/assets/BananaLogo';
+import { GulfLogo } from '@/assets/GulfLogo';
 import { fadeIn } from '@/animations/transitions';
 
 export function SplashScreen() {
@@ -17,7 +17,7 @@ export function SplashScreen() {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       >
-        <BananaLogo size={80} />
+        <GulfLogo size={80} />
       </motion.div>
       <motion.h1
         className="mt-6 text-2xl font-semibold tracking-wider text-white"
@@ -25,7 +25,7 @@ export function SplashScreen() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
       >
-        Banana<span className="text-banana-gold">OS</span>
+        GULF<span className="text-gulf-gold">OS</span>
       </motion.h1>
       <motion.p
         className="mt-2 text-sm text-white/50"

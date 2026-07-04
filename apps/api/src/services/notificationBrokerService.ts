@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import type { NotificationPriority } from '@bananaos/shared';
+import type { NotificationPriority } from '@gulfos/shared';
 import { Notification } from '../database/models/Notification';
 import { NotificationQueue } from '../database/models/NotificationQueue';
 import { emitToUser } from './socketService';
@@ -44,7 +44,7 @@ function formatNotification(notification: InstanceType<typeof Notification>) {
 
 export async function enqueueNotification(input: BrokerNotificationInput) {
   const allowed = await checkPermission(input.userId, input.appId, 'notifications');
-  if (!allowed && input.appId !== 'com.bananaos.system') {
+  if (!allowed && input.appId !== 'com.gulfos.system') {
     throw new Error('PERMISSION_DENIED');
   }
 

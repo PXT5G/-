@@ -1,4 +1,4 @@
-/** BananaOS Device Ecosystem — Phase 3.5 constants */
+/** GULFOS Device Ecosystem — Phase 3.5 constants */
 
 export const UNLOCK_METHODS = ['face', 'fingerprint', 'pin', 'password', 'none'] as const;
 export type UnlockMethodType = (typeof UNLOCK_METHODS)[number];

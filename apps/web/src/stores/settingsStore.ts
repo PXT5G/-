@@ -24,7 +24,17 @@ export const useSettingsStore = create<SettingsState>()(
       setHydrated: (hydrated) => set({ hydrated }),
     }),
     {
-      name: 'bananaos-settings',
+      name: 'gulfos-settings',
+      version: 1,
+      migrate: (persisted: unknown, version: number) => {
+        if (version === 0 && typeof window !== 'undefined') {
+          try {
+            const legacy = localStorage.getItem('bananaos-settings');
+            if (legacy) return JSON.parse(legacy);
+          } catch { /* ignore */ }
+        }
+        return persisted as SettingsState;
+      },
       partialize: (state) => {
         const { hydrated, updateSettings, setWallpaper, hydrateFromServer, resetSettings, setHydrated, ...settings } = state;
         return settings;

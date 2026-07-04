@@ -8,7 +8,7 @@ import type {
 function getToken(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
-    const raw = localStorage.getItem('bananaos_bananaos-auth');
+    const raw = localStorage.getItem('gulfos_gulfos-auth');
     if (raw) {
       const parsed = JSON.parse(raw);
       return parsed?.state?.tokens?.accessToken;
@@ -63,7 +63,7 @@ export const communicationService = {
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: MessageSnapshot }>(
       '/api/communication/messages',
-      { method: 'POST', body: JSON.stringify({ appId: 'com.bananaos.communication', ...params }), token }
+      { method: 'POST', body: JSON.stringify({ appId: 'com.gulfos.communication', ...params }), token }
     );
     return res.data!;
   },

@@ -1,19 +1,19 @@
 {
-  "name": "bananaos",
+  "name": "gulfos",
   "version": "1.0.0",
   "private": true,
-  "description": "BananaOS - Premium Mobile Web Operating System",
+  "description": "GULFOS - Premium Mobile Web Operating System",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:web": "npm run dev --workspace=@bananaos/web",
-    "dev:api": "npm run dev --workspace=@bananaos/api",
-    "build": "npm run build --workspace=@bananaos/shared && npm run build --workspace=@bananaos/api && npm run build --workspace=@bananaos/web",
-    "start": "concurrently \"npm run start --workspace=@bananaos/api\" \"npm run start --workspace=@bananaos/web\"",
-    "lint": "npm run lint --workspace=@bananaos/web"
+    "dev:web": "npm run dev --workspace=@gulfos/web",
+    "dev:api": "npm run dev --workspace=@gulfos/api",
+    "build": "npm run build --workspace=@gulfos/shared && npm run build --workspace=@gulfos/api && npm run build --workspace=@gulfos/web",
+    "start": "concurrently \"npm run start --workspace=@gulfos/api\" \"npm run start --workspace=@gulfos/web\"",
+    "lint": "npm run lint --workspace=@gulfos/web"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

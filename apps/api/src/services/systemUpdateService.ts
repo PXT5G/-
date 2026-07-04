@@ -10,7 +10,7 @@ export async function reserveUpdateSpace(userId: string, updateBytes: number): P
   const profile = await DeviceProfile.findOne({ userId });
   if (!profile) throw new Error('Device profile not found');
 
-  const { reservationId } = await reserveStorage(userId, 'com.bananaos.system', required);
+  const { reservationId } = await reserveStorage(userId, 'com.gulfos.system', required);
   profile.systemStorage.updateReserved = required;
   await profile.save();
   return reservationId;
@@ -29,7 +29,7 @@ export async function completeSystemUpdate(
     profile.systemStorage.updateReserved = 0;
     profile.osVersion = bumpPatch(profile.osVersion);
     await recordStorageWrite(userId, updateBytes);
-    await commitReservation(userId, 'com.bananaos.system');
+    await commitReservation(userId, 'com.gulfos.system');
     emitToUser(userId, 'device:update:complete' as never, {
       version: profile.osVersion,
       timestamp: new Date().toISOString(),
@@ -47,7 +47,7 @@ export async function rollbackUpdate(userId: string): Promise<{ previousVersion:
   const previousVersion = profile.osVersion;
   profile.systemStorage.updateReserved = 0;
   await profile.save();
-  await releaseReservation(userId, 'com.bananaos.system');
+  await releaseReservation(userId, 'com.gulfos.system');
 
   const result = {
     previousVersion,

@@ -18,7 +18,7 @@ const developerSchema = new Schema<IDeveloper>(
     slug: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     description: { type: String, default: '' },
-    logo: { type: String, default: '🍌' },
+    logo: { type: String, default: '🏬' },
     website: { type: String },
     email: { type: String },
     verified: { type: Boolean, default: false },

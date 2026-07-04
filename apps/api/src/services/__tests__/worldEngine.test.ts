@@ -81,7 +81,7 @@ describe('world engine socket events', () => {
 });
 
 describe('carrier generations', () => {
-  it('supports all Banana Mobile generations', () => {
+  it('supports all GULF Mobile generations', () => {
     const gens = ['none', 'emergency', '2g', '3g', '4g', '5g'];
     assert.equal(gens.length, 6);
   });

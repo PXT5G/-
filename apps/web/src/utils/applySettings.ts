@@ -1,5 +1,5 @@
 import type { UserSettings } from '@/types';
-import { isRTL } from '@bananaos/shared';
+import { isRTL } from '@gulfos/shared';
 import { useThemeStore } from '@/stores/themeStore';
 import { useSoundStore } from '@/stores/soundStore';
 import { useHapticStore } from '@/stores/hapticStore';

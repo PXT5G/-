@@ -18,7 +18,7 @@ export interface ICarrier extends Document {
 const carrierSchema = new Schema<ICarrier>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
-    name: { type: String, default: 'Banana Mobile' },
+    name: { type: String, default: 'GULF Mobile' },
     generation: {
       type: String,
       enum: ['none', 'emergency', '2g', '3g', '4g', '5g'],

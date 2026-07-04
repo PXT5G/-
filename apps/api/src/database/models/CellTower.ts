@@ -34,7 +34,7 @@ const cellTowerSchema = new Schema<ICellTower>(
     coverageRadiusM: { type: Number, default: 2500 },
     signalPower: { type: Number, default: 100 },
     frequencyBand: { type: String, default: 'n78' },
-    carrier: { type: String, default: 'Banana Mobile', index: true },
+    carrier: { type: String, default: 'GULF Mobile', index: true },
     towerHealth: { type: Number, default: 100 },
     currentUsers: { type: Number, default: 0 },
     maxUsers: { type: Number, default: 500 },

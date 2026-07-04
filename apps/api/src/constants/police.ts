@@ -1,6 +1,6 @@
-/** Banana Police — com.bananaos.police constants */
+/** GULF Police — com.gulfos.police constants */
 
-export const POLICE_APP_BUNDLE = 'com.bananaos.police' as const;
+export const POLICE_APP_BUNDLE = 'com.gulfos.police' as const;
 
 export const POLICE_ROLES = [
   'chief',

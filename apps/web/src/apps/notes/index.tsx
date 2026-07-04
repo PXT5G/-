@@ -41,9 +41,9 @@ export function NotesApp() {
     return (
       <div className="h-full flex flex-col bg-black">
         <div className="p-4 flex items-center gap-3 border-b border-white/10">
-          <button type="button" onClick={() => setSelectedId(null)} className="text-banana-gold text-sm">‹ Notes</button>
+          <button type="button" onClick={() => setSelectedId(null)} className="text-gulf-gold text-sm">‹ Notes</button>
           <button type="button" onClick={() => pin.mutate()} className="text-xs text-white/50">{selected.pinned ? '📌' : 'Pin'}</button>
-          <button type="button" onClick={() => save.mutate()} className="ml-auto text-banana-gold text-sm">Save</button>
+          <button type="button" onClick={() => save.mutate()} className="ml-auto text-gulf-gold text-sm">Save</button>
         </div>
         <div className="flex-1 p-4 overflow-y-auto">
           <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="w-full bg-transparent text-xl font-bold text-white mb-4 outline-none" />
@@ -57,12 +57,12 @@ export function NotesApp() {
     <div className="h-full flex flex-col bg-black">
       <div className="p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold text-white">Notes</h1>
-        <button type="button" onClick={() => { tap(); create.mutate(); }} className="text-banana-gold text-2xl">+</button>
+        <button type="button" onClick={() => { tap(); create.mutate(); }} className="text-gulf-gold text-2xl">+</button>
       </div>
       <input type="text" value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder="Search notes..." className="mx-4 mb-4 bg-white/10 text-white rounded-xl px-4 py-2 text-sm" />
       <div className="flex-1 overflow-y-auto px-4">
         {isLoading ? (
-          <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" /></div>
         ) : (notes ?? []).map((n) => (
           <button
             key={String(n.noteId)}

@@ -3,7 +3,7 @@ import { apiRequest } from '@/utils/api';
 function getToken(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
-    const raw = localStorage.getItem('bananaos_bananaos-auth');
+    const raw = localStorage.getItem('gulfos_gulfos-auth');
     if (raw) {
       const parsed = JSON.parse(raw);
       return parsed?.state?.tokens?.accessToken;

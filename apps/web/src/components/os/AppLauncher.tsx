@@ -58,13 +58,13 @@ export function AppLauncher({ isOpen, onClose }: AppLauncherProps) {
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-white">App Store</h2>
-            <button onClick={onClose} className="text-banana-gold text-sm">Close</button>
+            <button onClick={onClose} className="text-gulf-gold text-sm">Close</button>
           </div>
 
           {!catalog.length && !loading && (
             <button
               onClick={loadCatalog}
-              className="w-full py-3 text-center text-banana-gold text-sm mb-4"
+              className="w-full py-3 text-center text-gulf-gold text-sm mb-4"
             >
               Load Available Apps
             </button>
@@ -82,7 +82,7 @@ export function AppLauncher({ isOpen, onClose }: AppLauncherProps) {
                   className={`mt-2 text-[10px] px-3 py-1 rounded-full ${
                     isInstalled(app.bundleId)
                       ? 'bg-white/10 text-white/40'
-                      : 'bg-banana-gold text-black font-medium'
+                      : 'bg-gulf-gold text-black font-medium'
                   }`}
                 >
                   {isInstalled(app.bundleId) ? 'Installed' : 'Install'}

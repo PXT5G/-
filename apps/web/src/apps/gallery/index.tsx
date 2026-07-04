@@ -31,7 +31,7 @@ export function GalleryApp() {
     <div className="h-full flex flex-col bg-black">
       <div className="flex-1 overflow-y-auto p-4">
         {isLoading ? (
-          <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-12"><div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" /></div>
         ) : tab === 'albums' ? (
           <div className="grid grid-cols-2 gap-3">
             {(albums ?? []).map((a) => (
@@ -57,7 +57,7 @@ export function GalleryApp() {
               {(timeline ?? []).map((t) => (
                 <div key={t.month} className="flex justify-between py-2">
                   <span className="text-white text-sm">{t.month}</span>
-                  <span className="text-banana-gold text-sm">{t.count} photos</span>
+                  <span className="text-gulf-gold text-sm">{t.count} photos</span>
                 </div>
               ))}
             </section>
@@ -86,7 +86,7 @@ export function GalleryApp() {
       </div>
       <nav className="flex border-t border-white/10">
         {(['photos', 'albums', 'favorites', 'more'] as Tab[]).map((t) => (
-          <button key={t} type="button" onClick={() => { tap(); setTab(t); }} className={`flex-1 py-3 text-xs capitalize ${tab === t ? 'text-banana-gold' : 'text-white/40'}`}>{t}</button>
+          <button key={t} type="button" onClick={() => { tap(); setTab(t); }} className={`flex-1 py-3 text-xs capitalize ${tab === t ? 'text-gulf-gold' : 'text-white/40'}`}>{t}</button>
         ))}
       </nav>
     </div>

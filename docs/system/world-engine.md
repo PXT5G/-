@@ -1,4 +1,4 @@
-# BananaOS World Engine
+# GULFOS World Engine
 
 Phase 3.3 infrastructure for GTA world simulation, carrier networking, GPS, and police tracking. This is **not** the Maps application — it is the operating system layer that future apps consume.
 
@@ -42,8 +42,8 @@ Phase 3.3 infrastructure for GTA world simulation, carrier networking, GPS, and 
 | `WorldLocation` | Map POIs with street, district, zone, coordinates, bounding area, nearby locations, road connections, postal code |
 | `Street` | Named streets with district and coordinate endpoints |
 | `District` | Los Santos districts with bounds and terrain |
-| `CellTower` | Banana Mobile towers with coverage, signal power, frequency band, health, user load |
-| `Carrier` | Per-user carrier state (Banana Mobile generation, connected tower) |
+| `CellTower` | GULF Mobile towers with coverage, signal power, frequency band, health, user load |
+| `Carrier` | Per-user carrier state (GULF Mobile generation, connected tower) |
 | `WorldState` | Live world snapshot per user |
 | `GpsState` | Navigation, saved/favorite/recent places |
 | `SignalHistory` | Signal metrics over time |
@@ -75,7 +75,7 @@ Base path: `/api/world` (JWT required)
 | POST | `/gps/favorite` | Add favorite |
 | GET | `/gps/search` | Search places |
 | GET | `/gps/history` | Location history |
-| GET | `/carrier` | Banana Mobile carrier state |
+| GET | `/carrier` | GULF Mobile carrier state |
 | GET | `/network` | Full network metrics |
 | GET | `/vpn` | VPN state |
 | GET | `/vpn/countries` | Available VPN countries |
@@ -97,13 +97,13 @@ Legacy system endpoints (`/api/system/location`, `/api/system/network`) remain a
 | `network:update` | Full network metrics with penalties |
 | `gps:update` | Navigation state, ETA, arrival |
 | `vpn:update` | VPN connection state |
-| `carrier:update` | Banana Mobile generation |
+| `carrier:update` | GULF Mobile generation |
 | `tracking:update` | Police tracking result |
 | `location:update` | Device location (synced from world) |
 
 ## Carrier System
 
-**Banana Mobile** is the default carrier. Generations:
+**GULF Mobile** is the default carrier. Generations:
 
 | Generation | Label | Behavior |
 |------------|-------|----------|
@@ -144,7 +144,7 @@ Centralized VPN service with country selection, virtual IP assignment, AES-256-G
 
 Secure APIs under `/api/world/police/*`:
 
-- Requires `com.bananaos.police` app with `location` permission, or admin role
+- Requires `com.gulfos.police` app with `location` permission, or admin role
 - Every request creates audit log entries
 - Supports: phone lookup, current/last tower, last location, movement history, signal history, network state, online status
 

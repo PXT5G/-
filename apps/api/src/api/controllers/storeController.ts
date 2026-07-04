@@ -690,8 +690,8 @@ export const getRecentlyInstalled = asyncHandler(async (req: AuthRequest, res: R
 });
 
 export const seedStore = asyncHandler(async (_req: AuthRequest, res: Response) => {
-  const { seedBananaStore } = await import('../../services/storeSeedService');
-  const result = await seedBananaStore();
+  const { seedGulfStore } = await import('../../services/storeSeedService');
+  const result = await seedGulfStore();
   res.json({ success: true, data: result });
 });
 

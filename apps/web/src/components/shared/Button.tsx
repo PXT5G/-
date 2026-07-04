@@ -15,9 +15,9 @@ interface ButtonProps {
 }
 
 const variants = {
-  primary: 'bg-banana-gold text-black font-semibold hover:bg-banana-gold/90',
+  primary: 'bg-gulf-gold text-black font-semibold hover:bg-gulf-gold/90',
   secondary: 'bg-white/10 text-white border border-white/15 hover:bg-white/15',
-  ghost: 'bg-transparent text-banana-gold hover:bg-white/5',
+  ghost: 'bg-transparent text-gulf-gold hover:bg-white/5',
   destructive: 'bg-red-500/90 text-white hover:bg-red-500',
 };
 

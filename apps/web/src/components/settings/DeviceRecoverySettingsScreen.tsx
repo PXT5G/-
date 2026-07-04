@@ -25,7 +25,7 @@ export function DeviceRecoverySettingsScreen({ onBack }: { onBack: () => void })
   if (isLoading || !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -35,7 +35,7 @@ export function DeviceRecoverySettingsScreen({ onBack }: { onBack: () => void })
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ Settings</button>
         <h1 className="text-2xl font-bold text-white mb-6">System Recovery</h1>
 
         <section className="mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
@@ -49,7 +49,7 @@ export function DeviceRecoverySettingsScreen({ onBack }: { onBack: () => void })
                 onClick={() => { tap(); modeMutation.mutate(mode); }}
                 disabled={modeMutation.isPending}
                 className={`px-3 py-1 rounded-full text-xs capitalize ${
-                  recovery.recoveryMode === mode ? 'bg-banana-gold text-black' : 'bg-white/10 text-white'
+                  recovery.recoveryMode === mode ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white'
                 }`}
               >
                 {mode}

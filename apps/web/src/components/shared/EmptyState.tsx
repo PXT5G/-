@@ -17,7 +17,7 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
         <button
           type="button"
           onClick={action.onPress}
-          className="mt-4 px-4 py-2 rounded-xl bg-banana-gold text-black text-sm font-medium"
+          className="mt-4 px-4 py-2 rounded-xl bg-gulf-gold text-black text-sm font-medium"
         >
           {action.label}
         </button>

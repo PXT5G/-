@@ -1,11 +1,11 @@
-/** BananaOS System Settings — Phase 3.7 constants */
+/** GULFOS System Settings — Phase 3.7 constants */
 
 export const DEVICE_INFO = {
   defaultDeviceName: 'Gulf Phone V1',
   developer: 'Abu Sharaf',
-  manufacturer: 'Banana Technologies',
-  operatingSystem: 'BananaOS',
-  kernel: 'Banana Core',
+  manufacturer: 'Gulf Technologies',
+  operatingSystem: 'GULFOS',
+  kernel: 'GULF Core',
   hardwareVersion: '1.0',
   model: 'Gulf Phone V1',
   buildNumber: '3.7.0',

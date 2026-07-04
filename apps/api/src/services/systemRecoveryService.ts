@@ -66,7 +66,7 @@ export async function factoryReset(userId: string, actorId: string, confirmPhras
 
   const apps = await InstalledApp.find({ userId, deletedAt: null });
   for (const app of apps) {
-    if (!app.bundleId.startsWith('com.bananaos.system') && !app.bundleId.startsWith('com.bananaos.settings')) {
+    if (!app.bundleId.startsWith('com.gulfos.system') && !app.bundleId.startsWith('com.gulfos.settings')) {
       await InstalledApp.findOneAndUpdate({ _id: app._id }, { deletedAt: new Date() });
       await AppStorage.deleteOne({ userId, bundleId: app.bundleId });
     }

@@ -43,7 +43,7 @@ export async function ensureLocation(userId: string) {
   return loc;
 }
 
-export async function getLocation(userId: string, appId = 'com.bananaos.system') {
+export async function getLocation(userId: string, appId = 'com.gulfos.system') {
   const allowed = await checkPermission(userId, appId, 'location');
   if (!allowed) {
     throw new Error('PERMISSION_DENIED');

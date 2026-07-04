@@ -2,18 +2,18 @@
 
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useBananaAppStore } from '../store/bananaAppStore';
-import { bananaAppService } from '../services/bananaAppService';
+import { useGulfStoreStore } from '../store/gulfStoreStore';
+import { gulfStoreService } from '../services/gulfStoreService';
 import { AppCard } from '../components/AppCard';
 import { cn } from '@/utils/cn';
 
 export function AppsScreen({ onAppPress }: { onAppPress: (bundleId: string) => void }) {
   const { categories, selectedCategory, categoryApps, setCategories, setCategoryApps, setSelectedCategory } =
-    useBananaAppStore();
+    useGulfStoreStore();
 
   const { data: cats } = useQuery({
     queryKey: ['store', 'categories'],
-    queryFn: () => bananaAppService.getCategories(),
+    queryFn: () => gulfStoreService.getCategories(),
   });
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function AppsScreen({ onAppPress }: { onAppPress: (bundleId: string) => v
 
   const { data: apps, isLoading } = useQuery({
     queryKey: ['store', 'category', activeCategory],
-    queryFn: () => (activeCategory ? bananaAppService.getByCategory(activeCategory) : Promise.resolve([])),
+    queryFn: () => (activeCategory ? gulfStoreService.getByCategory(activeCategory) : Promise.resolve([])),
     enabled: !!activeCategory,
   });
 
@@ -45,7 +45,7 @@ export function AppsScreen({ onAppPress }: { onAppPress: (bundleId: string) => v
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
                 activeCategory === cat.id
-                  ? 'bg-banana-gold text-black'
+                  ? 'bg-gulf-gold text-black'
                   : 'bg-white/10 text-white/70'
               )}
             >
@@ -60,7 +60,7 @@ export function AppsScreen({ onAppPress }: { onAppPress: (bundleId: string) => v
       <div className="flex-1 overflow-y-auto px-4">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
           </div>
         ) : categoryApps.length === 0 ? (
           <p className="text-center text-white/40 py-16 text-sm">No apps in this category</p>

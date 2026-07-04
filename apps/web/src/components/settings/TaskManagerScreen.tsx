@@ -31,7 +31,7 @@ export function TaskManagerScreen({ onBack }: { onBack: () => void }) {
   if (isLoading || !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -42,7 +42,7 @@ export function TaskManagerScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">
           ‹ Settings
         </button>
         <h1 className="text-2xl font-bold text-white mb-1">Task Manager</h1>
@@ -51,7 +51,7 @@ export function TaskManagerScreen({ onBack }: { onBack: () => void }) {
         <section className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-white">Memory Usage</span>
-            <span className={`text-sm font-medium ${data.memoryPressure ? 'text-red-400' : 'text-banana-gold'}`}>
+            <span className={`text-sm font-medium ${data.memoryPressure ? 'text-red-400' : 'text-gulf-gold'}`}>
               {pressurePct}%
             </span>
           </div>

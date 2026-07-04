@@ -61,7 +61,7 @@ export function LockScreenPIN({ onSuccess }: LockScreenPINProps) {
             className={cn(
               'w-3 h-3 rounded-full border-2 transition-all',
               i < entered.length
-                ? 'bg-banana-gold border-banana-gold'
+                ? 'bg-gulf-gold border-gulf-gold'
                 : 'border-white/30'
             )}
           />

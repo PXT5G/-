@@ -3,22 +3,22 @@
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { useBananaAppStore } from '../store/bananaAppStore';
-import { bananaAppService } from '../services/bananaAppService';
+import { useGulfStoreStore } from '../store/gulfStoreStore';
+import { gulfStoreService } from '../services/gulfStoreService';
 import { AppCard } from '../components/AppCard';
 
 export function TodayScreen({ onAppPress }: { onAppPress: (bundleId: string) => void }) {
   const { featured, trending, editorsChoice, recommended, setFeatured, setTrending, setEditorsChoice, setRecommended } =
-    useBananaAppStore();
+    useGulfStoreStore();
 
   const { data, isLoading } = useQuery({
     queryKey: ['store', 'today'],
     queryFn: async () => {
       const [f, t, e, r] = await Promise.all([
-        bananaAppService.getFeatured(),
-        bananaAppService.getTrending(),
-        bananaAppService.getEditorsChoice(),
-        bananaAppService.getRecommended(),
+        gulfStoreService.getFeatured(),
+        gulfStoreService.getTrending(),
+        gulfStoreService.getEditorsChoice(),
+        gulfStoreService.getRecommended(),
       ]);
       return { featured: f, trending: t, editorsChoice: e, recommended: r };
     },
@@ -36,7 +36,7 @@ export function TodayScreen({ onAppPress }: { onAppPress: (bundleId: string) => 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -44,8 +44,8 @@ export function TodayScreen({ onAppPress }: { onAppPress: (bundleId: string) => 
   return (
     <div className="overflow-y-auto h-full pb-4">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="px-4 pt-2">
-        <h1 className="text-2xl font-bold text-white mb-1">Banana App</h1>
-        <p className="text-sm text-white/50 mb-6">Premium apps for BananaOS</p>
+        <h1 className="text-2xl font-bold text-white mb-1">GULF Store</h1>
+        <p className="text-sm text-white/50 mb-6">Premium apps for GULFOS</p>
 
         {featured.length > 0 && (
           <section className="mb-8">

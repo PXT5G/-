@@ -40,7 +40,7 @@ function param(value: string | string[]): string {
   return Array.isArray(value) ? value[0] : value;
 }
 
-const appIdSchema = z.object({ appId: z.string().default('com.bananaos.system') });
+const appIdSchema = z.object({ appId: z.string().default('com.gulfos.system') });
 
 // ─── World State ────────────────────────────────────────────────────────────
 
@@ -232,7 +232,7 @@ const trackingRequestSchema = z.object({
   targetUserId: z.string().optional(),
   reason: z.string().min(5),
   warrantId: z.string().optional(),
-  appId: z.string().default('com.bananaos.police'),
+  appId: z.string().default('com.gulfos.police'),
 });
 
 export const policeTrackHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -266,7 +266,7 @@ export const policeTrackHandler = asyncHandler(async (req: AuthRequest, res: Res
 });
 
 export const policeTrackingHistoryHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const appId = (req.query.appId as string) ?? 'com.bananaos.police';
+  const appId = (req.query.appId as string) ?? 'com.gulfos.police';
   try {
     const data = await getTrackingHistory(req.user!.userId, appId, req.user!.role);
     res.json({ success: true, data });

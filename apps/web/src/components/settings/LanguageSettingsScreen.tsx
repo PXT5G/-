@@ -15,12 +15,12 @@ export function LanguageSettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ {t('common.settings')}</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ {t('common.settings')}</button>
         <h1 className="text-2xl font-bold text-white mb-6">{t('settings.language')}</h1>
 
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden divide-y divide-white/5">
@@ -31,7 +31,7 @@ export function LanguageSettingsScreen({ onBack }: { onBack: () => void }) {
                 onClick={() => { tap(); update.mutate({ language: lang.code }); }}
                 className={cn(
                   'flex items-center justify-between w-full px-4 py-3 text-left hover:bg-white/5 transition-colors',
-                  settings.language === lang.code && 'bg-banana-gold/10'
+                  settings.language === lang.code && 'bg-gulf-gold/10'
                 )}
               >
                 <div>
@@ -39,7 +39,7 @@ export function LanguageSettingsScreen({ onBack }: { onBack: () => void }) {
                   <p className="text-xs text-white/40">{lang.nativeName}</p>
                 </div>
                 {settings.language === lang.code && (
-                  <span className="text-banana-gold text-sm">✓</span>
+                  <span className="text-gulf-gold text-sm">✓</span>
                 )}
               </button>
             ))}

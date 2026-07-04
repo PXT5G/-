@@ -66,15 +66,15 @@ export function CameraApp() {
             <button type="button" onClick={() => setFlash(FLASH[(FLASH.indexOf(flash as never) + 1) % FLASH.length])} className="px-3 py-1 rounded-full bg-black/50 text-white text-xs">
               ⚡ {flash}
             </button>
-            <button type="button" onClick={() => setHdr(!hdr)} className={`px-3 py-1 rounded-full text-xs ${hdr ? 'bg-banana-gold text-black' : 'bg-black/50 text-white'}`}>HDR</button>
-            <button type="button" onClick={() => setGrid(!grid)} className={`px-3 py-1 rounded-full text-xs ${grid ? 'bg-banana-gold text-black' : 'bg-black/50 text-white'}`}>Grid</button>
+            <button type="button" onClick={() => setHdr(!hdr)} className={`px-3 py-1 rounded-full text-xs ${hdr ? 'bg-gulf-gold text-black' : 'bg-black/50 text-white'}`}>HDR</button>
+            <button type="button" onClick={() => setGrid(!grid)} className={`px-3 py-1 rounded-full text-xs ${grid ? 'bg-gulf-gold text-black' : 'bg-black/50 text-white'}`}>Grid</button>
           </div>
           <span className="text-white/60 text-xs">{zoom.toFixed(1)}x</span>
         </div>
 
         <div className="absolute bottom-32 left-0 right-0 flex justify-center gap-4 overflow-x-auto px-4">
           {MODES.map((m) => (
-            <button key={m} type="button" onClick={() => { tap(); setMode(m); }} className={`text-xs capitalize whitespace-nowrap px-2 py-1 ${mode === m ? 'text-banana-gold' : 'text-white/50'}`}>
+            <button key={m} type="button" onClick={() => { tap(); setMode(m); }} className={`text-xs capitalize whitespace-nowrap px-2 py-1 ${mode === m ? 'text-gulf-gold' : 'text-white/50'}`}>
               {m.replace('_', ' ')}
             </button>
           ))}

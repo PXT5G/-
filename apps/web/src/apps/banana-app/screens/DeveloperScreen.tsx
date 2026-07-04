@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { bananaAppService } from '../services/bananaAppService';
+import { gulfStoreService } from '../services/gulfStoreService';
 import type { StoreApp } from '../types';
 import { AppCard } from '../components/AppCard';
 
@@ -14,13 +14,13 @@ interface DeveloperScreenProps {
 export function DeveloperScreen({ slug, onBack, onAppPress }: DeveloperScreenProps) {
   const { data: developer, isLoading } = useQuery({
     queryKey: ['store', 'developer', slug],
-    queryFn: () => bananaAppService.getDeveloper(slug),
+    queryFn: () => gulfStoreService.getDeveloper(slug),
   });
 
   if (isLoading || !developer) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -28,7 +28,7 @@ export function DeveloperScreen({ slug, onBack, onAppPress }: DeveloperScreenPro
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-black/90 backdrop-blur-xl border-b border-white/5">
-        <button type="button" onClick={onBack} className="text-banana-gold text-sm">‹ Back</button>
+        <button type="button" onClick={onBack} className="text-gulf-gold text-sm">‹ Back</button>
         <h1 className="text-sm font-semibold text-white flex-1 truncate">Developer</h1>
       </div>
 
@@ -40,7 +40,7 @@ export function DeveloperScreen({ slug, onBack, onAppPress }: DeveloperScreenPro
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               {developer.name}
-              {developer.verified && <span className="text-banana-gold text-sm">✓</span>}
+              {developer.verified && <span className="text-gulf-gold text-sm">✓</span>}
             </h2>
             <p className="text-xs text-white/50">{developer.appCount} apps</p>
           </div>
@@ -51,7 +51,7 @@ export function DeveloperScreen({ slug, onBack, onAppPress }: DeveloperScreenPro
         )}
 
         {developer.website && (
-          <p className="text-sm text-banana-gold mb-6">{developer.website}</p>
+          <p className="text-sm text-gulf-gold mb-6">{developer.website}</p>
         )}
 
         <h3 className="text-xs font-semibold text-white/40 uppercase mb-3">Apps</h3>

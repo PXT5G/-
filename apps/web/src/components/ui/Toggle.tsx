@@ -19,7 +19,7 @@ export function Toggle({ enabled, onChange, label, className }: ToggleProps) {
       aria-label={label}
       className={cn(
         'relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-200',
-        enabled ? 'bg-banana-gold' : 'bg-white/20',
+        enabled ? 'bg-gulf-gold' : 'bg-white/20',
         className
       )}
       onClick={() => onChange(!enabled)}

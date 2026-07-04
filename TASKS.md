@@ -1,4 +1,4 @@
-# BananaOS — Phase 1 Tasks
+# GULFOS — Phase 1 Tasks
 
 ## Completed ✅
 
@@ -91,7 +91,7 @@
 - [x] GlassPanel (glassmorphism)
 - [x] Toggle switch
 - [x] Slider
-- [x] BananaLogo SVG asset
+- [x] GulfLogo SVG asset
 
 ---
 

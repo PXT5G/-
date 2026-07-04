@@ -38,7 +38,7 @@ export function NotificationCenter() {
                 {notifications.some((n) => !n.read) && (
                   <button
                     onClick={() => { tap(); markAllAsRead(); }}
-                    className="text-xs text-banana-gold"
+                    className="text-xs text-gulf-gold"
                   >
                     Mark all read
                   </button>

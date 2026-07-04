@@ -88,7 +88,7 @@ export interface PackageManifest {
   checksum: string;
   size: number;
   minOSVersion: string;
-  requiredBananaOSVersion: string;
+  requiredGULFOSVersion: string;
   dependencies: string[];
   requiredPermissions: string[];
   optionalPermissions: string[];

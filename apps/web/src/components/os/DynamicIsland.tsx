@@ -47,7 +47,7 @@ export function DynamicIsland() {
               {icon && <span className="text-sm">{icon}</span>}
               <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-banana-gold rounded-full"
+                  className="h-full bg-gulf-gold rounded-full"
                   animate={{ width: `${progress ?? 0}%` }}
                 />
               </div>
@@ -66,7 +66,7 @@ export function DynamicIsland() {
               {progress !== undefined && (
                 <div className="h-1 bg-white/20 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-banana-gold rounded-full"
+                    className="h-full bg-gulf-gold rounded-full"
                     animate={{ width: `${progress}%` }}
                   />
                 </div>

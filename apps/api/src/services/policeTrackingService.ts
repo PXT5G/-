@@ -12,7 +12,7 @@ import { emitToUser } from './socketService';
 import { logAudit } from './auditService';
 import { NetworkState } from '../database/models/NetworkState';
 
-const POLICE_APP = 'com.bananaos.police';
+const POLICE_APP = 'com.gulfos.police';
 const TRACKING_PERMISSION = 'location';
 
 async function assertPoliceAccess(requesterId: string, appId: string, role?: string): Promise<void> {

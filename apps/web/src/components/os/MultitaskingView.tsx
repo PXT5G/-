@@ -21,7 +21,7 @@ export function MultitaskingView({ onClose }: MultitaskingViewProps) {
     >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-white">Recent Apps</h2>
-        <button onClick={onClose} className="text-sm text-banana-gold">Done</button>
+        <button onClick={onClose} className="text-sm text-gulf-gold">Done</button>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

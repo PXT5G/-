@@ -7,12 +7,12 @@ const reviewSchema = z.object({
   body: z.string().min(1).max(2000),
 });
 
-describe('Banana App Store validation', () => {
+describe('GULF Store Store validation', () => {
   it('accepts valid review', () => {
     const result = reviewSchema.safeParse({
       rating: 5,
       title: 'Great app',
-      body: 'Works perfectly on BananaOS.',
+      body: 'Works perfectly on GULFOS.',
     });
     expect(result.success).toBe(true);
   });
@@ -38,14 +38,14 @@ describe('Banana App Store validation', () => {
 
 describe('Store bundle IDs', () => {
   const validBundleIds = [
-    'com.bananaos.store',
-    'com.bananaos.identity',
-    'com.bananaos.bank',
+    'com.gulfos.store',
+    'com.gulfos.identity',
+    'com.gulfos.bank',
   ];
 
   it('follows reverse-domain convention', () => {
     validBundleIds.forEach((id) => {
-      expect(id).toMatch(/^com\.bananaos\.\w+$/);
+      expect(id).toMatch(/^com\.gulfos\.\w+$/);
     });
   });
 });

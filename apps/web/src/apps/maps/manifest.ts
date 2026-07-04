@@ -1,9 +1,9 @@
 import type { AppManifest } from '@/types';
 
 export const mapsManifest: AppManifest = {
-  id: 'com.bananaos.maps',
-  bundleId: 'com.bananaos.maps',
-  name: 'Banana Maps',
+  id: 'com.gulfos.maps',
+  bundleId: 'com.gulfos.maps',
+  name: 'GULF Maps',
   version: '1.0.0',
   description: 'GTA map navigation with live GPS',
   icon: '🗺️',

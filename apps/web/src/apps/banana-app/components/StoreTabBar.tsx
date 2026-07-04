@@ -30,7 +30,7 @@ export function StoreTabBar({ active, onChange, updateCount = 0 }: StoreTabBarPr
           onClick={() => onChange(tab.id)}
           className={cn(
             'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors relative',
-            active === tab.id ? 'text-banana-gold' : 'text-white/40'
+            active === tab.id ? 'text-gulf-gold' : 'text-white/40'
           )}
           aria-current={active === tab.id ? 'page' : undefined}
         >

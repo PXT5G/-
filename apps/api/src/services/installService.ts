@@ -7,7 +7,7 @@ import {
   getPackageManifest,
   verifyPackageIntegrity,
   isVersionCompatible,
-  BANANAOS_VERSION,
+  GULFOS_VERSION,
   type PackageManifest,
 } from './packageService';
 import { ensureAppStorageDir, initAppStorage, getAppStorage } from './storageService';
@@ -21,6 +21,7 @@ import {
 } from './deviceStorageService';
 import { registerInstalledPackage, updateInstalledPackage, removeInstalledPackage } from './installedPackageService';
 import { emitToUser } from './socketService';
+import { resolveBundleId, bundleIdVariants } from '../utils/bundleIdMigration';
 
 const GRID_COLS = 4;
 const GRID_ROWS = 6;
@@ -70,8 +71,8 @@ export async function verifyInstallPrerequisites(
   approvedPermissions: string[],
   userId?: string
 ): Promise<void> {
-  if (!isVersionCompatible(BANANAOS_VERSION, manifest.requiredBananaOSVersion)) {
-    throw new Error(`Requires BananaOS ${manifest.requiredBananaOSVersion} or later`);
+  if (!isVersionCompatible(GULFOS_VERSION, manifest.requiredGULFOSVersion)) {
+    throw new Error(`Requires GULFOS ${manifest.requiredGULFOSVersion} or later`);
   }
 
   const missing = manifest.requiredPermissions.filter((p) => !approvedPermissions.includes(p));
@@ -104,11 +105,12 @@ export async function executeInstall(
   approvedPermissions: string[],
   onProgress?: (p: InstallProgress) => void
 ): Promise<{ installed: InstanceType<typeof InstalledApp>; payload: Record<string, unknown> }> {
-  const app = await App.findOne({ bundleId });
-  const listing = await StoreListing.findOne({ bundleId });
+  const canonicalId = resolveBundleId(bundleId);
+  const app = await App.findOne({ bundleId: { $in: bundleIdVariants(canonicalId) } });
+  const listing = await StoreListing.findOne({ bundleId: { $in: bundleIdVariants(canonicalId) } });
   if (!app || !listing) throw new Error('App not found');
 
-  const manifest = await getPackageManifest(bundleId, version);
+  const manifest = await getPackageManifest(canonicalId, version);
   await verifyInstallPrerequisites(manifest, approvedPermissions, userId);
 
   for (let i = 0; i < INSTALL_STEPS.length; i++) {
@@ -116,19 +118,20 @@ export async function executeInstall(
     await new Promise((r) => setTimeout(r, 120));
   }
 
-  const storagePath = await ensureAppStorageDir(userId, bundleId);
-  await initAppStorage(userId, bundleId, manifest.storageRequired);
-  const storage = await getAppStorage(userId, bundleId);
-  await commitReservation(userId, bundleId);
+  const storagePath = await ensureAppStorageDir(userId, canonicalId);
+  await initAppStorage(userId, canonicalId, manifest.storageRequired);
+  const storage = await getAppStorage(userId, canonicalId);
+  await commitReservation(userId, canonicalId);
   await registerInstalledPackage(userId, manifest, storage.totalSize);
 
   const registry = await registerApp(userId, manifest, storagePath, approvedPermissions);
   const grid = await findNextGridPosition(userId);
 
-  const existing = await InstalledApp.findOne({ userId, bundleId });
+  const existing = await InstalledApp.findOne({ userId, bundleId: { $in: bundleIdVariants(canonicalId) } });
   let installed: InstanceType<typeof InstalledApp>;
 
   if (existing) {
+    existing.bundleId = canonicalId;
     existing.installedVersion = version;
     existing.storageBytes = storage.totalSize;
     existing.updatedAt = new Date();
@@ -138,7 +141,7 @@ export async function executeInstall(
     installed = await InstalledApp.create({
       userId: new Types.ObjectId(userId),
       appId: app._id,
-      bundleId,
+      bundleId: canonicalId,
       installedVersion: version,
       storageBytes: storage.totalSize,
       pageIndex: grid.pageIndex,
@@ -156,7 +159,7 @@ export async function executeInstall(
   emitToUser(userId, 'app:installed', payload);
   emitToUser(userId, 'notification:new' as never, {
     id: `install-${bundleId}-${Date.now()}`,
-    appId: 'com.bananaos.store',
+    appId: 'com.gulfos.store',
     title: `${app.name} Installed`,
     body: `Version ${version} is ready to use.`,
     priority: 'normal',
@@ -205,23 +208,24 @@ export async function executeUninstall(
   bundleId: string,
   options: UninstallOptions = {}
 ): Promise<void> {
-  const app = await App.findOne({ bundleId });
+  const canonicalId = resolveBundleId(bundleId);
+  const app = await App.findOne({ bundleId: { $in: bundleIdVariants(canonicalId) } });
   if (app?.isSystemApp) throw new Error('Cannot uninstall system app');
 
-  await setAppState(userId, bundleId, 'uninstalling');
+  await setAppState(userId, canonicalId, 'uninstalling');
 
   const { removeAppStorage } = await import('./storageService');
-  const freedBytes = await removeAppStorage(userId, bundleId, options);
-  await removeInstalledPackage(userId, bundleId);
-  await unregisterApp(userId, bundleId);
-  await InstalledApp.deleteOne({ userId, bundleId });
-  await freeStorageOnUninstall(userId, bundleId, freedBytes);
+  const freedBytes = await removeAppStorage(userId, canonicalId, options);
+  await removeInstalledPackage(userId, canonicalId);
+  await unregisterApp(userId, canonicalId);
+  await InstalledApp.deleteOne({ userId, bundleId: { $in: bundleIdVariants(canonicalId) } });
+  await freeStorageOnUninstall(userId, canonicalId, freedBytes);
 
   const keepAny = options.keepUserData || options.keepSettings || options.keepSession;
-  emitToUser(userId, 'app:uninstalled', { bundleId });
+  emitToUser(userId, 'app:uninstalled', { bundleId: canonicalId });
   emitToUser(userId, 'notification:new' as never, {
-    id: `uninstall-${bundleId}-${Date.now()}`,
-    appId: 'com.bananaos.store',
+    id: `uninstall-${canonicalId}-${Date.now()}`,
+    appId: 'com.gulfos.store',
     title: `${app?.name ?? bundleId} Removed`,
     body: keepAny ? 'App removed. Your data was kept.' : 'App and data removed. Storage freed.',
     priority: 'low',

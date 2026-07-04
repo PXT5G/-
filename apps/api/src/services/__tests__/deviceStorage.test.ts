@@ -12,10 +12,15 @@ describe('device storage capacities', () => {
 
 describe('realistic app package sizes', () => {
   it('assigns realistic sizes to key apps', () => {
-    assert.equal(getAppPackageSize('com.bananaos.phone'), 320_000_000);
-    assert.equal(getAppPackageSize('com.bananaos.messages'), 260_000_000);
-    assert.equal(getAppPackageSize('com.bananaos.police'), 1_400_000_000);
+    assert.equal(getAppPackageSize('com.gulfos.phone'), 320_000_000);
+    assert.equal(getAppPackageSize('com.gulfos.messages'), 260_000_000);
+    assert.equal(getAppPackageSize('com.gulfos.police'), 1_400_000_000);
+    assert.equal(getAppPackageSize('com.gulfos.bank'), 480_000_000);
+  });
+
+  it('resolves legacy bundle IDs for size lookup', () => {
     assert.equal(getAppPackageSize('com.bananaos.bank'), 480_000_000);
+    assert.equal(getAppPackageSize('com.bananaos.voicerecorder'), 120_000_000);
   });
 
   it('uses fallback for unknown apps', () => {

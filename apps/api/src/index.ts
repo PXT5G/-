@@ -65,9 +65,9 @@ async function bootstrap(): Promise<void> {
     const { StoreListing } = await import('./database/models/StoreListing');
     const count = await StoreListing.countDocuments();
     if (count === 0) {
-      const { seedBananaStore } = await import('./services/storeSeedService');
-      const result = await seedBananaStore();
-      console.log('[BananaOS API] Store seeded:', result);
+      const { seedGulfStore } = await import('./services/storeSeedService');
+      const result = await seedGulfStore();
+      console.log('[GULFOS API] Store seeded:', result);
     }
 
     const { startBackgroundServiceManager } = await import('./services/backgroundServiceManager');
@@ -92,16 +92,16 @@ async function bootstrap(): Promise<void> {
     const { seedCellTowers } = await import('./services/cellTowerService');
     const mapStats = await seedMapDatabase();
     const towerCount = await seedCellTowers();
-    console.log('[BananaOS API] World map seeded:', mapStats, 'towers:', towerCount);
+    console.log('[GULFOS API] World map seeded:', mapStats, 'towers:', towerCount);
 
     startBackgroundServiceManager();
-    console.log('[BananaOS API] Core OS services started');
+    console.log('[GULFOS API] Core OS services started');
 
     httpServer.listen(env.PORT, () => {
-      console.log(`[BananaOS API] Running on port ${env.PORT}`);
+      console.log(`[GULFOS API] Running on port ${env.PORT}`);
     });
   } catch (error) {
-    console.error('[BananaOS API] Failed to start:', error);
+    console.error('[GULFOS API] Failed to start:', error);
     process.exit(1);
   }
 }

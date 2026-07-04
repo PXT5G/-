@@ -1,8 +1,8 @@
-# BananaOS Roadmap
+# GULFOS Roadmap
 
 ## Phase 1 — Base System ✅ (Current)
 
-The foundation of BananaOS: a fully functional mobile OS shell running in the browser.
+The foundation of GULFOS: a fully functional mobile OS shell running in the browser.
 
 - [x] Monorepo architecture (Next.js + Express + shared types)
 - [x] Splash screen & boot animation
@@ -32,16 +32,16 @@ Build each application as a standalone module registered via `appRouter.ts`.
 
 | App | Bundle ID | Priority |
 |-----|-----------|----------|
-| Phone | `com.bananaos.phone` | High |
-| Messages | `com.bananaos.messages` | High |
-| Camera | `com.bananaos.camera` | High |
-| Gallery | `com.bananaos.gallery` | High |
-| Files | `com.bananaos.files` | High |
-| Browser | `com.bananaos.browser` | Medium |
-| Music | `com.bananaos.music` | Medium |
-| Calculator | `com.bananaos.calculator` | Medium |
-| Notes | `com.bananaos.notes` | Medium |
-| Calendar | `com.bananaos.calendar` | Medium |
+| Phone | `com.gulfos.phone` | High |
+| Messages | `com.gulfos.messages` | High |
+| Camera | `com.gulfos.camera` | High |
+| Gallery | `com.gulfos.gallery` | High |
+| Files | `com.gulfos.files` | High |
+| Browser | `com.gulfos.browser` | Medium |
+| Music | `com.gulfos.music` | Medium |
+| Calculator | `com.gulfos.calculator` | Medium |
+| Notes | `com.gulfos.notes` | Medium |
+| Calendar | `com.gulfos.calendar` | Medium |
 
 ---
 
@@ -49,12 +49,12 @@ Build each application as a standalone module registered via `appRouter.ts`.
 
 | App | Bundle ID |
 |-----|-----------|
-| Bank | `com.bananaos.bank` |
-| Identity | `com.bananaos.identity` |
-| SIM Card | `com.bananaos.simcard` |
-| Store | `com.bananaos.store` |
-| Community | `com.bananaos.community` |
-| Police | `com.bananaos.police` |
+| Bank | `com.gulfos.bank` |
+| Identity | `com.gulfos.identity` |
+| SIM Card | `com.gulfos.sim` |
+| Store | `com.gulfos.store` |
+| Community | `com.gulfos.community` |
+| Police | `com.gulfos.police` |
 
 ---
 
@@ -63,7 +63,7 @@ Build each application as a standalone module registered via `appRouter.ts`.
 - [ ] Drag & drop app rearrangement with folder creation
 - [ ] App Store with reviews and ratings
 - [ ] iCloud-style sync across devices
-- [ ] Siri-like voice assistant (Banana AI)
+- [ ] Siri-like voice assistant (GULF AI)
 - [ ] Widget SDK for third-party developers
 - [ ] Plugin/extension marketplace
 - [ ] Multi-user profiles
@@ -81,7 +81,7 @@ Build each application as a standalone module registered via `appRouter.ts`.
 
 ## Phase 5 — Ecosystem
 
-- [ ] BananaOS SDK for third-party developers
+- [ ] GULFOS SDK for third-party developers
 - [ ] App submission and review process
 - [ ] Developer documentation portal
 - [ ] Beta testing program

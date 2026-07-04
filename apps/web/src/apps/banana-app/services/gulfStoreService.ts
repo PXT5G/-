@@ -16,7 +16,7 @@ import type {
 function getToken(): string | undefined {
   if (typeof window === 'undefined') return undefined;
   try {
-    const raw = localStorage.getItem('bananaos_bananaos-auth');
+    const raw = localStorage.getItem('gulfos_gulfos-auth');
     if (raw) {
       const parsed = JSON.parse(raw);
       return parsed?.state?.tokens?.accessToken;
@@ -25,7 +25,7 @@ function getToken(): string | undefined {
   return undefined;
 }
 
-export const bananaAppService = {
+export const gulfStoreService = {
   async getFeatured(): Promise<StoreApp[]> {
     const res = await apiRequest<{ success: boolean; data: StoreApp[] }>('/api/store/featured', {
       token: getToken(),

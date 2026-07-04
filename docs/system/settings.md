@@ -1,4 +1,4 @@
-# BananaOS System Settings
+# GULFOS System Settings
 
 Phase 3.7 transforms Settings into a fully functional operating-system control center. Every option persists in MongoDB, syncs in realtime via Socket.io, logs audit events, and immediately affects the OS through the settings broker pipeline.
 
@@ -34,9 +34,9 @@ Phase 3.7 transforms Settings into a fully functional operating-system control c
 |-------|-------|
 | Default Device Name | Gulf Phone V1 |
 | Developer | Abu Sharaf |
-| Manufacturer | Banana Technologies |
-| Operating System | BananaOS |
-| Kernel | Banana Core |
+| Manufacturer | Gulf Technologies |
+| Operating System | GULFOS |
+| Kernel | GULF Core |
 | Hardware Version | 1.0 |
 | Build Number | 3.7.0 |
 
@@ -100,7 +100,7 @@ Arabic, English, French, German, Spanish, Italian, Portuguese, Turkish, Russian,
 ### Pluralization
 
 ```typescript
-import { plural } from '@bananaos/shared';
+import { plural } from '@gulfos/shared';
 plural(5, { one: '1 minute', other: '{count} minutes' });
 ```
 
@@ -176,6 +176,6 @@ update.mutate({ brightness: 90 });
 ### Running tests
 
 ```bash
-npm test --workspace=@bananaos/api
+npm test --workspace=@gulfos/api
 npm run build
 ```

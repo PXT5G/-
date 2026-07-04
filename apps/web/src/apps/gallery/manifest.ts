@@ -1,8 +1,8 @@
 import type { AppManifest } from '@/types';
 
 export const galleryManifest: AppManifest = {
-  id: 'com.bananaos.gallery',
-  bundleId: 'com.bananaos.gallery',
+  id: 'com.gulfos.gallery',
+  bundleId: 'com.gulfos.gallery',
   name: 'Gallery',
   version: '1.0.0',
   description: 'Photos, videos, albums, and memories',

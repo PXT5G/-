@@ -18,9 +18,9 @@ describe('encryption service', () => {
   it('encrypts and decrypts messages with integrity', () => {
     const { keyId, key } = generateConversationKey('conv-1');
     assert.ok(keyId);
-    const { encrypted, signature } = encryptMessage('Hello BananaOS', key);
+    const { encrypted, signature } = encryptMessage('Hello GULFOS', key);
     const decrypted = decryptMessage(encrypted, key, signature);
-    assert.equal(decrypted, 'Hello BananaOS');
+    assert.equal(decrypted, 'Hello GULFOS');
   });
 
   it('rejects tampered signatures', () => {
@@ -108,7 +108,7 @@ describe('background communication tasks', () => {
 
 describe('permission routing', () => {
   it('requires apps to route through communication core', () => {
-    const coreApp = 'com.bananaos.communication';
+    const coreApp = 'com.gulfos.communication';
     assert.ok(coreApp.includes('communication'));
   });
 });

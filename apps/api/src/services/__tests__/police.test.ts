@@ -13,7 +13,7 @@ import { calculateFine, calculateJailDays } from '../../services/policeIntegrati
 
 describe('police constants', () => {
   it('defines police app bundle', () => {
-    assert.equal(POLICE_APP_BUNDLE, 'com.bananaos.police');
+    assert.equal(POLICE_APP_BUNDLE, 'com.gulfos.police');
   });
 
   it('defines 14 police roles', () => {

@@ -19,7 +19,7 @@ export function PhoneFrame({ children, className }: PhoneFrameProps) {
           className
         )}
         role="application"
-        aria-label="BananaOS"
+        aria-label="GULFOS"
       >
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-b-2xl z-[55]" />
         {children}

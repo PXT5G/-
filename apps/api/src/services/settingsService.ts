@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import { z } from 'zod';
-import { getTranslations } from '@bananaos/shared';
+import { getTranslations } from '@gulfos/shared';
 import { UserSettings, type IUserSettings } from '../database/models/UserSettings';
 import { DeviceProfile } from '../database/models/DeviceProfile';
 import { DeviceState } from '../database/models/DeviceState';

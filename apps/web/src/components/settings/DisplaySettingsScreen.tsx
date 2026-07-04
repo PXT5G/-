@@ -24,7 +24,7 @@ export function DisplaySettingsScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ {t('common.settings')}</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ {t('common.settings')}</button>
         <h1 className="text-2xl font-bold text-white mb-6">{t('settings.display')}</h1>
 
         <SettingsSection title={t('settings.appearance')}>
@@ -35,7 +35,7 @@ export function DisplaySettingsScreen({ onBack }: { onBack: () => void }) {
                   key={th}
                   type="button"
                   onClick={() => { setMode(th); patch({ theme: th }); }}
-                  className={`px-3 py-1 rounded-full text-xs capitalize ${mode === th ? 'bg-banana-gold text-black' : 'bg-white/10 text-white'}`}
+                  className={`px-3 py-1 rounded-full text-xs capitalize ${mode === th ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white'}`}
                 >
                   {th === 'system' ? t('settings.systemTheme') : th === 'light' ? t('settings.light') : t('settings.dark')}
                 </button>
@@ -52,7 +52,7 @@ export function DisplaySettingsScreen({ onBack }: { onBack: () => void }) {
                   key={c}
                   type="button"
                   onClick={() => { setAccentColor(c); patch({ accentColor: c }); }}
-                  className={`w-6 h-6 rounded-full border-2 ${accentColor === c ? 'border-banana-gold' : 'border-white/20'}`}
+                  className={`w-6 h-6 rounded-full border-2 ${accentColor === c ? 'border-gulf-gold' : 'border-white/20'}`}
                   style={{ background: c === 'gold' ? '#D4AF37' : c === 'white' ? '#fff' : '#1a1a1a' }}
                   aria-label={c}
                 />

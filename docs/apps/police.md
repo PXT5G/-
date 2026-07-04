@@ -1,12 +1,12 @@
-# Banana Police — com.bananaos.police
+# GULF Police — com.gulfos.police
 
-Phase 4 App 06 delivers a production Mobile Data Terminal (MDT) integrated into the Banana Police application. The MDT is built into the app — not a separate application — with full RBAC, audit logging, and realtime synchronization.
+Phase 4 App 06 delivers a production Mobile Data Terminal (MDT) integrated into the GULF Police application. The MDT is built into the app — not a separate application — with full RBAC, audit logging, and realtime synchronization.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Banana Police MDT (Frontend)                    │
+│                    GULF Police MDT (Frontend)                    │
 │         PoliceApp → usePolice → policeService → Socket.io        │
 └──────┬──────────┬──────────┬──────────┬──────────┬────────────┘
        │          │          │          │          │
@@ -21,7 +21,7 @@ Phase 4 App 06 delivers a production Mobile Data Terminal (MDT) integrated into 
 
 ### Design principles
 
-- **MDT built-in**: All law enforcement tools live inside `com.bananaos.police`
+- **MDT built-in**: All law enforcement tools live inside `com.gulfos.police`
 - **RBAC-first**: 14 configurable roles with 50+ granular permissions
 - **Audit everything**: Every action logs to `AuditLog` + `PoliceDutyLog`
 - **Realtime**: Socket.io events for dispatch, units, panic, BOLO, warrants
@@ -132,7 +132,7 @@ Police app UI is English-only (law enforcement standard). Citizen-facing integra
 
 Every mutation:
 1. Checks `checkPolicePermission(userId, permission)`
-2. Requires `com.bananaos.police` app with `location` permission (or admin role)
+2. Requires `com.gulfos.police` app with `location` permission (or admin role)
 3. Logs to `AuditLog` with actor, resource, IP, device UUID
 4. Creates `PoliceDutyLog` entry for officer actions
 
@@ -185,7 +185,7 @@ apps/web/src/hooks/usePolice.ts
 ### Running tests
 
 ```bash
-npm test --workspace=@bananaos/api
+npm test --workspace=@gulfos/api
 npm run build
 ```
 
@@ -202,4 +202,4 @@ npm run build
 | Notification Broker | Critical dispatch and panic alerts |
 | Permission Broker | App-level location permission |
 | Device Ecosystem | Officer device UUID in audit logs |
-| Banana App Store | `com.bananaos.police` premium listing |
+| GULF Store Store | `com.gulfos.police` premium listing |

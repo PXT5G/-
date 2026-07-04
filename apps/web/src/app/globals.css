@@ -1,9 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --color-banana-gold: #D4AF37;
-  --color-banana-black: #0a0a0a;
-  --color-banana-white: #ffffff;
+  --color-gulf-gold: #D4AF37;
+  --color-gulf-black: #0a0a0a;
+  --color-gulf-white: #ffffff;
+  /* Legacy aliases for backward compatibility */
+  --color-banana-gold: var(--color-gulf-gold);
+  --color-banana-black: var(--color-gulf-black);
+  --color-banana-white: var(--color-gulf-white);
   --background: #0a0a0a;
   --foreground: #ffffff;
 }
@@ -11,9 +15,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-banana-gold: #D4AF37;
-  --color-banana-black: #0a0a0a;
-  --color-banana-white: #ffffff;
+  --color-gulf-gold: #D4AF37;
+  --color-gulf-black: #0a0a0a;
+  --color-gulf-white: #ffffff;
+  /* Legacy aliases for backward compatibility */
+  --color-banana-gold: var(--color-gulf-gold);
+  --color-banana-black: var(--color-gulf-black);
+  --color-banana-white: var(--color-gulf-white);
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -53,6 +61,7 @@ body {
   transition-duration: 0.01ms !important;
 }
 
+.wallpaper-gulf,
 .wallpaper-banana {
   background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #1a1a2e 100%);
   background-size: 400% 400%;
@@ -66,7 +75,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wallpaper-banana {
+  .wallpaper-gulf {
     animation: none;
   }
 }

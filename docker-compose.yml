@@ -3,14 +3,14 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:7
-    container_name: bananaos-mongodb
+    container_name: gulfos-mongodb
     restart: unless-stopped
     ports:
       - '27017:27017'
     volumes:
-      - bananaos-mongo-data:/data/db
+      - gulfos-mongo-data:/data/db
     environment:
-      MONGO_INITDB_DATABASE: bananaos
+      MONGO_INITDB_DATABASE: gulfos
     healthcheck:
       test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 10s
@@ -21,14 +21,14 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: bananaos-api
+    container_name: gulfos-api
     restart: unless-stopped
     ports:
       - '4000:4000'
     environment:
       PORT: 4000
       NODE_ENV: production
-      MONGODB_URI: mongodb://mongodb:27017/bananaos
+      MONGODB_URI: mongodb://mongodb:27017/gulfos
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-min-16-chars}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh-min-16-chars}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
@@ -40,7 +40,7 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    container_name: bananaos-web
+    container_name: gulfos-web
     restart: unless-stopped
     ports:
       - '3000:3000'
@@ -50,4 +50,4 @@ services:
       - api
 
 volumes:
-  bananaos-mongo-data:
+  gulfos-mongo-data:

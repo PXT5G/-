@@ -34,7 +34,7 @@ export async function initiateAttachmentUpload(params: {
   actorId: string;
 }) {
   const allowed = await checkPermission(params.userId, params.appId, 'storage');
-  if (!allowed && params.appId !== 'com.bananaos.system') throw new Error('PERMISSION_DENIED');
+  if (!allowed && params.appId !== 'com.gulfos.system') throw new Error('PERMISSION_DENIED');
 
   validateAttachmentSize(params.mimeType, params.sizeBytes);
 

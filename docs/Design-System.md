@@ -1,16 +1,16 @@
-# BananaOS — Design System
+# GULFOS — Design System
 
 > Phase 2 Design Document  
-> Visual language, tokens, and styling rules for all BananaOS surfaces.
+> Visual language, tokens, and styling rules for all GULFOS surfaces.
 
 ---
 
 ## 1. Brand Identity
 
 ### Logo
-- **Mark:** Banana silhouette in gold on dark rounded square
-- **Wordmark:** `Banana` (white) + `OS` (gold)
-- **Component:** `BananaLogo.tsx`
+- **Mark:** Gulf wave mark in gold on dark rounded square
+- **Wordmark:** `GULF` (white) + `OS` (gold)
+- **Component:** `GulfLogo.tsx`
 - **Minimum size:** 32px (digital), 16px (favicon)
 
 ### Brand Values
@@ -19,7 +19,7 @@
 | Luxury | Gold accents, generous whitespace, premium shadows |
 | Minimal | Clean layouts, limited color palette, no clutter |
 | Modern | Glassmorphism, smooth motion, rounded geometry |
-| Original | No Apple assets; BananaOS-specific patterns |
+| Original | No Apple assets; GULFOS-specific patterns |
 
 ---
 
@@ -29,9 +29,9 @@
 
 | Token | Hex | CSS Variable | Usage |
 |-------|-----|--------------|-------|
-| Banana Gold | `#D4AF37` | `--color-banana-gold` | Primary accent, CTAs, active states |
-| Banana Black | `#0A0A0A` | `--color-banana-black` | Primary background (dark) |
-| Banana White | `#FFFFFF` | `--color-banana-white` | Primary text, icons |
+| Gulf Gold | `#D4AF37` | `--color-gulf-gold` | Primary accent, CTAs, active states |
+| Gulf Black | `#0A0A0A` | `--color-gulf-black` | Primary background (dark) |
+| Gulf White | `#FFFFFF` | `--color-gulf-white` | Primary text, icons |
 | Surface Dark | `#1A1A1A` | `--surface-dark` | Cards, panels |
 | Surface Elevated | `#2D2D2D` | `--surface-elevated` | Modals, sheets |
 | Glass White | `rgba(255,255,255,0.10)` | `--glass-white` | Glassmorphism fill |

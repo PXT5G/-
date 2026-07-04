@@ -3,10 +3,10 @@ WORKDIR /app
 COPY package*.json ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
-RUN npm install --workspace=@bananaos/api --workspace=@bananaos/shared
+RUN npm install --workspace=@gulfos/api --workspace=@gulfos/shared
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
-RUN npm run build --workspace=@bananaos/shared && npm run build --workspace=@bananaos/api
+RUN npm run build --workspace=@gulfos/shared && npm run build --workspace=@gulfos/api
 
 FROM node:20-alpine AS runner
 WORKDIR /app

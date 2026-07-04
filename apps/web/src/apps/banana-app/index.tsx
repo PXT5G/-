@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useBananaAppStore } from './store/bananaAppStore';
-import { bananaAppService } from './services/bananaAppService';
+import { useGulfStoreStore } from './store/gulfStoreStore';
+import { gulfStoreService } from './services/gulfStoreService';
 import { StoreTabBar } from './components/StoreTabBar';
 import { InstallOverlay } from './components/InstallOverlay';
 import { PermissionApprovalModal } from './components/PermissionApprovalModal';
@@ -27,14 +27,14 @@ interface StorageError {
   free: number;
 }
 
-export function BananaApp() {
+export function GulfStoreApp() {
   const {
     activeTab,
     activeInstall,
     updates,
     setTab,
     setActiveInstall,
-  } = useBananaAppStore();
+  } = useGulfStoreStore();
 
   const [detailBundleId, setDetailBundleId] = useState<string | null>(null);
   const [developerSlug, setDeveloperSlug] = useState<string | null>(null);
@@ -67,8 +67,8 @@ export function BananaApp() {
         setStorageError({ required: check.required, free: check.free });
         return;
       }
-      const app = await bananaAppService.getAppDetail(bundleId);
-      const { manifest } = await bananaAppService.getPackageManifest(bundleId, app.version);
+      const app = await gulfStoreService.getAppDetail(bundleId);
+      const { manifest } = await gulfStoreService.getPackageManifest(bundleId, app.version);
       setPendingInstall({
         bundleId,
         appName: app.name,
@@ -77,7 +77,7 @@ export function BananaApp() {
         manifest,
       });
     } catch (err) {
-      console.error('[BananaApp] Failed to load package manifest:', err);
+      console.error('[GulfStore] Failed to load package manifest:', err);
     }
   }, [playTap]);
 
@@ -95,8 +95,8 @@ export function BananaApp() {
       const { bundleId, appName, appIcon, type } = pendingInstall;
       const result =
         type === 'update'
-          ? await bananaAppService.update(bundleId, approvedPermissions)
-          : await bananaAppService.install(bundleId, approvedPermissions);
+          ? await gulfStoreService.update(bundleId, approvedPermissions)
+          : await gulfStoreService.install(bundleId, approvedPermissions);
 
       setPendingInstall(null);
       setActiveInstall({
@@ -124,7 +124,7 @@ export function BananaApp() {
           free: 0,
         });
       }
-      console.error('[BananaApp] Install failed:', err);
+      console.error('[GulfStore] Install failed:', err);
       setPendingInstall(null);
     }
   }, [pendingInstall, setActiveInstall, islandShow]);
@@ -137,24 +137,24 @@ export function BananaApp() {
 
   const handlePause = useCallback(async () => {
     if (!activeInstall) return;
-    await bananaAppService.pauseDownload(activeInstall.downloadId);
+    await gulfStoreService.pauseDownload(activeInstall.downloadId);
   }, [activeInstall]);
 
   const handleResume = useCallback(async () => {
     if (!activeInstall) return;
-    await bananaAppService.resumeDownload(activeInstall.downloadId);
+    await gulfStoreService.resumeDownload(activeInstall.downloadId);
   }, [activeInstall]);
 
   const handleCancel = useCallback(async () => {
     if (!activeInstall) return;
-    await bananaAppService.cancelDownload(activeInstall.downloadId);
+    await gulfStoreService.cancelDownload(activeInstall.downloadId);
     setActiveInstall(null);
     islandHide();
   }, [activeInstall, setActiveInstall, islandHide]);
 
   const handleRetry = useCallback(async () => {
     if (!activeInstall) return;
-    await bananaAppService.retryDownload(activeInstall.downloadId);
+    await gulfStoreService.retryDownload(activeInstall.downloadId);
     setActiveInstall({ ...activeInstall, status: 'queued', progress: 0 });
   }, [activeInstall, setActiveInstall]);
 

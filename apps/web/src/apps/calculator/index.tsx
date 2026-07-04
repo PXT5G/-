@@ -77,7 +77,7 @@ export function CalculatorApp() {
     <div className="h-full flex flex-col bg-black">
       <div className="p-4 flex gap-2">
         {(['basic', 'scientific'] as Mode[]).map((m) => (
-          <button key={m} type="button" onClick={() => setMode(m)} className={`px-4 py-1 rounded-full text-xs capitalize ${mode === m ? 'bg-banana-gold text-black' : 'bg-white/10 text-white'}`}>{m}</button>
+          <button key={m} type="button" onClick={() => setMode(m)} className={`px-4 py-1 rounded-full text-xs capitalize ${mode === m ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white'}`}>{m}</button>
         ))}
         <button type="button" onClick={convertCurrency} className="px-3 py-1 rounded-full text-xs bg-white/10 text-white">USD→EUR</button>
         <button type="button" onClick={convertUnits} className="px-3 py-1 rounded-full text-xs bg-white/10 text-white">km→mi</button>
@@ -93,7 +93,7 @@ export function CalculatorApp() {
             type="button"
             onClick={() => handleBtn(b)}
             className={`aspect-square rounded-2xl text-lg font-medium ${
-              b === '=' ? 'bg-banana-gold text-black' :
+              b === '=' ? 'bg-gulf-gold text-black' :
               ['+', '-', '×', '÷', '%', 'C', '⌫'].includes(b) ? 'bg-white/20 text-white' :
               'bg-white/10 text-white'
             } ${b === '0' && mode === 'basic' ? 'col-span-2 aspect-auto py-4' : ''}`}

@@ -21,7 +21,7 @@ export function AccessibilitySettingsScreen({ onBack }: { onBack: () => void }) 
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ {t('common.settings')}</button>
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">‹ {t('common.settings')}</button>
         <h1 className="text-2xl font-bold text-white mb-6">{t('settings.accessibility')}</h1>
 
         <SettingsSection title={t('settings.accessibility')}>

@@ -6,30 +6,31 @@ import { AppPackage, IAppPackage } from '../database/models/AppPackage';
 import { AppVersion } from '../database/models/AppVersion';
 import { StoreListing } from '../database/models/StoreListing';
 import { getAppPackageSize } from '../constants/appSizes';
+import { resolveBundleId, bundleIdVariants } from '../utils/bundleIdMigration';
 
 const PACKAGES_DIR = path.join(process.cwd(), 'data', 'packages');
-const BANANAOS_VERSION = '1.0.0';
+const GULFOS_VERSION = '1.0.0';
 
 const RUNTIME_APPS = new Set([
-  'com.bananaos.settings',
-  'com.bananaos.store',
-  'com.bananaos.identity',
-  'com.bananaos.bank',
-  'com.bananaos.sim',
-  'com.bananaos.contacts',
-  'com.bananaos.police',
-  'com.bananaos.control-panel',
-  'com.bananaos.phone',
-  'com.bananaos.maps',
-  'com.bananaos.camera',
-  'com.bananaos.gallery',
-  'com.bananaos.files',
-  'com.bananaos.calendar',
-  'com.bananaos.clock',
-  'com.bananaos.calculator',
-  'com.bananaos.notes',
-  'com.bananaos.voicerecorder',
-  'com.bananaos.weather',
+  'com.gulfos.settings',
+  'com.gulfos.store',
+  'com.gulfos.identity',
+  'com.gulfos.bank',
+  'com.gulfos.sim',
+  'com.gulfos.contacts',
+  'com.gulfos.police',
+  'com.gulfos.control-panel',
+  'com.gulfos.phone',
+  'com.gulfos.maps',
+  'com.gulfos.camera',
+  'com.gulfos.gallery',
+  'com.gulfos.files',
+  'com.gulfos.calendar',
+  'com.gulfos.clock',
+  'com.gulfos.calculator',
+  'com.gulfos.notes',
+  'com.gulfos.recorder',
+  'com.gulfos.weather',
 ]);
 
 export interface PackageManifest {
@@ -38,7 +39,7 @@ export interface PackageManifest {
   checksum: string;
   size: number;
   minOSVersion: string;
-  requiredBananaOSVersion: string;
+  requiredGULFOSVersion: string;
   dependencies: string[];
   requiredPermissions: string[];
   optionalPermissions: string[];
@@ -78,21 +79,22 @@ export async function ensurePackageDir(bundleId: string, version: string): Promi
 }
 
 export async function buildPackageForApp(bundleId: string, version: string): Promise<IAppPackage> {
-  const app = await App.findOne({ bundleId });
+  const canonicalId = resolveBundleId(bundleId);
+  const app = await App.findOne({ bundleId: { $in: bundleIdVariants(canonicalId) } });
   if (!app) throw new Error(`App not found: ${bundleId}`);
 
-  const listing = await StoreListing.findOne({ bundleId });
-  const appVersion = await AppVersion.findOne({ bundleId, version });
+  const listing = await StoreListing.findOne({ bundleId: { $in: bundleIdVariants(canonicalId) } });
+  const appVersion = await AppVersion.findOne({ bundleId: { $in: bundleIdVariants(canonicalId) }, version });
 
-  const packageSize = getAppPackageSize(bundleId, listing?.storageSize ?? appVersion?.size ?? 80_000_000);
-  const dir = await ensurePackageDir(bundleId, version);
+  const packageSize = getAppPackageSize(canonicalId, listing?.storageSize ?? appVersion?.size ?? 80_000_000);
+  const dir = await ensurePackageDir(canonicalId, version);
   const manifest: PackageManifest = {
-    bundleId,
+    bundleId: canonicalId,
     version,
     checksum: '',
     size: packageSize,
     minOSVersion: listing?.minOSVersion ?? app.minOSVersion,
-    requiredBananaOSVersion: BANANAOS_VERSION,
+    requiredGULFOSVersion: GULFOS_VERSION,
     dependencies: [],
     requiredPermissions: (listing?.permissions ?? app.permissions).slice(0, 4),
     optionalPermissions: (listing?.permissions ?? app.permissions).slice(4),
@@ -102,7 +104,7 @@ export async function buildPackageForApp(bundleId: string, version: string): Pro
     icons: [app.icon],
     screenshots: listing?.screenshots ?? [],
     changelog: appVersion?.changelog ?? '',
-    hasRuntime: RUNTIME_APPS.has(bundleId),
+    hasRuntime: RUNTIME_APPS.has(canonicalId),
     route: app.route,
     entryPoint: app.entryPoint,
   };
@@ -124,7 +126,7 @@ export async function buildPackageForApp(bundleId: string, version: string): Pro
       checksum: manifest.checksum,
       size: manifest.size,
       minOSVersion: manifest.minOSVersion,
-      requiredBananaOSVersion: manifest.requiredBananaOSVersion,
+      requiredGULFOSVersion: manifest.requiredGULFOSVersion,
       dependencies: manifest.dependencies,
       requiredPermissions: manifest.requiredPermissions,
       optionalPermissions: manifest.optionalPermissions,
@@ -143,9 +145,10 @@ export async function buildPackageForApp(bundleId: string, version: string): Pro
 }
 
 export async function getPackage(bundleId: string, version: string) {
-  const existing = await AppPackage.findOne({ bundleId, version });
+  const canonicalId = resolveBundleId(bundleId);
+  const existing = await AppPackage.findOne({ bundleId: { $in: bundleIdVariants(canonicalId) }, version });
   if (existing) return existing;
-  return buildPackageForApp(bundleId, version);
+  return buildPackageForApp(canonicalId, version);
 }
 
 export async function getPackageManifest(bundleId: string, version: string): Promise<PackageManifest> {
@@ -158,7 +161,7 @@ export async function getPackageManifest(bundleId: string, version: string): Pro
     checksum: pkg.checksum,
     size: pkg.size,
     minOSVersion: pkg.minOSVersion,
-    requiredBananaOSVersion: pkg.requiredBananaOSVersion,
+    requiredGULFOSVersion: pkg.requiredGULFOSVersion,
     dependencies: pkg.dependencies,
     requiredPermissions: pkg.requiredPermissions,
     optionalPermissions: pkg.optionalPermissions,
@@ -168,7 +171,7 @@ export async function getPackageManifest(bundleId: string, version: string): Pro
     icons: pkg.icons,
     screenshots: pkg.screenshots,
     changelog: pkg.changelog,
-    hasRuntime: RUNTIME_APPS.has(bundleId),
+    hasRuntime: RUNTIME_APPS.has(resolveBundleId(pkg.bundleId)),
   };
 }
 
@@ -220,4 +223,4 @@ export async function getStorageRequired(bundleId: string, version: string): Pro
   return manifest.storageRequired;
 }
 
-export { RUNTIME_APPS, BANANAOS_VERSION };
+export { RUNTIME_APPS, GULFOS_VERSION };

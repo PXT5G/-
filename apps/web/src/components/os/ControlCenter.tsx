@@ -121,7 +121,7 @@ export function ControlCenter() {
                     <p className="text-sm text-white font-medium">{carrier?.name ?? carrierName}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-banana-gold font-semibold">
+                    <p className="text-xs text-gulf-gold font-semibold">
                       {generation === 'none' ? 'No Service' : generation === 'emergency' ? 'SOS' : generation.toUpperCase()}
                     </p>
                     <p className="text-[10px] text-white/40">{signalBars}/5 bars</p>
@@ -151,7 +151,7 @@ function ControlTile({
     <button
       onClick={onClick}
       className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all ${
-        active ? 'bg-banana-gold/30 border border-banana-gold/50' : 'bg-white/5 border border-white/10'
+        active ? 'bg-gulf-gold/30 border border-gulf-gold/50' : 'bg-white/5 border border-white/10'
       }`}
       aria-label={label}
       aria-pressed={active}

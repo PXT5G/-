@@ -30,7 +30,7 @@ export interface INetworkState extends Document {
 const networkStateSchema = new Schema<INetworkState>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
-    carrier: { type: String, default: 'Banana Mobile' },
+    carrier: { type: String, default: 'GULF Mobile' },
     signalStrength: { type: Number, default: 4, min: 0, max: 5 },
     cellTowers: [
       {
@@ -53,7 +53,7 @@ const networkStateSchema = new Schema<INetworkState>(
       default: 'connected',
     },
     wifiEnabled: { type: Boolean, default: true },
-    wifiSsid: { type: String, default: 'BananaOS-5G' },
+    wifiSsid: { type: String, default: 'GULFOS-5G' },
     bluetoothEnabled: { type: Boolean, default: false },
     ...auditSchemaFields,
   },

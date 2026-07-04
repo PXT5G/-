@@ -1,5 +1,5 @@
 /**
- * Single background scheduler for all BananaOS system tasks.
+ * Single background scheduler for all GULFOS system tasks.
  * Replaces individual setInterval simulators.
  */
 

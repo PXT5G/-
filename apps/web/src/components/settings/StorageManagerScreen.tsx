@@ -155,7 +155,7 @@ export function StorageManagerScreen({ onBack }: { onBack: () => void }) {
   if (isLoading || !data) {
     return (
       <div className="h-full flex items-center justify-center bg-black">
-        <div className="w-8 h-8 border-2 border-banana-gold border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -168,12 +168,12 @@ export function StorageManagerScreen({ onBack }: { onBack: () => void }) {
   return (
     <div className="h-full overflow-y-auto bg-black">
       <div className="p-4 pb-8">
-        <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">
+        <button type="button" onClick={() => { tap(); onBack(); }} className="text-gulf-gold text-sm mb-4">
           ‹ Settings
         </button>
         <h1 className="text-2xl font-bold text-white mb-1">Storage</h1>
         <p className="text-xs text-white/50 mb-2">
-          {data.deviceName ?? 'Banana Phone'} · {data.capacityTier ?? formatBytes(data.total)}
+          {data.deviceName ?? 'Gulf Phone V1'} · {data.capacityTier ?? formatBytes(data.total)}
         </p>
 
         {(data.lowStorageLevel === 'warning' || data.lowStorageLevel === 'low' || data.lowStorageLevel === 'critical' || data.lowStorageLevel === 'emergency') && (
@@ -193,7 +193,7 @@ export function StorageManagerScreen({ onBack }: { onBack: () => void }) {
 
         <div className="text-center mb-6">
           <p className="text-sm text-white">
-            <span className="text-banana-gold font-semibold">{formatBytes(data.used)}</span>
+            <span className="text-gulf-gold font-semibold">{formatBytes(data.used)}</span>
             <span className="text-white/50"> of {formatBytes(data.total)} used</span>
           </p>
           <p className="text-xs text-white/40 mt-1">{formatBytes(data.free)} available</p>
@@ -283,7 +283,7 @@ export function StorageManagerScreen({ onBack }: { onBack: () => void }) {
             <button
               type="button"
               onClick={() => setSortBySize(!sortBySize)}
-              className="text-xs text-banana-gold"
+              className="text-xs text-gulf-gold"
             >
               {sortBySize ? 'Sort A–Z' : 'Sort by Size'}
             </button>
@@ -304,7 +304,7 @@ export function StorageManagerScreen({ onBack }: { onBack: () => void }) {
                   <p className="text-sm font-medium text-white truncate">{app.name}</p>
                   <p className="text-xs text-white/50">v{app.installedVersion}</p>
                 </div>
-                <span className="text-sm text-banana-gold font-medium">{formatBytes(app.storageBytes)}</span>
+                <span className="text-sm text-gulf-gold font-medium">{formatBytes(app.storageBytes)}</span>
               </motion.div>
             ))
           )}

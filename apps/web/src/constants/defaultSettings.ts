@@ -4,9 +4,9 @@ export const DEFAULT_SETTINGS: UserSettings = {
   theme: 'dark',
   accentColor: 'gold',
   wallpaper: {
-    id: 'banana-gradient',
+    id: 'gulf-gradient',
     type: 'animated',
-    animatedClass: 'wallpaper-banana',
+    animatedClass: 'wallpaper-gulf',
     dark: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)',
     light: 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 50%, #d4d4d4 100%)',
   },

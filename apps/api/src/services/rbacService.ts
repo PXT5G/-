@@ -1,5 +1,5 @@
 import type { AuthRequest } from '../api/middleware/auth';
-import type { SystemPermissionType } from '@bananaos/shared';
+import type { SystemPermissionType } from '@gulfos/shared';
 import { checkPermission } from './permissionBrokerService';
 
 export async function requireSystemPermission(
