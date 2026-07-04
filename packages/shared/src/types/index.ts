@@ -230,6 +230,13 @@ export type SocketEvent =
   | 'system:error'
   | 'location:update'
   | 'network:update'
+  | 'world:update'
+  | 'tower:update'
+  | 'signal:update'
+  | 'gps:update'
+  | 'vpn:update'
+  | 'carrier:update'
+  | 'tracking:update'
   | 'battery:update'
   | 'device:update'
   | 'permission:update'
@@ -262,6 +269,11 @@ export interface DeviceLocationState {
 export interface NetworkStateSnapshot {
   carrier: string;
   signalStrength: number;
+  signalBars?: number;
+  signalDbm?: number;
+  generation?: string;
+  connectionType?: string;
+  pingMs?: number;
   cellTowers: { id: string; strength: number; band: string }[];
   internetConnected: boolean;
   vpnEnabled: boolean;
@@ -271,10 +283,101 @@ export interface NetworkStateSnapshot {
   bandwidthMbps: number;
   packetLoss: number;
   jitterMs: number;
+  congestion?: number;
+  penalties?: Record<string, number>;
   connectionState: 'connected' | 'connecting' | 'disconnected' | 'limited';
   wifiEnabled: boolean;
   wifiSsid?: string;
   bluetoothEnabled: boolean;
+}
+
+export type ConnectionGeneration = 'none' | 'emergency' | '2g' | '3g' | '4g' | '5g';
+
+export interface WorldStateSnapshot {
+  latitude: number;
+  longitude: number;
+  heading: number;
+  speed: number;
+  altitude: number;
+  district: string;
+  street: string;
+  zone: string;
+  region: string;
+  vehicleState: string;
+  weather: string;
+  timeOfDay: string;
+  gameHour: number;
+  interior: boolean;
+  safeZone: boolean;
+  restrictedZone: boolean;
+  nearestLocationId?: string;
+  connectedTowerUuid?: string;
+  lastTickAt: string;
+}
+
+export interface CellTowerSnapshot {
+  towerUuid: string;
+  towerName: string;
+  latitude: number;
+  longitude: number;
+  coverageRadiusM: number;
+  signalPower: number;
+  frequencyBand: string;
+  carrier: string;
+  towerHealth: number;
+  currentUsers: number;
+  maxUsers: number;
+  status: string;
+  maintenance: boolean;
+  district: string;
+  handoff?: boolean;
+  distanceM?: number;
+}
+
+export interface SignalSnapshot {
+  signalBars: number;
+  signalDbm: number;
+  generation: ConnectionGeneration;
+  carrier: string;
+  latencyMs?: number;
+  bandwidthMbps?: number;
+  packetLoss?: number;
+  jitterMs?: number;
+  congestion?: number;
+}
+
+export interface GpsStateSnapshot {
+  navigating: boolean;
+  destination: {
+    locationId?: string;
+    name: string;
+    latitude?: number;
+    longitude?: number;
+  } | null;
+  distanceRemainingM: number;
+  etaSeconds: number;
+  savedPlaces: { locationId: string; name: string; lat: number; lng: number }[];
+  recentPlaces: { locationId: string; name: string; lat: number; lng: number; visitedAt?: string }[];
+  favoritePlaces: { locationId: string; name: string; lat: number; lng: number }[];
+  sharingEnabled: boolean;
+  arrived?: boolean;
+}
+
+export interface VpnStateSnapshot {
+  active: boolean;
+  country?: string | null;
+  countryName?: string | null;
+  virtualIp?: string | null;
+  encryption?: string | null;
+  latencyPenaltyMs?: number;
+  bandwidthPenaltyMbps?: number;
+  connectedAt?: string;
+}
+
+export interface CarrierStateSnapshot {
+  name: string;
+  generation: ConnectionGeneration;
+  connectedTowerUuid: string | null;
 }
 
 export interface DeviceStateSnapshot {

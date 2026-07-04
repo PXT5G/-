@@ -16,6 +16,11 @@ import { BackgroundJobsScreen } from './BackgroundJobsScreen';
 import { PermissionsSettingsScreen } from './PermissionsSettingsScreen';
 import { BatterySettingsScreen } from './BatterySettingsScreen';
 import { DeveloperSettingsScreen } from './DeveloperSettingsScreen';
+import { MapsSettingsScreen } from './MapsSettingsScreen';
+import { CarrierSettingsScreen } from './CarrierSettingsScreen';
+import { VpnSettingsScreen } from './VpnSettingsScreen';
+import { SignalSettingsScreen } from './SignalSettingsScreen';
+import { CellTowersSettingsScreen } from './CellTowersSettingsScreen';
 import { Toggle } from '@/components/ui/Toggle';
 import { Slider } from '@/components/ui/Slider';
 import { useHaptic } from '@/hooks/useSound';
@@ -71,6 +76,26 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
   if (activeSection === 'developer') {
     return <DeveloperSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'maps') {
+    return <MapsSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'carrier') {
+    return <CarrierSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'vpn') {
+    return <VpnSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'signal') {
+    return <SignalSettingsScreen onBack={() => setActiveSection(null)} />;
+  }
+
+  if (activeSection === 'cell-towers') {
+    return <CellTowersSettingsScreen onBack={() => setActiveSection(null)} />;
   }
 
   if (activeSection === 'installed-apps') {
@@ -210,7 +235,12 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
         <SettingsSection title="Device">
           <SettingsRow label="Battery" chevron onClick={() => setActiveSection('battery')} />
           <SettingsRow label="Location" chevron onClick={() => setActiveSection('location')} />
+          <SettingsRow label="Maps" chevron onClick={() => setActiveSection('maps')} />
           <SettingsRow label="Network" chevron onClick={() => setActiveSection('network')} />
+          <SettingsRow label="Carrier" chevron onClick={() => setActiveSection('carrier')} />
+          <SettingsRow label="VPN" chevron onClick={() => setActiveSection('vpn')} />
+          <SettingsRow label="Signal" chevron onClick={() => setActiveSection('signal')} />
+          <SettingsRow label="Cell Towers" chevron onClick={() => setActiveSection('cell-towers')} />
           <SettingsRow label="Hardware" chevron onClick={() => setActiveSection('hardware')} />
           <SettingsRow label="Task Manager" chevron onClick={() => setActiveSection('task-manager')} />
           <SettingsRow label="Storage" chevron onClick={() => setActiveSection('storage')} />
@@ -237,7 +267,7 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
         <SettingsSection title="About">
           <SettingsRow label="BananaOS Version" value="1.0.0" />
-          <SettingsRow label="Build" value="Phase 3.2 — Core OS Services" />
+          <SettingsRow label="Build" value="Phase 3.3 — World Engine" />
         </SettingsSection>
       </div>
     </div>

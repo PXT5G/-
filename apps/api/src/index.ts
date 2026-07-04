@@ -16,6 +16,7 @@ import adminRoutes from './api/routes/admin';
 import storeRoutes from './api/routes/store';
 import deviceRoutes from './api/routes/device';
 import systemRoutes from './api/routes/system';
+import worldRoutes from './api/routes/world';
 
 const app = express();
 const httpServer = createServer(app);
@@ -45,6 +46,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/device', deviceRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/world', worldRoutes);
 
 app.use(errorHandler);
 
@@ -79,6 +81,13 @@ async function bootstrap(): Promise<void> {
     });
 
     await recoverCrashedJobs();
+
+    const { seedMapDatabase } = await import('./services/mapDatabaseService');
+    const { seedCellTowers } = await import('./services/cellTowerService');
+    const mapStats = await seedMapDatabase();
+    const towerCount = await seedCellTowers();
+    console.log('[BananaOS API] World map seeded:', mapStats, 'towers:', towerCount);
+
     startBackgroundServiceManager();
     console.log('[BananaOS API] Core OS services started');
 

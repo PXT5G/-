@@ -43,6 +43,7 @@ import { seedSystemPermissions } from '../../services/permissionBrokerService';
 import { ensureLocation } from '../../services/locationService';
 import { ensureNetwork } from '../../services/networkService';
 import { ensureDeviceState } from '../../services/deviceStateService';
+import { initializeWorld } from '../../services/worldEngineService';
 import { emitToUser } from '../../services/socketService';
 
 function param(value: string | string[]): string {
@@ -347,6 +348,7 @@ export async function initializeSystemServices(userId: string): Promise<void> {
     ensureDeviceState(userId),
     seedSystemPermissions(userId),
   ]);
+  await initializeWorld(userId);
   emitToUser(userId, 'system:ready', {
     services: getRegisteredTasks(),
     timestamp: new Date().toISOString(),

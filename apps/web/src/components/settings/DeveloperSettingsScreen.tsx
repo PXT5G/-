@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { systemService } from '@/services/systemService';
+import { worldService } from '@/services/worldService';
 import { useHaptic } from '@/hooks/useSound';
 
 export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
@@ -14,7 +15,12 @@ export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
 
   const { data: events } = useQuery({
     queryKey: ['system', 'events'],
-    queryFn: () => systemService.replayEvents({ limit: 10 }),
+    queryFn: () => systemService.replayEvents({ namespace: 'world', limit: 10 }),
+  });
+
+  const { data: world } = useQuery({
+    queryKey: ['world', 'state'],
+    queryFn: () => worldService.getWorldState(),
   });
 
   return (
@@ -22,6 +28,19 @@ export function DeveloperSettingsScreen({ onBack }: { onBack: () => void }) {
       <div className="p-4 pb-8">
         <button type="button" onClick={() => { tap(); onBack(); }} className="text-banana-gold text-sm mb-4">‹ Settings</button>
         <h1 className="text-2xl font-bold text-white mb-6">Developer</h1>
+
+        <section className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
+          <h2 className="text-xs font-semibold text-white/40 uppercase mb-3">World Engine</h2>
+          {world ? (
+            <>
+              <p className="text-xs text-white/70 font-mono">{world.district} · {world.street}</p>
+              <p className="text-xs text-white/50 font-mono">{world.latitude.toFixed(5)}, {world.longitude.toFixed(5)}</p>
+              <p className="text-xs text-white/50">Tower: {world.connectedTowerUuid?.slice(0, 8) ?? '—'}…</p>
+            </>
+          ) : (
+            <p className="text-xs text-white/40">Loading world state…</p>
+          )}
+        </section>
 
         <section className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
           <h2 className="text-xs font-semibold text-white/40 uppercase mb-3">Background Scheduler</h2>

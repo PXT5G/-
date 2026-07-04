@@ -9,12 +9,15 @@ import { Slider } from '@/components/ui/Slider';
 import { controlCenterSlide } from '@/animations/transitions';
 import { useHaptic } from '@/hooks/useSound';
 import { GlassPanel } from '@/components/ui/GlassPanel';
+import { useCarrier, useSignal } from '@/hooks/useWorldServices';
 
 export function ControlCenter() {
   const { isOpen, close } = useControlCenterStore();
   const settings = useSettingsStore();
   const { mode, setMode } = useThemeStore();
   const { tap } = useHaptic();
+  const { data: carrier } = useCarrier();
+  const { signalBars, generation, carrier: carrierName } = useSignal();
 
   const toggle = (key: keyof typeof settings, value: boolean) => {
     tap();
@@ -109,6 +112,21 @@ export function ControlCenter() {
                   onChange={(v) => toggle('silentMode', v)}
                   label="Do Not Disturb"
                 />
+              </div>
+
+              <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-white/50">Carrier</p>
+                    <p className="text-sm text-white font-medium">{carrier?.name ?? carrierName}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-banana-gold font-semibold">
+                      {generation === 'none' ? 'No Service' : generation === 'emergency' ? 'SOS' : generation.toUpperCase()}
+                    </p>
+                    <p className="text-[10px] text-white/40">{signalBars}/5 bars</p>
+                  </div>
+                </div>
               </div>
             </GlassPanel>
           </motion.div>

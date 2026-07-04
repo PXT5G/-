@@ -33,6 +33,13 @@ export type {
   DiagnosticsReport,
   SystemEventInfo,
   SystemPermissionType,
+  WorldStateSnapshot,
+  CellTowerSnapshot,
+  SignalSnapshot,
+  GpsStateSnapshot,
+  VpnStateSnapshot,
+  CarrierStateSnapshot,
+  ConnectionGeneration,
 } from '@bananaos/shared';
 
 export interface AppFolder {

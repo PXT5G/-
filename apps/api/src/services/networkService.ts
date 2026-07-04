@@ -1,7 +1,6 @@
 import { Types } from 'mongoose';
 import { NetworkState } from '../database/models/NetworkState';
 import { emitToUser } from './socketService';
-import { publishEvent } from './eventBusService';
 
 function formatNetwork(doc: InstanceType<typeof NetworkState>) {
   return {
@@ -46,40 +45,10 @@ export async function getNetwork(userId: string) {
 }
 
 export async function refreshNetwork(userId: string) {
+  const { tickWorld } = await import('./worldEngineService');
+  const result = await tickWorld(userId);
   const net = await ensureNetwork(userId);
-
-  net.signalStrength = Math.max(1, Math.min(5, net.signalStrength + (Math.random() > 0.5 ? 1 : -1) * (Math.random() < 0.3 ? 1 : 0)));
-  net.latencyMs = Math.max(12, Math.round(net.latencyMs + (Math.random() - 0.5) * 10));
-  net.bandwidthMbps = Math.max(10, net.bandwidthMbps + (Math.random() - 0.5) * 20);
-  net.packetLoss = Math.max(0, Math.min(5, net.packetLoss + (Math.random() - 0.5) * 0.2));
-  net.jitterMs = Math.max(0.5, net.jitterMs + (Math.random() - 0.5) * 2);
-
-  net.cellTowers = net.cellTowers.map((t) => ({
-    ...t,
-    strength: Math.max(1, Math.min(5, t.strength + (Math.random() > 0.7 ? (Math.random() > 0.5 ? 1 : -1) : 0))),
-  }));
-
-  if (!net.wifiEnabled && net.signalStrength < 2) {
-    net.connectionState = 'limited';
-    net.internetConnected = Math.random() > 0.3;
-  } else {
-    net.connectionState = 'connected';
-    net.internetConnected = true;
-  }
-
-  await net.save();
-
-  const data = formatNetwork(net);
-  emitToUser(userId, 'network:update', data);
-  await publishEvent({
-    userId,
-    namespace: 'system.network',
-    event: 'network:update',
-    payload: data,
-    source: 'networkService',
-  });
-
-  return data;
+  return result.network ?? formatNetwork(net);
 }
 
 export async function updateNetworkSettings(
@@ -106,9 +75,6 @@ export async function updateNetworkSettings(
 }
 
 export async function refreshAllNetworks(): Promise<number> {
-  const states = await NetworkState.find({ deletedAt: null });
-  for (const net of states) {
-    await refreshNetwork(net.userId.toString());
-  }
-  return states.length;
+  const { tickAllWorlds } = await import('./worldEngineService');
+  return tickAllWorlds();
 }

@@ -57,14 +57,9 @@ export function startBackgroundServiceManager(): void {
     await refreshAllHardware();
   });
 
-  registerBackgroundTask('location-refresh', 30 * 1000, async () => {
-    const { refreshAllLocations } = await import('./locationService');
-    await refreshAllLocations();
-  });
-
-  registerBackgroundTask('network-refresh', 15 * 1000, async () => {
-    const { refreshAllNetworks } = await import('./networkService');
-    await refreshAllNetworks();
+  registerBackgroundTask('world-engine-tick', 15 * 1000, async () => {
+    const { tickAllWorlds } = await import('./worldEngineService');
+    await tickAllWorlds();
   });
 
   registerBackgroundTask('device-state-refresh', 20 * 1000, async () => {
