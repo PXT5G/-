@@ -43,6 +43,13 @@ class RealtimeService {
       'bank:transfer:complete',
       'bank:notification',
       'bank:accounts:provisioned',
+      'sim:activated',
+      'sim:deactivated',
+      'sim:suspended',
+      'sim:replaced',
+      'sim:number:changed',
+      'sim:signal:updated',
+      'sim:notification',
     ];
 
     events.forEach((event) => {

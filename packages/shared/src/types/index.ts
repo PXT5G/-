@@ -218,7 +218,14 @@ export type SocketEvent =
   | 'bank:balance:updated'
   | 'bank:transfer:complete'
   | 'bank:notification'
-  | 'bank:accounts:provisioned';
+  | 'bank:accounts:provisioned'
+  | 'sim:activated'
+  | 'sim:deactivated'
+  | 'sim:suspended'
+  | 'sim:replaced'
+  | 'sim:number:changed'
+  | 'sim:signal:updated'
+  | 'sim:notification';
 
 export interface SocketPayload {
   event: SocketEvent;

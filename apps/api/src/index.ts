@@ -16,6 +16,7 @@ import adminRoutes from './api/routes/admin';
 import storeRoutes from './api/routes/store';
 import identityRoutes from './api/routes/identity';
 import bankRoutes from './api/routes/bank';
+import simRoutes from './api/routes/sim';
 
 const app = express();
 const httpServer = createServer(app);
@@ -45,6 +46,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/identity', identityRoutes);
 app.use('/api/bank', bankRoutes);
+app.use('/api/sim', simRoutes);
 
 app.use(errorHandler);
 

@@ -8,6 +8,8 @@ import { IdentityApp } from '@/apps/identity';
 import { identityManifest } from '@/apps/identity/manifest';
 import { BankApp } from '@/apps/bank';
 import { bankManifest } from '@/apps/bank/manifest';
+import { SimApp } from '@/apps/sim';
+import { simManifest } from '@/apps/sim/manifest';
 
 registerApp(
   {
@@ -29,3 +31,4 @@ registerApp(
 registerApp(bananaAppManifest, BananaApp);
 registerApp(identityManifest, IdentityApp);
 registerApp(bankManifest, BankApp);
+registerApp(simManifest, SimApp);
