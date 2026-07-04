@@ -1,71 +1,41 @@
 ---
-description: BananaOS master development standards — production-ready mobile OS in the browser
+description: BananaOS core principles — production-ready browser mobile OS
 alwaysApply: true
 ---
 
-# BananaOS Master Development Rule
+# BananaOS Master Rule
 
-You are building BananaOS, a premium mobile operating system that runs entirely in the browser. Treat every change as production software.
+Building BananaOS: a premium mobile OS in the browser. Every change is production software.
 
-## Core Principles
+## Non-Negotiables
 
-- Never generate placeholder UI or mock implementations unless explicitly requested.
-- Every feature must be production ready.
-- Never break existing functionality.
-- Prefer extending existing architecture over rewriting code.
-- Only add integration points to completed apps; do not remove features or rewrite them unless necessary.
-
-## Design System
-
-All apps use the Banana Design System:
-
-- Glassmorphism, premium mobile UI, Apple-level polish (original — do not copy Apple UI)
-- Framer Motion animations, Tailwind CSS, customized shadcn/ui only
-- Consistent spacing, typography, rounded corners, soft shadows
-- Dynamic Island support, responsive mobile-first layout
-- Reuse shared components; do not duplicate UI primitives
+- No placeholder UI or mock implementations unless explicitly requested.
+- Never break existing apps — only add integration points.
+- Extend architecture; do not rewrite completed applications.
+- `npm run build` and relevant tests must pass before finishing.
 
 ## Stack
 
-TypeScript, React, Next.js, Express, MongoDB, Mongoose, Zod, Zustand, TanStack Query, Socket.io.
+TypeScript · React · Next.js · Express · MongoDB · Mongoose · Zod · Zustand · TanStack Query · Socket.io
 
-- Never use `any`.
-- Avoid duplicated code; extract reusable components, services, and hooks.
-- Keep architecture modular.
+Never use `any`.
 
-## Security (every app)
+## New App Checklist
 
-RBAC, permissions, audit logs, activity logs, authentication, authorization, Zod input validation, rate limiting, session management.
+1. `apps/web/src/apps/<app>/` — manifest, index, store, services, screens, `__tests__/`
+2. `apps/api/src/` — models, service, controller, routes; mount in `index.ts`
+3. Register: `registerSystemApps.ts`, `storeSeedService.ts`
+4. Shared API: `apps/web/src/services/<app>Api.ts` if other apps depend on it
+5. Socket events in `packages/shared/src/types/index.ts` + `realtimeService.ts`
+6. Docs: `docs/apps/<app>.md`
 
-## Database
+## Integration Targets
 
-Models include `createdAt`, `updatedAt`, `createdBy`, `updatedBy`, and `deletedAt` (soft delete when appropriate). Add audit history where required.
+Identity · Banana Bank · Banana SIM · Contacts · Notifications · Permissions · Audit Logs · Realtime · Banana App Store
 
-## APIs
+## Specialized Rules
 
-Every endpoint: validation, authentication, authorization, error handling, typed `{ success, data }` responses, and documentation.
-
-## Testing & Build
-
-Unit tests, integration tests where applicable, and `npm run build` must pass before completing work.
-
-## Documentation
-
-Update `docs/apps/<app>.md` with architecture, database, API, permissions, audit logs, user flows, and roadmap.
-
-## Performance & UX
-
-Lazy loading, code splitting, memoization, virtualization when needed, Socket.io realtime updates.
-
-UX: spring animations, loading skeletons, empty/error/success states, haptic-ready feedback — no abrupt transitions. Every interaction should feel like a real mobile OS.
-
-## Integration (every new app)
-
-Wire into existing services automatically:
-
-- Identity, Banana Bank, Banana SIM, Contacts
-- Notifications, permissions, audit logs, realtime, Banana App Store
-- Register in `registerSystemApps.ts`, `appRouter.ts`, and `storeSeedService.ts`
-- Expose shared APIs (e.g. `simApi.ts`, `contactsApi.ts`) for dependent apps
-
-Always think long-term, build for scalability, and maintain a premium user experience.
+- UI → `bananaos-ui.mdc`
+- Architecture → `bananaos-architecture.mdc`
+- Security → `bananaos-security.mdc`
+- Animation → `bananaos-animation.mdc`
