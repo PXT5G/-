@@ -80,7 +80,7 @@ async function assertCanSend(userId: string, conversationId: string, appId: stri
   }
 
   const allowed = await checkPermission(userId, appId, 'contacts');
-  if (!allowed && appId !== 'com.gulfos.system' && appId !== 'com.gulfos.communication' && appId !== 'com.gulfos.chat' && appId !== 'com.gulfos.justice' && appId !== 'com.gulfos.ems' && appId !== 'com.gulfos.business' && appId !== 'com.gulfos.real-estate') {
+  if (!allowed && appId !== 'com.gulfos.system' && appId !== 'com.gulfos.communication' && appId !== 'com.gulfos.chat' && appId !== 'com.gulfos.justice' && appId !== 'com.gulfos.ems' && appId !== 'com.gulfos.business' && appId !== 'com.gulfos.real-estate' && appId !== 'com.gulfos.vehicles') {
     throw new Error('PERMISSION_DENIED');
   }
 

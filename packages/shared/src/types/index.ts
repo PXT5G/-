@@ -466,7 +466,19 @@ export type SocketEvent =
   | 'realestate:analytics:update'
   | 'realestate:escrow:update'
   | 'realestate:lease:update'
-  | 'realestate:inspection:update';
+  | 'realestate:inspection:update'
+  | 'vehicles:initialized'
+  | 'vehicles:listed'
+  | 'vehicles:sold'
+  | 'vehicles:reserved'
+  | 'vehicles:auction'
+  | 'vehicles:inventory:update'
+  | 'vehicles:price:change'
+  | 'vehicles:offer:received'
+  | 'vehicles:offer:accepted'
+  | 'vehicles:notification'
+  | 'vehicles:analytics:update'
+  | 'vehicles:finance:update';
 
 export interface SocketPayload {
   event: SocketEvent;

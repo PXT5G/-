@@ -27,6 +27,7 @@ import justiceRoutes from './api/routes/justice';
 import emsRoutes from './api/routes/ems';
 import businessRoutes from './api/routes/business';
 import realEstateRoutes from './api/routes/realEstate';
+import vehicleRoutes from './api/routes/vehicles';
 
 const app = express();
 const httpServer = createServer(app);
@@ -67,6 +68,7 @@ app.use('/api/justice', justiceRoutes);
 app.use('/api/ems', emsRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/real-estate', realEstateRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 
 app.use(errorHandler);
 

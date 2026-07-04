@@ -127,6 +127,12 @@ export async function searchPlate(plate: string) {
     deletedAt: null,
   }).limit(5);
 
+  let marketplaceVehicles: Record<string, unknown>[] = [];
+  try {
+    const { searchVehiclesForPolice } = await import('./vehicleIntegrationService');
+    marketplaceVehicles = await searchVehiclesForPolice(plate);
+  } catch { /* vehicles module optional at boot */ }
+
   return {
     plate: plate.toUpperCase(),
     citations: citations.map((c) => ({
@@ -142,12 +148,20 @@ export async function searchPlate(plate: string) {
       title: b.title,
       dangerLevel: b.dangerLevel,
     })),
+    marketplaceVehicles,
     flags: citations.some((c) => c.status === 'issued') ? ['outstanding_fines'] : [],
   };
 }
 
 export async function searchVehicle(query: string) {
-  return searchPlate(query);
+  const plateResult = await searchPlate(query);
+  try {
+    const { searchVehiclesForPolice } = await import('./vehicleIntegrationService');
+    const vehicles = await searchVehiclesForPolice(query);
+    return { ...plateResult, vehicles };
+  } catch {
+    return plateResult;
+  }
 }
 
 export async function searchProperty(query: string) {
