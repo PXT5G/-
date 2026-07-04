@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as systemController from '../controllers/systemController';
+import * as phoneOsController from '../controllers/phoneOsController';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
@@ -43,5 +44,7 @@ router.get('/diagnostics', authenticate, systemController.getDiagnosticsHandler)
 router.post('/diagnostics/collect', authenticate, systemController.collectDiagnosticsHandler);
 router.get('/diagnostics/history', authenticate, systemController.getDiagnosticsHistoryHandler);
 router.get('/diagnostics/tasks', authenticate, systemController.getBackgroundTasksHandler);
+
+router.get('/search', authenticate, phoneOsController.globalSearchHandler);
 
 export default router;

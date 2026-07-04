@@ -6,6 +6,9 @@ import { useLockStore } from '@/stores/lockStore';
 import { useGestures } from '@/hooks/useGestures';
 import { useControlCenterStore } from '@/stores/controlCenterStore';
 import { useSearchStore } from '@/stores/searchStore';
+import { useNotificationStore } from '@/stores/notificationStore';
+import { usePhoneOsStore } from '@/stores/phoneOsStore';
+import { useWindowManagerStore } from '@/stores/windowManagerStore';
 import { SplashScreen } from '@/components/os/SplashScreen';
 import { BootAnimation } from '@/components/os/BootAnimation';
 import { LockScreen } from '@/components/os/LockScreen';
@@ -26,10 +29,19 @@ export function OSLayout() {
   const isLocked = useLockStore((s) => s.isLocked);
   const openControlCenter = useControlCenterStore((s) => s.open);
   const openSearch = useSearchStore((s) => s.open);
+  const setCenterOpen = useNotificationStore((s) => s.setCenterOpen);
+  const setMultitaskingOpen = usePhoneOsStore((s) => s.setMultitaskingOpen);
+  const windows = useWindowManagerStore((s) => s.windows);
 
   const gestures = useGestures({
     onSwipeDown: () => openControlCenter(),
+    onSwipeUp: () => {
+      if (windows.filter((w) => !w.isMinimized).length > 0) {
+        setMultitaskingOpen(true);
+      }
+    },
     onLongPress: () => openSearch(),
+    onSwipeLeft: () => setCenterOpen(true),
   });
 
   const showHome = phase === 'home' || (phase === 'locked' && !isLocked);

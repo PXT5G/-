@@ -91,6 +91,16 @@ export function startBackgroundServiceManager(): void {
     await deviceEcosystemTick();
   });
 
+  registerBackgroundTask('phone-os-tick', 30 * 1000, async () => {
+    const { phoneOsTickAll } = await import('./phoneOsService');
+    await phoneOsTickAll();
+  });
+
+  registerBackgroundTask('live-activity-expiry', 60 * 1000, async () => {
+    const { expireStaleActivities } = await import('./liveActivityService');
+    await expireStaleActivities();
+  });
+
   registerBackgroundTask('clock-alarms', 60 * 1000, async () => {
     const { ClockAlarm } = await import('../database/models/ClockAlarm');
     const { scheduleAlarmNotifications } = await import('./clockService');

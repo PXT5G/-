@@ -49,6 +49,17 @@ export interface IDeviceProfile extends Document {
   region: string;
   language: string;
   timezone: string;
+  imei: string;
+  secureDeviceId: string;
+  simStatus: string;
+  carrier: string;
+  networkType: string;
+  bluetoothMac: string;
+  wifiMac: string;
+  kernelVersion: string;
+  installedBuild: string;
+  activationDate?: Date;
+  deviceHealthScore: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -109,6 +120,17 @@ const deviceProfileSchema = new Schema<IDeviceProfile>(
     region: { type: String, default: 'US' },
     language: { type: String, default: 'en' },
     timezone: { type: String, default: 'America/Los_Angeles' },
+    imei: { type: String, default: '' },
+    secureDeviceId: { type: String, default: '' },
+    simStatus: { type: String, enum: ['active', 'inactive', 'no_sim', 'locked', 'roaming'], default: 'active' },
+    carrier: { type: String, default: 'Gulf Mobile' },
+    networkType: { type: String, default: '5G' },
+    bluetoothMac: { type: String, default: '' },
+    wifiMac: { type: String, default: '' },
+    kernelVersion: { type: String, default: '6.12.58-gulf' },
+    installedBuild: { type: String, default: '100' },
+    activationDate: { type: Date },
+    deviceHealthScore: { type: Number, default: 100 },
   },
   { timestamps: true }
 );

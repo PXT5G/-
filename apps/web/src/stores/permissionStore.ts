@@ -1,11 +1,20 @@
+'use client';
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { PermissionType, PermissionGrant } from '@/types';
 
+export interface PendingPermissionRequest {
+  appId: string;
+  permission: PermissionType;
+}
+
 interface PermissionState {
   grants: PermissionGrant[];
+  pending: PendingPermissionRequest | null;
   requestPermission: (appId: string, permission: PermissionType) => Promise<boolean>;
   grantPermission: (appId: string, permission: PermissionType) => void;
+  denyPermission: () => void;
   revokePermission: (appId: string, permission: PermissionType) => void;
   hasPermission: (appId: string, permission: PermissionType) => boolean;
   getAppPermissions: (appId: string) => PermissionGrant[];
@@ -17,6 +26,7 @@ export const usePermissionStore = create<PermissionState>()(
   persist(
     (set, get) => ({
       grants: [],
+      pending: null,
 
       requestPermission: (appId, permission) =>
         new Promise((resolve) => {
@@ -26,6 +36,7 @@ export const usePermissionStore = create<PermissionState>()(
           }
           const key = `${appId}:${permission}`;
           pendingRequests.set(key, resolve);
+          set({ pending: { appId, permission } });
         }),
 
       grantPermission: async (appId, permission) => {
@@ -35,6 +46,7 @@ export const usePermissionStore = create<PermissionState>()(
           );
           if (existing) {
             return {
+              pending: null,
               grants: s.grants.map((g) =>
                 g.appId === appId && g.permission === permission
                   ? { ...g, granted: true, grantedAt: new Date().toISOString() }
@@ -43,6 +55,7 @@ export const usePermissionStore = create<PermissionState>()(
             };
           }
           return {
+            pending: null,
             grants: [
               ...s.grants,
               {
@@ -66,6 +79,19 @@ export const usePermissionStore = create<PermissionState>()(
           resolver(true);
           pendingRequests.delete(key);
         }
+      },
+
+      denyPermission: () => {
+        const pending = get().pending;
+        if (pending) {
+          const key = `${pending.appId}:${pending.permission}`;
+          const resolver = pendingRequests.get(key);
+          if (resolver) {
+            resolver(false);
+            pendingRequests.delete(key);
+          }
+        }
+        set({ pending: null });
       },
 
       revokePermission: async (appId, permission) => {

@@ -59,6 +59,14 @@ export type {
   RecoveryStateSnapshot,
   MaintenanceRecordSnapshot,
   ExtendedDiagnosticsReport,
+  BatteryStateSnapshot,
+  PerformanceStateSnapshot,
+  PhonePowerStateSnapshot,
+  LiveActivitySnapshot,
+  ControlCenterConfigSnapshot,
+  LockScreenConfigSnapshot,
+  StatusBarConfigSnapshot,
+  GlobalSearchResult,
 } from '@gulfos/shared';
 
 export interface AppFolder {

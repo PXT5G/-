@@ -71,6 +71,7 @@ export type PermissionType =
   | 'location'
   | 'contacts'
   | 'photos'
+  | 'videos'
   | 'notifications'
   | 'storage'
   | 'network'
@@ -78,7 +79,16 @@ export type PermissionType =
   | 'phone'
   | 'bluetooth'
   | 'sim'
-  | 'files';
+  | 'files'
+  | 'calendar'
+  | 'sms'
+  | 'background_refresh'
+  | 'motion'
+  | 'clipboard'
+  | 'nearby_devices'
+  | 'media_library'
+  | 'vpn'
+  | 'health';
 
 export type SystemPermissionType = PermissionType;
 
@@ -519,7 +529,20 @@ export type SocketEvent =
   | 'portfolio:update'
   | 'order:update'
   | 'dividend:update'
-  | 'news:update';
+  | 'news:update'
+  | 'charging:start'
+  | 'charging:stop'
+  | 'device:boot'
+  | 'device:shutdown'
+  | 'device:restart'
+  | 'device:lock'
+  | 'device:unlock'
+  | 'status:update'
+  | 'control:center:update'
+  | 'widget:update'
+  | 'liveactivity:update'
+  | 'performance:update'
+  | 'security:update';
 
 export interface SocketPayload {
   event: SocketEvent;
@@ -882,4 +905,124 @@ export interface ExtendedDiagnosticsReport extends DiagnosticsReport {
   sensors?: Record<string, unknown>;
   systemHealth?: { score: number; powerMode: string; chargingCycles: number };
   errorReports?: Array<{ message: string; category: string; at: string }>;
+}
+
+export interface BatteryStateSnapshot {
+  level: number;
+  health: number;
+  isCharging: boolean;
+  chargingType: 'none' | 'wired' | 'fast' | 'wireless';
+  fastChargingEnabled: boolean;
+  wirelessChargingEnabled: boolean;
+  chargingCycles: number;
+  temperatureCelsius: number;
+  degradationRate: number;
+  estimatedTimeToFullMinutes: number;
+  estimatedTimeToEmptyMinutes: number;
+  lastChargeAt?: string;
+  lastDischargeAt?: string;
+}
+
+export interface PerformanceStateSnapshot {
+  performanceMode: 'normal' | 'balanced' | 'performance' | 'power_saving' | 'ultra_power_saving';
+  thermalState: 'nominal' | 'fair' | 'serious' | 'critical';
+  cpuUsagePercent: number;
+  gpuUsagePercent: number;
+  memoryPressure: number;
+  backgroundApps: Array<{
+    bundleId: string;
+    memoryMb: number;
+    cpuPercent: number;
+    frozen: boolean;
+    pinned: boolean;
+    locked: boolean;
+    lastActiveAt: string;
+  }>;
+  cpuThrottled: boolean;
+  gpuThrottled: boolean;
+  batteryOptimized: boolean;
+  lastTickAt: string;
+}
+
+export interface PhonePowerStateSnapshot {
+  isPoweredOn: boolean;
+  bootPhase: 'off' | 'booting' | 'splash' | 'locked' | 'home' | 'recovery' | 'safe';
+  lastBootAt?: string;
+  lastShutdownAt?: string;
+  lastRestartAt?: string;
+  crashRecoveryPending: boolean;
+  emergencyRestartCount: number;
+}
+
+export interface LiveActivitySnapshot {
+  id: string;
+  type: string;
+  state: 'active' | 'paused' | 'ended' | 'dismissed';
+  title: string;
+  subtitle?: string;
+  icon?: string;
+  progress?: number;
+  appId: string;
+  payload: Record<string, unknown>;
+  startedAt: string;
+  endedAt?: string;
+  expiresAt?: string;
+  dynamicIsland: boolean;
+  lockScreen: boolean;
+}
+
+export interface ControlCenterConfigSnapshot {
+  tiles: string[];
+  longPressActions: Record<string, string>;
+  showBatteryWidget: boolean;
+  showNetworkDetails: boolean;
+  showMusicControls: boolean;
+  showMediaOutput: boolean;
+  brightnessEnabled: boolean;
+  volumeEnabled: boolean;
+  focusModeEnabled: boolean;
+  activeFocusMode: string;
+}
+
+export interface LockScreenConfigSnapshot {
+  clockStyle: 'digital' | 'analog' | 'minimal' | 'bold';
+  wallpaperBlur: boolean;
+  showWidgets: boolean;
+  showNotifications: boolean;
+  showMusicPlayer: boolean;
+  showChargingIndicator: boolean;
+  emergencyCallEnabled: boolean;
+  cameraShortcutEnabled: boolean;
+  flashlightShortcutEnabled: boolean;
+  faceUnlockEnabled: boolean;
+  fingerprintEnabled: boolean;
+  pinEnabled: boolean;
+  passcodeEnabled: boolean;
+  autoLockSeconds: number;
+  raiseToWake: boolean;
+  doubleTapToWake: boolean;
+  alwaysOnDisplay: boolean;
+}
+
+export interface StatusBarConfigSnapshot {
+  visibleIcons: string[];
+  showCarrier: boolean;
+  showClock: boolean;
+  showBatteryPercent: boolean;
+  showVpn: boolean;
+  showDnd: boolean;
+  showAlarm: boolean;
+  showGps: boolean;
+  showHotspot: boolean;
+  showEmergency: boolean;
+}
+
+export interface GlobalSearchResult {
+  id: string;
+  category: string;
+  title: string;
+  subtitle?: string;
+  icon?: string;
+  route?: string;
+  metadata?: Record<string, unknown>;
 }
