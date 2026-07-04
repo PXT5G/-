@@ -45,6 +45,19 @@ export function initializeSocket(httpServer: HttpServer): Server {
     socket.on('ping', () => {
       socket.emit('pong', { timestamp: new Date().toISOString() });
     });
+
+    socket.on('control-panel:subscribe', async () => {
+      try {
+        const { User } = await import('../database/models/User');
+        const user = await User.findById(userId).select('role').lean();
+        if (user?.role === 'admin') {
+          socket.join('admin:control');
+          socket.emit('control:subscribed', { timestamp: new Date().toISOString() });
+        }
+      } catch {
+        // ignore
+      }
+    });
   });
 
   return io;
@@ -93,4 +106,18 @@ export function getConnectedUsers(): number {
 
 export function getSocketServer(): Server | null {
   return io;
+}
+
+export function disconnectUser(userId: string): void {
+  if (!io) return;
+  const sockets = userSockets.get(userId);
+  if (!sockets) return;
+  for (const socketId of sockets) {
+    io.sockets.sockets.get(socketId)?.disconnect(true);
+  }
+  userSockets.delete(userId);
+}
+
+export function getConnectedUserIds(): string[] {
+  return Array.from(userSockets.keys());
 }

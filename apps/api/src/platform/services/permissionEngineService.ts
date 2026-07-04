@@ -186,6 +186,77 @@ export async function syncLegacyToCore(appId: string, userId: string, grantedBy:
   return legacyPerms.length;
 }
 
+export async function queryAllPermissions(params: {
+  appId?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const filter: Record<string, unknown> = { granted: true };
+  if (params.appId) filter.appId = params.appId;
+  if (params.userId) filter.userId = new Types.ObjectId(params.userId);
+
+  const page = params.page ?? 0;
+  const limit = Math.min(params.limit ?? 50, 200);
+
+  const [permissions, total] = await Promise.all([
+    CorePermission.find(filter).sort({ grantedAt: -1 }).skip(page * limit).limit(limit).lean(),
+    CorePermission.countDocuments(filter),
+  ]);
+
+  return {
+    total,
+    page,
+    limit,
+    permissions: permissions.map((p) => ({
+      id: p._id.toString(),
+      appId: p.appId,
+      userId: p.userId.toString(),
+      permission: p.permission,
+      granted: p.granted,
+      grantedAt: p.grantedAt.toISOString(),
+      metadata: p.metadata,
+    })),
+  };
+}
+
+export async function syncAppPermissions(appId: string, grantedBy: string): Promise<number> {
+  const { User } = await import('../../database/models/User');
+  const users = await User.find({}).select('_id').limit(500).lean();
+  let synced = 0;
+  for (const user of users) {
+    const count = await syncLegacyToCore(appId, user._id.toString(), grantedBy);
+    if (count > 0) synced += count;
+  }
+  await auditService.log({
+    appId,
+    userId: grantedBy,
+    action: 'permissions_sync_all',
+    entityType: 'CorePermission',
+    ctx: { performedBy: grantedBy, performedByRole: 'admin', permission: 'manage_permissions' },
+    metadata: { syncedCount: synced, userCount: users.length },
+  });
+  return synced;
+}
+
+export async function overrideAccess(
+  appId: string,
+  userId: string,
+  permissions: string[],
+  grantedBy: string,
+  reason: string
+): Promise<void> {
+  await grantPermissions(appId, userId, permissions, grantedBy, { override: true, reason });
+  await auditService.log({
+    appId,
+    userId,
+    action: 'permission_override',
+    entityType: 'CorePermission',
+    ctx: { performedBy: grantedBy, performedByRole: 'admin', reason },
+    metadata: { permissions },
+  });
+}
+
 export const permissionEngineService = {
   hasPermission,
   requirePermission,
@@ -193,4 +264,7 @@ export const permissionEngineService = {
   revokePermission,
   listPermissions,
   syncLegacyToCore,
+  queryAllPermissions,
+  syncAppPermissions,
+  overrideAccess,
 };

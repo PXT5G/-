@@ -28,6 +28,7 @@ export async function queryLogs(params: {
   appId?: string;
   userId?: string;
   action?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }) {
@@ -35,6 +36,10 @@ export async function queryLogs(params: {
   if (params.appId) filter.appId = params.appId;
   if (params.userId) filter.userId = new Types.ObjectId(params.userId);
   if (params.action) filter.action = params.action;
+  if (params.search?.trim()) {
+    const regex = new RegExp(params.search.trim(), 'i');
+    filter.$or = [{ action: regex }, { entityType: regex }, { query: regex }, { details: regex }];
+  }
 
   const page = params.page ?? 0;
   const limit = Math.min(params.limit ?? 50, 200);
@@ -50,6 +55,17 @@ export async function queryLogs(params: {
     limit,
     logs: logs.map(formatAuditLog),
   };
+}
+
+export async function exportLogs(params: {
+  appId?: string;
+  userId?: string;
+  action?: string;
+  search?: string;
+  limit?: number;
+}) {
+  const result = await queryLogs({ ...params, page: 0, limit: Math.min(params.limit ?? 1000, 5000) });
+  return result.logs;
 }
 
 export async function getStats() {
@@ -88,4 +104,4 @@ function formatAuditLog(log: Record<string, unknown>) {
   };
 }
 
-export const auditService = { log, queryLogs, getStats };
+export const auditService = { log, queryLogs, exportLogs, getStats };

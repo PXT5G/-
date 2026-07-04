@@ -3,4 +3,5 @@ export { permissionEngineService } from './services/permissionEngineService';
 export { auditService } from './services/auditService';
 export { eventBusService } from './services/eventBusService';
 export { notificationService } from './services/notificationService';
+export { controlPanelService } from './services/controlPanelService';
 export * from './types';

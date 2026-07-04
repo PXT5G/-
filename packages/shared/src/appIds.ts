@@ -5,6 +5,7 @@ export const BANANAOS_APP_IDS = {
   CONTACTS: 'com.bananaos.contacts',
   POLICE: 'com.bananaos.police',
   JUSTICE: 'com.bananaos.justice',
+  CONTROL_PANEL: 'com.bananaos.control-panel',
   SETTINGS: 'com.bananaos.settings',
   STORE: 'com.bananaos.store',
 } as const;

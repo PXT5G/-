@@ -14,6 +14,8 @@ import { ContactsApp } from '@/apps/contacts';
 import { contactsManifest } from '@/apps/contacts/manifest';
 import { PoliceApp } from '@/apps/police';
 import { policeManifest } from '@/apps/police/manifest';
+import { ControlPanelApp } from '@/apps/control-panel';
+import { controlPanelManifest } from '@/apps/control-panel/manifest';
 
 registerApp(
   {
@@ -38,3 +40,4 @@ registerApp(bankManifest, BankApp);
 registerApp(simManifest, SimApp);
 registerApp(contactsManifest, ContactsApp);
 registerApp(policeManifest, PoliceApp);
+registerApp(controlPanelManifest, ControlPanelApp);

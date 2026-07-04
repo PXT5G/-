@@ -2,9 +2,11 @@ import { Identity } from '../../database/models/Identity';
 import { IdentityPermission } from '../../database/models/IdentityPermission';
 import { PlatformAppSession } from '../../database/models/platform/PlatformAppSession';
 import { Session } from '../../database/models/Session';
+import { User } from '../../database/models/User';
 import { BANANAOS_APP_IDS, IDENTITY_GATED_APPS, type IdentityContext } from '../types';
 import { auditService } from './auditService';
 import { eventBusService } from './eventBusService';
+import { disconnectUser } from '../../services/socketService';
 
 export async function getIdentityContext(userId: string): Promise<IdentityContext> {
   const identity = await Identity.findOne({ userId });
@@ -154,6 +156,86 @@ export async function crossAppIdentityLookup(
   return context;
 }
 
+export async function listAllPlatformSessions(params: { page?: number; limit?: number; userId?: string }) {
+  const filter: Record<string, unknown> = {};
+  if (params.userId) filter.userId = params.userId;
+
+  const page = params.page ?? 0;
+  const limit = Math.min(params.limit ?? 50, 200);
+
+  const [sessions, total] = await Promise.all([
+    PlatformAppSession.find(filter).sort({ lastActiveAt: -1 }).skip(page * limit).limit(limit).lean(),
+    PlatformAppSession.countDocuments(filter),
+  ]);
+
+  const userIds = [...new Set(sessions.map((s) => s.userId.toString()))];
+  const users = await User.find({ _id: { $in: userIds } }).select('username displayName role').lean();
+  const userMap = new Map(users.map((u) => [u._id.toString(), u]));
+
+  return {
+    total,
+    page,
+    limit,
+    sessions: sessions.map((s) => {
+      const user = userMap.get(s.userId.toString());
+      return {
+        id: s._id.toString(),
+        userId: s.userId.toString(),
+        username: user?.username,
+        displayName: user?.displayName,
+        role: user?.role,
+        sessionId: s.sessionId,
+        activeAppId: s.activeAppId,
+        deviceId: s.deviceId,
+        deviceName: s.deviceName,
+        ipAddress: s.ipAddress,
+        lastActiveAt: s.lastActiveAt.toISOString(),
+        appContexts: s.appContexts.map((c) => ({
+          appId: c.appId,
+          lastAccessedAt: c.lastAccessedAt.toISOString(),
+          deviceId: c.deviceId,
+        })),
+      };
+    }),
+  };
+}
+
+export async function forceLogoutSession(
+  adminUserId: string,
+  targetUserId: string,
+  sessionId: string,
+  reason?: string
+): Promise<void> {
+  await PlatformAppSession.deleteOne({ userId: targetUserId, sessionId });
+  await Session.deleteMany({ userId: targetUserId });
+  disconnectUser(targetUserId);
+  eventBusService.emitToUser(targetUserId, 'session:expired', { reason: reason ?? 'Session revoked by admin' });
+
+  await auditService.log({
+    appId: BANANAOS_APP_IDS.SETTINGS,
+    userId: targetUserId,
+    action: 'session_force_logout',
+    entityType: 'PlatformAppSession',
+    ctx: { performedBy: adminUserId, performedByRole: 'admin', reason },
+    metadata: { sessionId },
+  });
+}
+
+export async function forceLogoutUser(adminUserId: string, targetUserId: string, reason?: string): Promise<void> {
+  await Session.deleteMany({ userId: targetUserId });
+  await PlatformAppSession.deleteMany({ userId: targetUserId });
+  disconnectUser(targetUserId);
+  eventBusService.emitToUser(targetUserId, 'session:expired', { reason: reason ?? 'All sessions revoked by admin' });
+
+  await auditService.log({
+    appId: BANANAOS_APP_IDS.SETTINGS,
+    userId: targetUserId,
+    action: 'user_force_logout',
+    entityType: 'User',
+    ctx: { performedBy: adminUserId, performedByRole: 'admin', reason },
+  });
+}
+
 export const identityBridgeService = {
   getIdentityContext,
   assertIdentityGate,
@@ -161,4 +243,7 @@ export const identityBridgeService = {
   linkAppSession,
   getActiveAppSessions,
   crossAppIdentityLookup,
+  listAllPlatformSessions,
+  forceLogoutSession,
+  forceLogoutUser,
 };

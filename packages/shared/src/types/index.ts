@@ -246,7 +246,9 @@ export type SocketEvent =
   | 'police:officer:status'
   | 'police:rank:changed'
   | 'police:officer:provisioned'
-  | 'police:notification';
+  | 'police:notification'
+  | 'control:event'
+  | 'control:subscribed';
 
 export interface SocketPayload {
   event: SocketEvent;

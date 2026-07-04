@@ -71,6 +71,8 @@ class RealtimeService {
       'police:rank:changed',
       'police:officer:provisioned',
       'police:notification',
+      'control:event',
+      'control:subscribed',
     ];
 
     events.forEach((event) => {

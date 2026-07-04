@@ -21,6 +21,7 @@ import contactsRoutes from './api/routes/contacts';
 import policeRoutes from './api/routes/police';
 import platformRoutes from './api/routes/platform';
 import justiceRoutes from './api/routes/justice';
+import controlPanelRoutes from './api/routes/controlPanel';
 
 const app = express();
 const httpServer = createServer(app);
@@ -55,6 +56,7 @@ app.use('/api/contacts', contactsRoutes);
 app.use('/api/police', policeRoutes);
 app.use('/api/platform', platformRoutes);
 app.use('/api/justice', justiceRoutes);
+app.use('/api/control-panel', controlPanelRoutes);
 
 app.use(errorHandler);
 
