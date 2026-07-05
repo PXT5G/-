@@ -31,9 +31,23 @@ npm-debug.log*
 # Testing
 coverage/
 
-# Python
-.venv/
-
-# Misc
+# TypeScript / Next.js
 *.tsbuildinfo
 next-env.d.ts
+
+# Python (GULFOS tooling + analysis toolkit)
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Local analysis database (SQLite + WAL sidecars)
+analysis_results.db
+analysis_results.db-wal
+analysis_results.db-shm
+*.db-wal
+*.db-shm

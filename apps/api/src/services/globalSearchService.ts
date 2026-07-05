@@ -411,6 +411,102 @@ async function searchCalls(userId: string, regex: RegExp): Promise<SearchResult[
   }));
 }
 
+async function searchBankAccounts(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { BankAccount } = await import('../database/models/BankAccount');
+  const accounts = await BankAccount.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ name: regex }, { accountNumber: regex }, { iban: regex }],
+  }).limit(10).lean();
+  return accounts.map((a) => ({
+    id: a.accountId,
+    category: 'bank_accounts' as const,
+    title: a.name,
+    subtitle: `${a.accountType} · ${a.availableBalance.toLocaleString()} ${a.currency}`,
+    route: 'com.gulfos.bank',
+  }));
+}
+
+async function searchIdentity(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { CitizenIdentity } = await import('../database/models/CitizenIdentity');
+  const { IdentityDocument } = await import('../database/models/IdentityDocument');
+  const [identities, documents] = await Promise.all([
+    CitizenIdentity.find({
+      userId: new Types.ObjectId(userId),
+      deletedAt: null,
+      $or: [{ fullName: regex }, { nationalId: regex }],
+    }).limit(5).lean(),
+    IdentityDocument.find({
+      userId: new Types.ObjectId(userId),
+      deletedAt: null,
+      $or: [{ title: regex }, { documentNumber: regex }],
+    }).limit(10).lean(),
+  ]);
+  const identityResults = identities.map((i) => ({
+    id: i.identityId,
+    category: 'identity' as const,
+    title: i.fullName,
+    subtitle: `National ID: ${i.nationalId}`,
+    route: 'com.gulfos.identity',
+  }));
+  const docResults = documents.map((d) => ({
+    id: d.documentId,
+    category: 'identity' as const,
+    title: d.title,
+    subtitle: d.documentType,
+    route: 'com.gulfos.identity',
+  }));
+  return [...identityResults, ...docResults];
+}
+
+async function searchMail(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { MailMessage } = await import('../database/models/MailMessage');
+  const messages = await MailMessage.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ subject: regex }, { bodyText: regex }, { from: regex }],
+  }).limit(15).lean();
+  return messages.map((m) => ({
+    id: m.messageId,
+    category: 'mail' as const,
+    title: m.subject,
+    subtitle: m.from,
+    route: 'com.gulfos.mail',
+  }));
+}
+
+async function searchAssistant(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { AssistantConversation } = await import('../database/models/AssistantConversation');
+  const conversations = await AssistantConversation.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ title: regex }, { summary: regex }],
+  }).limit(15).lean();
+  return conversations.map((c) => ({
+    id: c.conversationId,
+    category: 'assistant' as const,
+    title: c.title,
+    subtitle: c.summary ?? `${c.messageCount} messages`,
+    route: 'com.gulfos.assistant',
+  }));
+}
+
+async function searchShortcuts(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { Shortcut } = await import('../database/models/Shortcut');
+  const shortcuts = await Shortcut.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ name: regex }, { description: regex }],
+  }).limit(15).lean();
+  return shortcuts.map((s) => ({
+    id: s.shortcutId,
+    category: 'shortcuts' as const,
+    title: s.name,
+    subtitle: s.description ?? `${s.runCount} runs`,
+    route: 'com.gulfos.shortcuts',
+  }));
+}
+
 const CATEGORY_SEARCHERS: Record<
   SearchCategory,
   (userId: string, regex: RegExp) => Promise<SearchResult[]>
@@ -427,7 +523,8 @@ const CATEGORY_SEARCHERS: Record<
   aircraft: async (_u, r) => searchAircraft(r),
   marine: async (_u, r) => searchMarine(r),
   stocks: async (_u, r) => searchStocks(r),
-  bank_accounts: async () => [],
+  bank_accounts: searchBankAccounts,
+  identity: searchIdentity,
   notes: searchNotes,
   calendar: searchCalendar,
   weather: async () => [],
@@ -437,6 +534,9 @@ const CATEGORY_SEARCHERS: Record<
   browser_history: searchBrowserHistory,
   downloads: searchDownloads,
   calls: searchCalls,
+  mail: searchMail,
+  assistant: searchAssistant,
+  shortcuts: searchShortcuts,
 };
 
 export async function globalSearch(

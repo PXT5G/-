@@ -1,0 +1,18 @@
+[project]
+name = "defensive-code-analyzer"
+version = "1.0.0"
+description = "Defensive static code analysis, attack-surface & architecture mapping toolkit."
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [".venv", "sample_target"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E203"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

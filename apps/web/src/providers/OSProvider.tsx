@@ -14,6 +14,13 @@ import { useSettingsInit } from '@/hooks/useSettings';
 import { usePhoneOsInit, usePhoneOsRealtime, useLiveActivitiesHydration } from '@/hooks/usePhoneOs';
 import { usePremiumExperienceInit, usePremiumExperienceRealtime } from '@/hooks/usePremiumExperience';
 import { usePhoneRealtime } from '@/hooks/usePhone';
+import { useBankSocketSync } from '@/hooks/useBank';
+import { useIdentitySocketSync } from '@/hooks/useIdentity';
+import { useAssistantSocketSync } from '@/hooks/useAssistant';
+import { useAutomationSocketSync } from '@/hooks/useAutomation';
+import { useShortcutsSocketSync } from '@/hooks/useShortcuts';
+import { useFocusSocketSync } from '@/hooks/useFocus';
+import { useIntelligenceSocketSync } from '@/hooks/useIntelligence';
 import '@/services/registerSystemApps';
 
 function OSInitializer() {
@@ -32,6 +39,13 @@ function OSInitializer() {
   usePremiumExperienceInit();
   usePremiumExperienceRealtime();
   usePhoneRealtime();
+  useBankSocketSync();
+  useIdentitySocketSync();
+  useAssistantSocketSync();
+  useAutomationSocketSync();
+  useShortcutsSocketSync();
+  useFocusSocketSync();
+  useIntelligenceSocketSync();
   useLiveActivitiesHydration();
   return null;
 }

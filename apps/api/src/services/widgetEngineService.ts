@@ -109,6 +109,8 @@ export async function getWidgetData(userId: string, type: string, config?: Recor
       return getMessagesWidgetData(userId);
     case 'mail':
       return getMailWidgetData(userId);
+    case 'bank':
+      return getBankWidgetData(userId);
     default:
       return { type, title: type, subtitle: 'Widget data', updatedAt: new Date().toISOString(), config };
   }
@@ -343,6 +345,21 @@ async function getMailWidgetData(userId: string) {
     type: 'mail',
     unread,
     account: account?.email,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function getBankWidgetData(userId: string) {
+  const { BankAccount } = await import('../database/models/BankAccount');
+  const accounts = await BankAccount.find({ userId: new Types.ObjectId(userId), deletedAt: null }).lean();
+  const totalBalance = accounts.reduce((s, a) => s + a.availableBalance, 0);
+  const primary = accounts.find((a) => a.isPrimary) ?? accounts[0];
+  return {
+    type: 'bank',
+    totalBalance,
+    currency: primary?.currency ?? 'GULF',
+    accountName: primary?.name ?? 'Account',
+    accountCount: accounts.length,
     updatedAt: new Date().toISOString(),
   };
 }

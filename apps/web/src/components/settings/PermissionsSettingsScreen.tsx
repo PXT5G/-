@@ -21,6 +21,9 @@ const PERMISSION_LABELS: Record<string, string> = {
   bluetooth: 'Bluetooth',
   sim: 'SIM',
   files: 'Files',
+  bank: 'Bank',
+  identity: 'Identity',
+  mail: 'Mail',
 };
 
 export function PermissionsSettingsScreen({ onBack }: { onBack: () => void }) {
