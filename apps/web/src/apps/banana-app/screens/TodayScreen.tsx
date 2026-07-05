@@ -5,13 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useGulfStoreStore } from '../store/gulfStoreStore';
 import { gulfStoreService } from '../services/gulfStoreService';
-import { useGulfStoreAuth } from '../hooks/useGulfStoreAuth';
 import { AppCard } from '../components/AppCard';
 
 export function TodayScreen({ onAppPress }: { onAppPress: (bundleId: string) => void }) {
   const { featured, trending, editorsChoice, recommended, setFeatured, setTrending, setEditorsChoice, setRecommended } =
     useGulfStoreStore();
-  const { storeReady } = useGulfStoreAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ['store', 'today'],
@@ -24,7 +22,6 @@ export function TodayScreen({ onAppPress }: { onAppPress: (bundleId: string) => 
       ]);
       return { featured: f, trending: t, editorsChoice: e, recommended: r };
     },
-    enabled: storeReady,
   });
 
   useEffect(() => {
@@ -36,7 +33,7 @@ export function TodayScreen({ onAppPress }: { onAppPress: (bundleId: string) => 
     }
   }, [data, setFeatured, setTrending, setEditorsChoice, setRecommended]);
 
-  if (!storeReady || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />

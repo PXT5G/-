@@ -89,7 +89,7 @@ app.use('/api/notifications', ...withPhonePresenceGuard(notificationRoutes));
 app.use('/api/settings', ...withPhonePresenceGuard(settingsRoutes));
 app.use('/api/filesystem', ...withPhonePresenceGuard(filesystemRoutes));
 app.use('/api/admin', adminRoutes);
-app.use('/api/store', ...withPhonePresenceGuard(storeRoutes));
+app.use('/api/store', storeRoutes);
 app.use('/api/device', ...withPhonePresenceGuard(deviceRoutes));
 app.use('/api/system', ...withPhonePresenceGuard(systemRoutes));
 app.use('/api/world', worldRoutes);

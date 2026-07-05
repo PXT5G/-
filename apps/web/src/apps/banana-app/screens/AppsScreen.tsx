@@ -4,14 +4,12 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useGulfStoreStore } from '../store/gulfStoreStore';
 import { gulfStoreService } from '../services/gulfStoreService';
-import { useGulfStoreAuth } from '../hooks/useGulfStoreAuth';
 import { AppCard } from '../components/AppCard';
 import { cn } from '@/utils/cn';
 
 export function AppsScreen({ onAppPress }: { onAppPress: (bundleId: string) => void }) {
   const { categories, selectedCategory, categoryApps, setCategories, setCategoryApps, setSelectedCategory } =
     useGulfStoreStore();
-  const { storeReady } = useGulfStoreAuth();
 
   const { data: cats } = useQuery({
     queryKey: ['store', 'categories'],
@@ -27,7 +25,7 @@ export function AppsScreen({ onAppPress }: { onAppPress: (bundleId: string) => v
   const { data: apps, isLoading } = useQuery({
     queryKey: ['store', 'category', activeCategory],
     queryFn: () => (activeCategory ? gulfStoreService.getByCategory(activeCategory) : Promise.resolve([])),
-    enabled: storeReady && !!activeCategory,
+    enabled: !!activeCategory,
   });
 
   useEffect(() => {
@@ -60,7 +58,7 @@ export function AppsScreen({ onAppPress }: { onAppPress: (bundleId: string) => v
       </div>
 
       <div className="flex-1 overflow-y-auto px-4">
-        {(!storeReady || isLoading) ? (
+        {isLoading ? (
           <div className="flex justify-center py-16">
             <div className="w-8 h-8 border-2 border-gulf-gold border-t-transparent rounded-full animate-spin" />
           </div>
