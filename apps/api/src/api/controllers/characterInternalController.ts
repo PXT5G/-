@@ -252,3 +252,28 @@ export async function getCharacterPhone(req: Request, res: Response, next: NextF
     next(err);
   }
 }
+
+export async function postRevokePhone(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = req.body as {
+      platform?: string;
+      externalCharacterId: string;
+      reason: 'seized' | 'transferred' | 'deleted' | 'suspended' | 'unbound';
+      inventorySessionId?: string;
+    };
+    if (!body.externalCharacterId || !body.reason) {
+      res.status(400).json({ success: false, error: 'externalCharacterId and reason are required' });
+      return;
+    }
+    const { revokePhonePresence } = await import('../../services/phonePresenceService');
+    await revokePhonePresence({
+      platform: platformFromBody(body),
+      externalCharacterId: body.externalCharacterId,
+      reason: body.reason,
+      inventorySessionId: body.inventorySessionId,
+    });
+    res.json({ success: true, data: { revoked: true, reason: body.reason } });
+  } catch (err) {
+    next(err);
+  }
+}

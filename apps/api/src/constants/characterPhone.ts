@@ -16,14 +16,18 @@ export type CharacterPlatform = (typeof CHARACTER_PLATFORMS)[number];
 export const CHARACTER_SESSION_STATUS = ['active', 'ended', 'expired'] as const;
 export type CharacterSessionStatus = (typeof CHARACTER_SESSION_STATUS)[number];
 
-export const CHARACTER_PHONE_STATUS = ['active', 'suspended', 'unbound'] as const;
+export const CHARACTER_PHONE_STATUS = ['active', 'suspended', 'unbound', 'seized', 'transferred', 'deleted'] as const;
 export type CharacterPhoneStatus = (typeof CHARACTER_PHONE_STATUS)[number];
 
 export const CHARACTER_SOCKET_EVENTS = [
   'character:changed',
   'character:session:ended',
   'character:phone:activated',
+  'phone:unavailable',
 ] as const;
+
+export const PHONE_NOT_AVAILABLE_CODE = 'PHONE_NOT_AVAILABLE' as const;
+export const PHONE_NOT_AVAILABLE_MESSAGE = 'الهاتف لم يعد معك';
 
 export const CHARACTER_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 export const INVENTORY_ATTESTATION_TTL_MS = 15 * 60 * 1000;
@@ -39,6 +43,10 @@ export const CHARACTER_VERIFICATION_ERRORS = {
   PHONE_ID_MISMATCH: 'PHONE_ID_MISMATCH',
   DEVICE_ID_MISMATCH: 'DEVICE_ID_MISMATCH',
   PHONE_NOT_REGISTERED: 'PHONE_NOT_REGISTERED',
+  PHONE_NOT_AVAILABLE: PHONE_NOT_AVAILABLE_CODE,
+  PHONE_SEIZED: 'PHONE_SEIZED',
+  PHONE_TRANSFERRED: 'PHONE_TRANSFERRED',
+  PHONE_DELETED: 'PHONE_DELETED',
   CONTEXT_INCOMPLETE: 'CHARACTER_CONTEXT_INCOMPLETE',
 } as const;
 

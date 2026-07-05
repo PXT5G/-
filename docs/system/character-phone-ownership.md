@@ -91,6 +91,29 @@ Use `phoneScopeService` to build queries scoped by `phoneId` once verification s
 | `character:changed` | Active character switched |
 | `character:session:ended` | Previous phone session ended |
 | `character:phone:activated` | New character phone ready |
+| `phone:unavailable` | Phone lost from inventory — close phone UI |
+
+## Phone Presence Validation
+
+Every phone action must pass `assertPhoneAccess()` (which calls `verifyPhoneAccess()` internally) **before** any logic runs.
+
+| Item | Path |
+|------|------|
+| Central gate | `phonePresenceService.assertPhoneAccess()` |
+| User-scoped gate | `phonePresenceService.assertPhoneAccessForUser()` |
+| HTTP middleware | `requirePhonePresence` via `withPhonePresenceGuard()` |
+| Constants | `constants/phonePresence.ts` |
+
+**Failure response:**
+```json
+{ "success": false, "error": "PHONE_NOT_AVAILABLE", "message": "الهاتف لم يعد معك" }
+```
+
+**Enforcement:** `PHONE_PRESENCE_ENFORCE=true` always validates. When `false` (default), validation runs only if the user has an active character session.
+
+**Revoke phone:** `POST /api/internal/character/phone/revoke` — marks phone seized/transferred/deleted and emits `phone:unavailable`.
+
+See also: [Phone Presence Validation](./phone-presence-validation.md)
 
 ## File Map
 

@@ -302,10 +302,21 @@ export async function verifyPhoneAccess(input: CharacterContextInput): Promise<P
   const phone = await CharacterPhone.findOne({
     platform: ctx.platform,
     externalCharacterId: ctx.externalCharacterId,
-    status: 'active',
   });
   if (!phone) {
     return fail(CHARACTER_VERIFICATION_ERRORS.PHONE_NOT_REGISTERED, 'No phone registered for this character');
+  }
+
+  if (phone.status !== 'active') {
+    const code =
+      phone.status === 'seized'
+        ? CHARACTER_VERIFICATION_ERRORS.PHONE_SEIZED
+        : phone.status === 'transferred'
+          ? CHARACTER_VERIFICATION_ERRORS.PHONE_TRANSFERRED
+          : phone.status === 'deleted'
+            ? CHARACTER_VERIFICATION_ERRORS.PHONE_DELETED
+            : CHARACTER_VERIFICATION_ERRORS.PHONE_NOT_AVAILABLE;
+    return fail(code, 'Phone is no longer available for this character');
   }
 
   if (phone.externalCharacterId !== ctx.externalCharacterId) {
@@ -344,7 +355,19 @@ export async function verifyPhoneAccess(input: CharacterContextInput): Promise<P
 }
 
 function fail(code: CharacterVerificationErrorCode, message: string): PhoneVerificationFailure {
-  return { verified: false, code, message };
+  const publicCode =
+    code === CHARACTER_VERIFICATION_ERRORS.PHONE_NOT_AVAILABLE ||
+    code === CHARACTER_VERIFICATION_ERRORS.INVENTORY_NO_PHONE ||
+    code === CHARACTER_VERIFICATION_ERRORS.PHONE_NOT_REGISTERED ||
+    code === CHARACTER_VERIFICATION_ERRORS.PHONE_NOT_OWNED ||
+    code === CHARACTER_VERIFICATION_ERRORS.PHONE_SEIZED ||
+    code === CHARACTER_VERIFICATION_ERRORS.PHONE_TRANSFERRED ||
+    code === CHARACTER_VERIFICATION_ERRORS.PHONE_DELETED ||
+    code === CHARACTER_VERIFICATION_ERRORS.CHARACTER_NOT_ACTIVE ||
+    code === CHARACTER_VERIFICATION_ERRORS.SESSION_INVALID
+      ? CHARACTER_VERIFICATION_ERRORS.PHONE_NOT_AVAILABLE
+      : code;
+  return { verified: false, code: publicCode, message };
 }
 
 function formatLink(doc: InstanceType<typeof ExternalAccountLink>) {

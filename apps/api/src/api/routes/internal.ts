@@ -21,6 +21,7 @@ characterRouter.post('/session/open', characterController.postOpenSession);
 characterRouter.post('/changed', characterController.postCharacterChanged);
 characterRouter.post('/inventory/attest', characterController.postInventoryAttestation);
 characterRouter.post('/phone/verify', characterController.postVerifyPhone);
+characterRouter.post('/phone/revoke', characterController.postRevokePhone);
 characterRouter.get('/session/active', characterController.getActiveSession);
 characterRouter.get('/phone', characterController.getCharacterPhone);
 

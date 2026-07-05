@@ -3,6 +3,14 @@ import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import type { SocketEvent, SocketPayload } from '@gulfos/shared';
+import { PHONE_INTERACTIVE_SOCKET_EVENTS } from '../constants/phonePresence';
+import {
+  assertPhoneAccessForUser,
+  PhoneNotAvailableError,
+  PHONE_NOT_AVAILABLE_CODE,
+  PHONE_NOT_AVAILABLE_MESSAGE,
+  shouldEnforcePhonePresence,
+} from './phonePresenceService';
 
 let io: Server | null = null;
 const userSockets = new Map<string, Set<string>>();
@@ -37,6 +45,40 @@ export function initializeSocket(httpServer: HttpServer): Server {
     registerSocket(userId, socket.id);
 
     socket.join(`user:${userId}`);
+
+    socket.use(async (packet, next) => {
+      const eventName = packet[0] as string;
+      if (!PHONE_INTERACTIVE_SOCKET_EVENTS.has(eventName)) {
+        next();
+        return;
+      }
+
+      try {
+        const enforce = await shouldEnforcePhonePresence(userId);
+        if (!enforce) {
+          next();
+          return;
+        }
+        await assertPhoneAccessForUser(userId);
+        next();
+      } catch (err) {
+        if (err instanceof PhoneNotAvailableError) {
+          const payload: SocketPayload = {
+            event: 'phone:unavailable',
+            data: {
+              code: PHONE_NOT_AVAILABLE_CODE,
+              message: PHONE_NOT_AVAILABLE_MESSAGE,
+              triggeredBy: eventName,
+            },
+            timestamp: new Date().toISOString(),
+          };
+          socket.emit('phone:unavailable', payload);
+          next(new Error(PHONE_NOT_AVAILABLE_CODE));
+          return;
+        }
+        next(err as Error);
+      }
+    });
 
     socket.on('disconnect', () => {
       unregisterSocket(userId, socket.id);

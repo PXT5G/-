@@ -376,6 +376,7 @@ export type SocketEvent =
   | 'character:changed'
   | 'character:session:ended'
   | 'character:phone:activated'
+  | 'phone:unavailable'
   | 'police:dispatch:new'
   | 'police:dispatch:update'
   | 'police:unit:update'
