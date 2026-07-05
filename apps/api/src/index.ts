@@ -41,6 +41,9 @@ import bankRoutes from './api/routes/bank';
 import identityRoutes from './api/routes/identity';
 import assistantRoutes from './api/routes/assistant';
 import automationRoutes from './api/routes/automation';
+import shortcutsRoutes from './api/routes/shortcuts';
+import focusRoutes from './api/routes/focus';
+import intelligenceRoutes from './api/routes/intelligence';
 
 const app = express();
 const httpServer = createServer(app);
@@ -95,6 +98,9 @@ app.use('/api/bank', bankRoutes);
 app.use('/api/identity', identityRoutes);
 app.use('/api/assistant', assistantRoutes);
 app.use('/api/automation', automationRoutes);
+app.use('/api/shortcuts', shortcutsRoutes);
+app.use('/api/focus', focusRoutes);
+app.use('/api/intelligence', intelligenceRoutes);
 
 app.use(errorHandler);
 

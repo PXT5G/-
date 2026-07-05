@@ -66,6 +66,12 @@ import { AssistantApp } from '@/apps/assistant';
 import { assistantManifest } from '@/apps/assistant/manifest';
 import { AutomationApp } from '@/apps/automation';
 import { automationManifest } from '@/apps/automation/manifest';
+import { ShortcutsApp } from '@/apps/shortcuts';
+import { shortcutsManifest } from '@/apps/shortcuts/manifest';
+import { FocusApp } from '@/apps/focus';
+import { focusManifest } from '@/apps/focus/manifest';
+import { IntelligenceHubApp } from '@/apps/intelligence';
+import { intelligenceManifest } from '@/apps/intelligence/manifest';
 
 registerApp(
   {
@@ -124,3 +130,6 @@ registerApp(bankManifest, BankApp);
 registerApp(identityManifest, IdentityApp);
 registerApp(assistantManifest, AssistantApp);
 registerApp(automationManifest, AutomationApp);
+registerApp(shortcutsManifest, ShortcutsApp);
+registerApp(focusManifest, FocusApp);
+registerApp(intelligenceManifest, IntelligenceHubApp);

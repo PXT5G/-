@@ -591,7 +591,22 @@ export type SocketEvent =
   | 'automation:running'
   | 'automation:completed'
   | 'automation:failed'
-  | 'automation:history';
+  | 'automation:history'
+  | 'shortcut:run'
+  | 'shortcut:updated'
+  | 'shortcut:created'
+  | 'shortcut:deleted'
+  | 'focus:enabled'
+  | 'focus:disabled'
+  | 'focus:updated'
+  | 'focus:schedule'
+  | 'prediction:update'
+  | 'prediction:generated'
+  | 'dashboard:update'
+  | 'dashboard:widget'
+  | 'search:index:update'
+  | 'suggestion:generated'
+  | 'notification:summary';
 
 export interface SocketPayload {
   event: SocketEvent;

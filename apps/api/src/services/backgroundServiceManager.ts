@@ -130,6 +130,48 @@ export function startBackgroundServiceManager(): void {
     await refreshAllSimStatus();
   });
 
+  registerBackgroundTask('prediction-refresh', 15 * 60 * 1000, async () => {
+    const { User } = await import('../database/models/User');
+    const users = await User.find({}).limit(50).select('_id');
+    for (const u of users) {
+      try {
+        const { runBackgroundOptimization } = await import('./intelligenceService');
+        await runBackgroundOptimization(u._id.toString());
+      } catch { /* per-user */ }
+    }
+  });
+
+  registerBackgroundTask('search-index-refresh', 30 * 60 * 1000, async () => {
+    const { User } = await import('../database/models/User');
+    const users = await User.find({}).limit(50).select('_id');
+    for (const u of users) {
+      try {
+        const { refreshSearchIndex } = await import('./intelligenceService');
+        await refreshSearchIndex(u._id.toString());
+      } catch { /* per-user */ }
+    }
+  });
+
+  registerBackgroundTask('automation-scheduler', 60 * 1000, async () => {
+    const { Automation } = await import('../database/models/Automation');
+    const active = await Automation.find({ status: 'active', deletedAt: null }).limit(20);
+    for (const auto of active) {
+      const timeTrigger = auto.triggers.find((t) => t.type === 'time' || t.type === 'date');
+      if (timeTrigger) {
+        const { runAutomation } = await import('./automationService');
+        try {
+          await runAutomation(auto.userId.toString(), auto.automationId, auto.userId.toString());
+        } catch { /* scheduled run */ }
+      }
+    }
+  });
+
+  registerBackgroundTask('assistant-cleanup', 60 * 60 * 1000, async () => {
+    const { VoiceSession } = await import('../database/models/Intelligence');
+    const stale = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await VoiceSession.updateMany({ status: { $ne: 'ended' }, startedAt: { $lt: stale } }, { status: 'ended', endedAt: new Date() });
+  });
+
   registerBackgroundTask('economy-tick', 60 * 60 * 1000, async () => {
     const { tickEconomy } = await import('./economyEngineService');
     await tickEconomy('system');

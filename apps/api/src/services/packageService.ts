@@ -47,6 +47,9 @@ const RUNTIME_APPS = new Set([
   'com.gulfos.weather',
   'com.gulfos.assistant',
   'com.gulfos.automation',
+  'com.gulfos.shortcuts',
+  'com.gulfos.focus',
+  'com.gulfos.intelligence',
 ]);
 
 export interface PackageManifest {
