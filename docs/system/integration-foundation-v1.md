@@ -76,3 +76,7 @@ V2 Discord integration will use:
 - `POST /api/internal/heartbeat` for bot health
 
 No architectural changes required.
+
+## Related
+
+- [Character-Based Phone Ownership](./character-phone-ownership.md) — character session layer for V2 bot integration

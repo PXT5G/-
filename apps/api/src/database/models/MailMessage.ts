@@ -5,6 +5,8 @@ import { auditSchemaFields } from '../baseSchema';
 export interface IMailMessage extends Document {
   messageId: string;
   userId: Types.ObjectId;
+  phoneId?: string;
+  characterRecordId?: string;
   accountId: string;
   folder: MailFolder;
   from: string;
@@ -33,6 +35,8 @@ const mailMessageSchema = new Schema<IMailMessage>(
   {
     messageId: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    phoneId: { type: String, index: true },
+    characterRecordId: { type: String, index: true },
     accountId: { type: String, required: true, index: true },
     folder: { type: String, required: true, index: true },
     from: { type: String, required: true },

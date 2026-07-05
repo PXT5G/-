@@ -28,6 +28,8 @@ export interface IContactAddress {
 export interface IContact extends Document {
   contactId: string;
   userId: Types.ObjectId;
+  phoneId?: string;
+  characterRecordId?: string;
   category: ContactCategory;
   firstName: string;
   lastName: string;
@@ -69,6 +71,8 @@ const contactSchema = new Schema<IContact>(
   {
     contactId: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    phoneId: { type: String, index: true },
+    characterRecordId: { type: String, index: true },
     category: { type: String, required: true, index: true },
     firstName: { type: String, required: true },
     lastName: { type: String, default: '' },

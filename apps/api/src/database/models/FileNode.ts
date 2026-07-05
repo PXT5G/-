@@ -2,6 +2,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IFileNode extends Document {
   userId: mongoose.Types.ObjectId;
+  phoneId?: string;
+  characterRecordId?: string;
   name: string;
   type: 'file' | 'folder';
   mimeType?: string;
@@ -16,6 +18,8 @@ export interface IFileNode extends Document {
 const fileNodeSchema = new Schema<IFileNode>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    phoneId: { type: String, index: true },
+    characterRecordId: { type: String, index: true },
     name: { type: String, required: true },
     type: { type: String, enum: ['file', 'folder'], required: true },
     mimeType: { type: String },

@@ -17,6 +17,11 @@ export async function ensureDatabaseIndexes(): Promise<{ ensured: number }> {
     { model: 'ThemeProfile', indexes: [{ userId: 1, isActive: 1 }] },
     { model: 'AuditLog', indexes: [{ userId: 1, createdAt: -1 }] },
     { model: 'NotificationQueue', indexes: [{ userId: 1, status: 1, scheduledAt: 1 }] },
+    { model: 'CharacterSession', indexes: [{ platform: 1, externalUserId: 1, status: 1 }, { phoneId: 1 }] },
+    { model: 'CharacterPhone', indexes: [{ platform: 1, externalCharacterId: 1, status: 1 }] },
+    { model: 'SimCard', indexes: [{ phoneId: 1, slot: 1 }] },
+    { model: 'Contact', indexes: [{ phoneId: 1, displayName: 1 }] },
+    { model: 'PhoneCall', indexes: [{ phoneId: 1, startedAt: -1 }] },
   ];
 
   let ensured = 0;

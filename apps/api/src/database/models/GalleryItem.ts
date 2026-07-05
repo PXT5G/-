@@ -4,6 +4,8 @@ import type { CameraMode } from '../../constants/systemApps';
 
 export interface IGalleryItem extends Document {
   userId: Types.ObjectId;
+  phoneId?: string;
+  characterRecordId?: string;
   itemId: string;
   albumId?: string;
   type: 'photo' | 'video';
@@ -31,6 +33,8 @@ export interface IGalleryItem extends Document {
 const galleryItemSchema = new Schema<IGalleryItem>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    phoneId: { type: String, index: true },
+    characterRecordId: { type: String, index: true },
     itemId: { type: String, required: true, index: true },
     albumId: { type: String, index: true },
     type: { type: String, enum: ['photo', 'video'], required: true },
