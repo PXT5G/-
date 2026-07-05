@@ -1,4 +1,5 @@
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 import type {
   DeviceProfileSnapshot,
   PowerStateSnapshot,
@@ -10,21 +11,10 @@ import type {
   ExtendedDiagnosticsReport,
 } from '@/types';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
 
 export const deviceEcosystemService = {
   async initialize(deviceName?: string): Promise<{ ready: boolean }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { ready: boolean } }>(
       '/api/device/ecosystem/initialize',
@@ -34,7 +24,7 @@ export const deviceEcosystemService = {
   },
 
   async getProfile(): Promise<DeviceProfileSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DeviceProfileSnapshot }>(
       '/api/device/ecosystem/profile',
@@ -44,7 +34,7 @@ export const deviceEcosystemService = {
   },
 
   async updateProfile(updates: Partial<{ deviceName: string; region: string; language: string; timezone: string }>): Promise<DeviceProfileSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DeviceProfileSnapshot }>(
       '/api/device/ecosystem/profile',
@@ -54,7 +44,7 @@ export const deviceEcosystemService = {
   },
 
   async getPower(): Promise<PowerStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PowerStateSnapshot }>(
       '/api/device/ecosystem/power',
@@ -64,7 +54,7 @@ export const deviceEcosystemService = {
   },
 
   async setCharging(charging: boolean, chargingType?: string): Promise<PowerStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PowerStateSnapshot }>(
       '/api/device/ecosystem/power/charging',
@@ -74,7 +64,7 @@ export const deviceEcosystemService = {
   },
 
   async setPowerMode(mode: string): Promise<PowerStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PowerStateSnapshot }>(
       '/api/device/ecosystem/power/mode',
@@ -84,7 +74,7 @@ export const deviceEcosystemService = {
   },
 
   async getSecurity(): Promise<SecurityConfigSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: SecurityConfigSnapshot }>(
       '/api/device/ecosystem/security',
@@ -94,7 +84,7 @@ export const deviceEcosystemService = {
   },
 
   async updateSecurity(updates: Partial<SecurityConfigSnapshot>): Promise<SecurityConfigSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: SecurityConfigSnapshot }>(
       '/api/device/ecosystem/security',
@@ -104,7 +94,7 @@ export const deviceEcosystemService = {
   },
 
   async unlock(method: string, credential: string): Promise<{ unlocked: boolean }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { unlocked: boolean } }>(
       '/api/device/ecosystem/security/unlock',
@@ -114,7 +104,7 @@ export const deviceEcosystemService = {
   },
 
   async createBackup(): Promise<BackupSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: BackupSnapshot }>(
       '/api/device/ecosystem/backup',
@@ -124,7 +114,7 @@ export const deviceEcosystemService = {
   },
 
   async getBackups(): Promise<BackupSnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: BackupSnapshot[] }>(
       '/api/device/ecosystem/backup',
@@ -134,7 +124,7 @@ export const deviceEcosystemService = {
   },
 
   async restoreBackup(backupId: string): Promise<{ restored: boolean }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { restored: boolean } }>(
       `/api/device/ecosystem/backup/${backupId}/restore`,
@@ -144,7 +134,7 @@ export const deviceEcosystemService = {
   },
 
   async startSync(sourceDeviceId: string, targetDeviceId: string, domains?: string[]): Promise<{ syncId: string }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { syncId: string } }>(
       '/api/device/ecosystem/sync',
@@ -154,7 +144,7 @@ export const deviceEcosystemService = {
   },
 
   async getSyncStatus(): Promise<SyncStatusSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: SyncStatusSnapshot }>(
       '/api/device/ecosystem/sync/status',
@@ -164,7 +154,7 @@ export const deviceEcosystemService = {
   },
 
   async runMaintenance(action: string): Promise<{ action: string; status: string }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { action: string; status: string } }>(
       '/api/device/ecosystem/maintenance',
@@ -174,7 +164,7 @@ export const deviceEcosystemService = {
   },
 
   async getMaintenanceHistory(): Promise<MaintenanceRecordSnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: MaintenanceRecordSnapshot[] }>(
       '/api/device/ecosystem/maintenance',
@@ -184,7 +174,7 @@ export const deviceEcosystemService = {
   },
 
   async collectDiagnostics(): Promise<ExtendedDiagnosticsReport> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: ExtendedDiagnosticsReport }>(
       '/api/device/ecosystem/diagnostics',
@@ -194,7 +184,7 @@ export const deviceEcosystemService = {
   },
 
   async getRecovery(): Promise<{ recovery: RecoveryStateSnapshot; availableBackups: BackupSnapshot[] }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { recovery: RecoveryStateSnapshot; availableBackups: BackupSnapshot[] } }>(
       '/api/device/ecosystem/recovery',
@@ -204,7 +194,7 @@ export const deviceEcosystemService = {
   },
 
   async setRecoveryMode(mode: string): Promise<RecoveryStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: RecoveryStateSnapshot }>(
       '/api/device/ecosystem/recovery/mode',
@@ -214,7 +204,7 @@ export const deviceEcosystemService = {
   },
 
   async factoryReset(confirmPhrase: string): Promise<{ reset: boolean }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { reset: boolean } }>(
       '/api/device/ecosystem/recovery/factory-reset',
@@ -224,7 +214,7 @@ export const deviceEcosystemService = {
   },
 
   async getDeveloperDashboard(): Promise<Record<string, unknown>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: Record<string, unknown> }>(
       '/api/device/ecosystem/developer',
@@ -234,7 +224,7 @@ export const deviceEcosystemService = {
   },
 
   async detectDuplicates(): Promise<{ duplicateGroups: number; totalWasted: number }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { duplicateGroups: number; totalWasted: number } }>(
       '/api/device/ecosystem/storage/duplicates',
@@ -244,7 +234,7 @@ export const deviceEcosystemService = {
   },
 
   async storageCleanup(): Promise<{ bytesFreed: number }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { bytesFreed: number } }>(
       '/api/device/ecosystem/storage/cleanup',

@@ -1,4 +1,5 @@
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 import type {
   WorldStateSnapshot,
   CellTowerSnapshot,
@@ -10,35 +11,24 @@ import type {
   DeviceLocationState,
 } from '@/types';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
 
 export const worldService = {
   async getWorldState(): Promise<WorldStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: WorldStateSnapshot }>('/api/world/state', { token });
     return res.data!;
   },
 
   async tickWorld(): Promise<unknown> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: unknown }>('/api/world/tick', { method: 'POST', token });
     return res.data;
   },
 
   async searchLocations(q: string): Promise<Array<Record<string, unknown>>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: Array<Record<string, unknown>> }>(
       `/api/world/locations/search?q=${encodeURIComponent(q)}`,
@@ -48,14 +38,14 @@ export const worldService = {
   },
 
   async getNearbyTowers(): Promise<CellTowerSnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: CellTowerSnapshot[] }>('/api/world/towers/nearby', { token });
     return res.data ?? [];
   },
 
   async getGps(): Promise<GpsStateSnapshot & { currentPosition?: DeviceLocationState }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: GpsStateSnapshot & { currentPosition?: DeviceLocationState } }>(
       '/api/world/gps',
@@ -65,7 +55,7 @@ export const worldService = {
   },
 
   async startNavigation(destination: { locationId?: string; name?: string; lat?: number; lng?: number }): Promise<GpsStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: GpsStateSnapshot }>(
       '/api/world/gps/navigate',
@@ -75,7 +65,7 @@ export const worldService = {
   },
 
   async stopNavigation(): Promise<GpsStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: GpsStateSnapshot }>(
       '/api/world/gps/stop',
@@ -85,28 +75,28 @@ export const worldService = {
   },
 
   async getCarrier(): Promise<CarrierStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: CarrierStateSnapshot }>('/api/world/carrier', { token });
     return res.data!;
   },
 
   async getNetwork(): Promise<NetworkStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: NetworkStateSnapshot }>('/api/world/network', { token });
     return res.data!;
   },
 
   async getVpn(): Promise<VpnStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: VpnStateSnapshot }>('/api/world/vpn', { token });
     return res.data!;
   },
 
   async connectVpn(countryCode: string): Promise<VpnStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: VpnStateSnapshot }>(
       '/api/world/vpn/connect',
@@ -116,7 +106,7 @@ export const worldService = {
   },
 
   async disconnectVpn(): Promise<VpnStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: VpnStateSnapshot }>(
       '/api/world/vpn/disconnect',
@@ -126,7 +116,7 @@ export const worldService = {
   },
 
   async getVpnCountries(): Promise<Array<{ code: string; name: string }>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: Array<{ code: string; name: string }> }>(
       '/api/world/vpn/countries',
@@ -136,7 +126,7 @@ export const worldService = {
   },
 
   async getLocationHistory(limit = 50): Promise<Array<Record<string, unknown>>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: Array<Record<string, unknown>> }>(
       `/api/world/gps/history?limit=${limit}`,
