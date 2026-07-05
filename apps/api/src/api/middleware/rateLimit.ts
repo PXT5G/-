@@ -16,4 +16,5 @@ export const authRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Too many authentication attempts' },
+  skip: () => env.NODE_ENV === 'development',
 });

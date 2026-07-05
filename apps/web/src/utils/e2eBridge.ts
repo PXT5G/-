@@ -22,6 +22,8 @@ export interface GulfOSE2EBridge {
   closeAllPanels: () => void;
   launchApp: (bundleId: string, name?: string) => boolean;
   closeAllApps: () => void;
+  shutdown: () => void;
+  swipeHome: () => void;
 }
 
 declare global {
@@ -69,6 +71,21 @@ export function initE2EBridge(): void {
     closeAllApps: () => {
       const { windows, closeWindow } = useWindowManagerStore.getState();
       for (const w of windows) closeWindow(w.id);
+    },
+    shutdown: () => {
+      const { windows, closeWindow } = useWindowManagerStore.getState();
+      for (const w of windows) closeWindow(w.id);
+      useControlCenterStore.getState().close();
+      useNotificationStore.getState().setCenterOpen(false);
+      useSearchStore.getState().close();
+      usePremiumExperienceStore.getState().setAppLibraryOpen(false);
+      usePhoneOsStore.getState().setMultitaskingOpen(false);
+      useLockStore.getState().lock();
+      useOSStore.getState().reset();
+    },
+    swipeHome: () => {
+      useLockStore.getState().unlock();
+      useOSStore.getState().setPhase('home');
     },
   };
 }

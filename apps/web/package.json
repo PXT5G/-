@@ -11,6 +11,7 @@
     "demo": "playwright test e2e/gulfos-full-demo.spec.ts --config=playwright.config.ts",
     "demo:audit": "playwright test e2e/gulfos-apps-audit.spec.ts --config=playwright.config.ts",
     "demo:all": "playwright test e2e/gulfos-full-demo.spec.ts e2e/gulfos-apps-audit.spec.ts --config=playwright.config.ts",
+    "showcase": "playwright test e2e/gulfos-cinematic-showcase.spec.ts --config=playwright.showcase.config.ts",
     "demo:ui": "playwright test e2e/gulfos-full-demo.spec.ts --config=playwright.config.ts --ui"
   },
   "dependencies": {

@@ -1,5 +1,6 @@
 import { type Page, type Locator, expect } from '@playwright/test';
 import { DEMO_CREDENTIALS } from './app-catalog';
+import type { DemoSession } from './api-client';
 
 export class GulfOSPage {
   readonly frame: Locator;
@@ -8,20 +9,61 @@ export class GulfOSPage {
     this.frame = page.getByRole('application', { name: 'GULFOS' });
   }
 
+  async pause(ms = 1200) {
+    await this.page.waitForTimeout(ms);
+  }
+
   async waitForBridge() {
     await this.page.waitForFunction(() => !!window.__GULFOS_E2E__, undefined, { timeout: 45_000 });
   }
 
-  async goto() {
+  async goto(cinema = false) {
     await this.page.addInitScript(() => {
       localStorage.removeItem('bananaos-os');
       localStorage.removeItem('bananaos-lock');
       localStorage.removeItem('bananaos-auth');
     });
-    await this.page.goto('/', { waitUntil: 'load' });
+    const url = cinema ? '/?cinema=1' : '/';
+    await this.page.goto(url, { waitUntil: 'load' });
     await this.frame.waitFor({ state: 'visible', timeout: 30_000 });
     await this.page.getByText('GULFOS').first().waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {});
     await this.waitForBridge();
+  }
+
+  async gotoWithSession(session: DemoSession, cinema = false) {
+    await this.page.addInitScript(
+      ({ token, user }) => {
+        localStorage.removeItem('bananaos-os');
+        localStorage.removeItem('bananaos-lock');
+        localStorage.setItem(
+          'bananaos-auth',
+          JSON.stringify({
+            state: {
+              user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                displayName: user.displayName,
+                role: user.role,
+              },
+              tokens: { accessToken: token, refreshToken: token },
+              isAuthenticated: true,
+              isLoading: false,
+            },
+            version: 0,
+          }),
+        );
+      },
+      { token: session.token, user: session.user },
+    );
+    const url = cinema ? '/?cinema=1' : '/';
+    await this.page.goto(url, { waitUntil: 'load' });
+    await this.frame.waitFor({ state: 'visible', timeout: 30_000 });
+    await this.waitForBridge();
+  }
+
+  async seedSession(session: DemoSession, cinema = true) {
+    await this.gotoWithSession(session, cinema);
   }
 
   async waitForSplash() {
@@ -240,6 +282,20 @@ export class GulfOSPage {
     await this.waitForSplash().catch(() => {});
     await this.waitForBoot();
     await this.waitForLockScreen();
+  }
+
+  async shutdown() {
+    await this.closeAllApps();
+    await this.page.evaluate(() => window.__GULFOS_E2E__?.shutdown());
+    await this.pause(2500);
+  }
+
+  async browseApp(bundleId: string, name: string, dwellMs = 3500) {
+    await this.ensureHome();
+    await this.closeAllPanels();
+    await this.launchAppByBundleId(bundleId, name);
+    await this.pause(dwellMs);
+    await this.closeApp();
   }
 
   async isAppOpen(title: string) {

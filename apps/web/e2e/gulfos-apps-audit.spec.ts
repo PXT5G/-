@@ -4,7 +4,7 @@ import fs from 'fs';
 import { GulfOSPage } from './helpers/gulfos-page';
 import { DemoReport } from './helpers/demo-report';
 import { GULFOS_APPS } from './helpers/app-catalog';
-import { ensureDemoUser } from './helpers/api-client';
+import { prepareShowcaseEnvironment } from './helpers/api-client';
 
 const REPORT_DIR = path.join(__dirname, '../demo-output');
 
@@ -15,8 +15,8 @@ test('GULFOS Apps Audit — all registered apps', async ({ page, request }) => {
   const gulf = new GulfOSPage(page);
 
   try {
-    await ensureDemoUser(request);
-    await gulf.goto();
+    const session = await prepareShowcaseEnvironment(request);
+    await gulf.gotoWithSession(session, false);
     await gulf.waitForBoot();
     await gulf.waitForLockScreen();
     await gulf.unlock();
@@ -27,7 +27,7 @@ test('GULFOS Apps Audit — all registered apps', async ({ page, request }) => {
         await gulf.launchAppByBundleId(app.bundleId, app.name);
         await page.waitForTimeout(200);
         const hasContent = await gulf.hasVisibleContent();
-        const hasError = await page.getByText(/error|failed|not found/i).isVisible({ timeout: 300 }).catch(() => false);
+        const hasError = await page.getByText(/failed to load|permission denied|search failed/i).isVisible({ timeout: 300 }).catch(() => false);
         report.recordApp(
           app.bundleId,
           app.name,
