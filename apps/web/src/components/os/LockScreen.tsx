@@ -15,6 +15,8 @@ import { LockScreenPIN } from './LockScreenPIN';
 import { LockScreenBiometric } from './LockScreenBiometric';
 import { WidgetContent } from '@/components/widgets/WidgetContent';
 import { GlassPanel } from '@/components/ui/GlassPanel';
+import { unlockAnimation } from '@/animations/transitions';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { cn } from '@/utils/cn';
 import { useState, useEffect } from 'react';
 
@@ -48,6 +50,7 @@ export function LockScreen() {
   const { playUnlock } = useSound();
   const { success: hapticSuccess, tap } = useHaptic();
   const { launchApp } = useAppLaunch();
+  const { unlockDuration, shouldReduceMotion } = useMotionPreference();
 
   const layout = profile?.lockScreenLayout ?? 'classic';
   const clockFont = CLOCK_FONT_CLASSES[profile?.clockFont ?? 'system'] ?? CLOCK_FONT_CLASSES.system;
@@ -79,8 +82,8 @@ export function LockScreen() {
       className="absolute inset-0 z-40 flex flex-col"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={profile?.unlockAnimation === 'slide' ? { y: '-100%', opacity: 0 } : { opacity: 0, scale: 1.05 }}
-      transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+      exit={shouldReduceMotion ? { opacity: 0 } : unlockAnimation.lockScreen.exit}
+      transition={shouldReduceMotion ? { duration: 0.01 } : { duration: unlockDuration, ease: [0.32, 0.72, 0, 1] as [number, number, number, number] }}
       {...gestures}
     >
       <div
@@ -88,7 +91,7 @@ export function LockScreen() {
         style={{ backdropFilter: `blur(${blurIntensity}px)` }}
       />
 
-      {showChargingAnim && (
+      {showChargingAnim && !shouldReduceMotion && (
         <motion.div
           className="absolute inset-0 pointer-events-none"
           initial={{ opacity: 0 }}

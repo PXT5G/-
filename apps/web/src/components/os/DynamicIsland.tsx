@@ -6,6 +6,7 @@ import { useDynamicIslandStore } from '@/stores/dynamicIslandStore';
 import { usePhoneOsStore } from '@/stores/phoneOsStore';
 import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
 import { islandExpand } from '@/animations/transitions';
+import { useMotionPreference } from '@/hooks/useMotionPreference';
 import { cn } from '@/utils/cn';
 
 export function DynamicIsland() {
@@ -14,6 +15,7 @@ export function DynamicIsland() {
   const profile = usePremiumExperienceStore((s) => s.profile);
   const maxActivities = profile?.dynamicIslandMaxActivities ?? 3;
   const [activeIndex, setActiveIndex] = useState(0);
+  const { spring } = useMotionPreference();
 
   const activeLive = liveActivities.filter(
     (a) => a.state === 'active' && a.dynamicIsland
@@ -43,7 +45,7 @@ export function DynamicIsland() {
           )}
           initial={false}
           animate={dimensions}
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          transition={spring}
           onClick={() => {
             if (displayMode === 'compact') {
               if (hasLiveActivities && activeLive.length > 1) {

@@ -63,6 +63,9 @@ export const SEARCH_CATEGORIES = [
   'browser_history',
   'downloads',
   'calls',
+  'mail',
+  'assistant',
+  'shortcuts',
 ] as const;
 export type SearchCategory = (typeof SEARCH_CATEGORIES)[number];
 

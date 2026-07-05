@@ -127,6 +127,8 @@ app.use(errorHandler);
 async function bootstrap(): Promise<void> {
   try {
     await connectDatabase();
+    const { ensureDatabaseIndexes } = await import('./database/ensureIndexes');
+    await ensureDatabaseIndexes();
     initializeSocket(httpServer);
 
     // Auto-seed store catalog if empty

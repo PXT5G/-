@@ -459,6 +459,54 @@ async function searchIdentity(userId: string, regex: RegExp): Promise<SearchResu
   return [...identityResults, ...docResults];
 }
 
+async function searchMail(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { MailMessage } = await import('../database/models/MailMessage');
+  const messages = await MailMessage.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ subject: regex }, { bodyText: regex }, { from: regex }],
+  }).limit(15).lean();
+  return messages.map((m) => ({
+    id: m.messageId,
+    category: 'mail' as const,
+    title: m.subject,
+    subtitle: m.from,
+    route: 'com.gulfos.mail',
+  }));
+}
+
+async function searchAssistant(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { AssistantConversation } = await import('../database/models/AssistantConversation');
+  const conversations = await AssistantConversation.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ title: regex }, { summary: regex }],
+  }).limit(15).lean();
+  return conversations.map((c) => ({
+    id: c.conversationId,
+    category: 'assistant' as const,
+    title: c.title,
+    subtitle: c.summary ?? `${c.messageCount} messages`,
+    route: 'com.gulfos.assistant',
+  }));
+}
+
+async function searchShortcuts(userId: string, regex: RegExp): Promise<SearchResult[]> {
+  const { Shortcut } = await import('../database/models/Shortcut');
+  const shortcuts = await Shortcut.find({
+    userId: new Types.ObjectId(userId),
+    deletedAt: null,
+    $or: [{ name: regex }, { description: regex }],
+  }).limit(15).lean();
+  return shortcuts.map((s) => ({
+    id: s.shortcutId,
+    category: 'shortcuts' as const,
+    title: s.name,
+    subtitle: s.description ?? `${s.runCount} runs`,
+    route: 'com.gulfos.shortcuts',
+  }));
+}
+
 const CATEGORY_SEARCHERS: Record<
   SearchCategory,
   (userId: string, regex: RegExp) => Promise<SearchResult[]>
@@ -486,6 +534,9 @@ const CATEGORY_SEARCHERS: Record<
   browser_history: searchBrowserHistory,
   downloads: searchDownloads,
   calls: searchCalls,
+  mail: searchMail,
+  assistant: searchAssistant,
+  shortcuts: searchShortcuts,
 };
 
 export async function globalSearch(

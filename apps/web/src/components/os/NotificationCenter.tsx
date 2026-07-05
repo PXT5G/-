@@ -21,12 +21,19 @@ export function NotificationCenter() {
   const pinnedIds = new Set(profile?.pinnedNotificationIds ?? []);
   const { tap } = useHaptic();
   const [tab, setTab] = useState<Tab>('active');
+  const [searchQ, setSearchQ] = useState('');
   const { data: history = [] } = useNotificationHistory();
 
   if (!isCenterOpen) return null;
 
   const groupStrategy = profile?.notificationGroupStrategy ?? 'app';
-  const grouped = groupNotifications(notifications, groupStrategy, pinnedIds);
+  const filteredNotifications = searchQ.trim()
+    ? notifications.filter((n) =>
+        n.title.toLowerCase().includes(searchQ.toLowerCase()) ||
+        n.body.toLowerCase().includes(searchQ.toLowerCase())
+      )
+    : notifications;
+  const grouped = groupNotifications(filteredNotifications, groupStrategy, pinnedIds);
 
   return (
     <AnimatePresence>
@@ -81,10 +88,19 @@ export function NotificationCenter() {
               ))}
             </div>
 
+            <input
+              type="search"
+              value={searchQ}
+              onChange={(e) => setSearchQ(e.target.value)}
+              placeholder="Search notifications..."
+              aria-label="Search notifications"
+              className="w-full mb-4 px-4 py-2 rounded-xl bg-white/10 border border-white/10 text-white text-sm placeholder:text-white/40 outline-none"
+            />
+
             <div className="overflow-y-auto max-h-[50vh] space-y-3">
               {tab === 'active' && (
                 <>
-                  {notifications.length === 0 ? (
+                  {filteredNotifications.length === 0 ? (
                     <p className="text-center text-white/40 py-8 text-sm">No notifications</p>
                   ) : (
                     grouped.map((group) => (
