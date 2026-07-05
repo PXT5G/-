@@ -375,7 +375,23 @@ export async function initializeSystemServices(userId: string): Promise<void> {
     initializeBank(userId, userId),
     initializeIdentity(userId, userId),
   ]);
-  const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone', 'bank', 'identity', 'biometrics'] as const;
+  const { initializeAssistant } = await import('../../services/assistantService');
+  const { initializeAutomation } = await import('../../services/automationService');
+  const { initializeShortcuts } = await import('../../services/shortcutsService');
+  const { initializeFocus } = await import('../../services/focusService');
+  const { initializeIntelligence } = await import('../../services/intelligenceService');
+  const { initializePersonalization } = await import('../../services/personalizationService');
+  const { initializeSecurity } = await import('../../services/phase55Service');
+  await Promise.all([
+    initializeAssistant(userId, userId),
+    initializeAutomation(userId, userId),
+    initializeShortcuts(userId, userId),
+    initializeFocus(userId, userId),
+    initializeIntelligence(userId, userId),
+    initializePersonalization(userId, userId),
+    initializeSecurity(userId, userId),
+  ]);
+  const commPerms = ['contacts', 'phone', 'notifications', 'storage', 'microphone', 'bank', 'identity', 'biometrics', 'location'] as const;
   const coreApps = [
     'com.gulfos.communication',
     'com.gulfos.phone',
@@ -385,6 +401,19 @@ export async function initializeSystemServices(userId: string): Promise<void> {
     'com.gulfos.sim',
     'com.gulfos.bank',
     'com.gulfos.identity',
+    'com.gulfos.assistant',
+    'com.gulfos.automation',
+    'com.gulfos.shortcuts',
+    'com.gulfos.focus',
+    'com.gulfos.intelligence',
+    'com.gulfos.personalization',
+    'com.gulfos.security',
+    'com.gulfos.privacy',
+    'com.gulfos.cloud',
+    'com.gulfos.find-my',
+    'com.gulfos.developer',
+    'com.gulfos.analytics',
+    'com.gulfos.enterprise',
   ] as const;
   for (const appId of coreApps) {
     for (const permission of commPerms) {

@@ -44,6 +44,16 @@ import automationRoutes from './api/routes/automation';
 import shortcutsRoutes from './api/routes/shortcuts';
 import focusRoutes from './api/routes/focus';
 import intelligenceRoutes from './api/routes/intelligence';
+import personalizationRoutes from './api/routes/personalization';
+import securityRoutes from './api/routes/security';
+import privacyRoutes from './api/routes/privacy';
+import cloudRoutes from './api/routes/cloud';
+import findMyRoutes from './api/routes/findMy';
+import updatesRoutes from './api/routes/updates';
+import developerRoutes from './api/routes/developer';
+import analyticsRoutes from './api/routes/analytics';
+import diagnosticsRoutes from './api/routes/diagnostics';
+import enterpriseRoutes from './api/routes/enterprise';
 
 const app = express();
 const httpServer = createServer(app);
@@ -101,6 +111,16 @@ app.use('/api/automation', automationRoutes);
 app.use('/api/shortcuts', shortcutsRoutes);
 app.use('/api/focus', focusRoutes);
 app.use('/api/intelligence', intelligenceRoutes);
+app.use('/api/personalization', personalizationRoutes);
+app.use('/api/security', securityRoutes);
+app.use('/api/privacy', privacyRoutes);
+app.use('/api/cloud', cloudRoutes);
+app.use('/api/find-my', findMyRoutes);
+app.use('/api/updates', updatesRoutes);
+app.use('/api/developer', developerRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/diagnostics', diagnosticsRoutes);
+app.use('/api/enterprise', enterpriseRoutes);
 
 app.use(errorHandler);
 

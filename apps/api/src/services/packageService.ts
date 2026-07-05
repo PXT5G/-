@@ -50,6 +50,16 @@ const RUNTIME_APPS = new Set([
   'com.gulfos.shortcuts',
   'com.gulfos.focus',
   'com.gulfos.intelligence',
+  'com.gulfos.personalization',
+  'com.gulfos.security',
+  'com.gulfos.privacy',
+  'com.gulfos.cloud',
+  'com.gulfos.find-my',
+  'com.gulfos.developer',
+  'com.gulfos.performance',
+  'com.gulfos.diagnostics',
+  'com.gulfos.analytics',
+  'com.gulfos.enterprise',
 ]);
 
 export interface PackageManifest {

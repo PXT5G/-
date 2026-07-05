@@ -172,6 +172,34 @@ export function startBackgroundServiceManager(): void {
     await VoiceSession.updateMany({ status: { $ne: 'ended' }, startedAt: { $lt: stale } }, { status: 'ended', endedAt: new Date() });
   });
 
+  registerBackgroundTask('cloud-backup-monitor', 6 * 60 * 60 * 1000, async () => {
+    const { CloudBackup } = await import('../database/models/Phase55');
+    const stale = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    await CloudBackup.deleteMany({ state: 'completed', completedAt: { $lt: stale } });
+  });
+
+  registerBackgroundTask('security-monitor', 30 * 60 * 1000, async () => {
+    const { User } = await import('../database/models/User');
+    const users = await User.find({}).limit(20).select('_id');
+    for (const u of users) {
+      try {
+        const { getSecurityDashboard } = await import('./phase55Service');
+        const dash = await getSecurityDashboard(u._id.toString());
+        if (dash.securityScore < 50) {
+          const { logSecurityEvent } = await import('./phase55Service');
+          await logSecurityEvent(u._id.toString(), 'score_low', 'Security score below threshold', 'high');
+        }
+      } catch { /* per-user */ }
+    }
+  });
+
+  registerBackgroundTask('continuity-cleanup', 15 * 60 * 1000, async () => {
+    const { ContinuitySession, ClipboardSession } = await import('../database/models/Personalization');
+    const now = new Date();
+    await ContinuitySession.updateMany({ expiresAt: { $lt: now }, status: 'active' }, { status: 'expired' });
+    await ClipboardSession.deleteMany({ expiresAt: { $lt: now } });
+  });
+
   registerBackgroundTask('economy-tick', 60 * 60 * 1000, async () => {
     const { tickEconomy } = await import('./economyEngineService');
     await tickEconomy('system');
