@@ -120,6 +120,11 @@ export function startBackgroundServiceManager(): void {
     await processPendingNotifications();
   });
 
+  registerBackgroundTask('discord-notification-batch', 15 * 1000, async () => {
+    const { flushExpiredDiscordBatches } = await import('./discord/discordGroupingService');
+    await flushExpiredDiscordBatches();
+  });
+
   registerBackgroundTask('telephony-cleanup', 60 * 1000, async () => {
     const { cleanupStaleCalls } = await import('./callEngineService');
     await cleanupStaleCalls();

@@ -39,7 +39,7 @@ describe('token encryption service', () => {
 });
 
 describe('notification provider registry', () => {
-  it('registers default socket and event_bus providers', async () => {
+  it('registers default socket, event_bus, and discord providers', async () => {
     const { clearNotificationProviders, listNotificationProviders } = await import('../notificationProviderRegistry');
     const { registerDefaultNotificationProviders } = await import('../notificationProviders/defaultProviders');
     clearNotificationProviders();
@@ -47,6 +47,7 @@ describe('notification provider registry', () => {
     const providers = listNotificationProviders();
     assert.ok(providers.some((p) => p.id === 'socket'));
     assert.ok(providers.some((p) => p.id === 'event_bus'));
+    assert.ok(providers.some((p) => p.id === 'discord'));
     clearNotificationProviders();
   });
 });

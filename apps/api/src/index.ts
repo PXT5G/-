@@ -55,6 +55,8 @@ import analyticsRoutes from './api/routes/analytics';
 import diagnosticsRoutes from './api/routes/diagnostics';
 import enterpriseRoutes from './api/routes/enterprise';
 import internalRoutes from './api/routes/internal';
+import discordInternalRoutes from './api/routes/discordInternal';
+import discordRoutes from './api/routes/discord';
 import { idempotencyMiddleware } from './api/middleware/idempotency';
 import { withPhonePresenceGuard } from './api/middleware/phoneRouteGuard';
 import { collectSystemHealth } from './services/healthService';
@@ -129,6 +131,8 @@ app.use('/api/analytics', ...withPhonePresenceGuard(analyticsRoutes));
 app.use('/api/diagnostics', ...withPhonePresenceGuard(diagnosticsRoutes));
 app.use('/api/enterprise', ...withPhonePresenceGuard(enterpriseRoutes));
 app.use('/api/internal', internalRoutes);
+app.use('/api/internal/discord', discordInternalRoutes);
+app.use('/api/discord', discordRoutes);
 
 app.use(errorHandler);
 

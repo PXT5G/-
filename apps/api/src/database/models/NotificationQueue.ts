@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 import { auditSchemaFields } from '../baseSchema';
 import type { NotificationPriority } from '@gulfos/shared';
+import type { DiscordNotificationCategory } from '../../constants/discordNotifications';
 
 export type NotificationDeliveryState = 'pending' | 'delivered' | 'failed' | 'dismissed';
 
@@ -19,6 +20,9 @@ export interface INotificationQueue extends Document {
   groupId?: string;
   actions?: { id: string; label: string; destructive?: boolean }[];
   deepLink?: string;
+  category?: DiscordNotificationCategory | string;
+  externalCharacterId?: string;
+  phoneId?: string;
   deliveryState: NotificationDeliveryState;
   read: boolean;
   dismissed: boolean;
@@ -47,6 +51,9 @@ const notificationQueueSchema = new Schema<INotificationQueue>(
     groupId: { type: String },
     actions: [{ id: String, label: String, destructive: Boolean }],
     deepLink: { type: String },
+    category: { type: String, index: true },
+    externalCharacterId: { type: String, index: true },
+    phoneId: { type: String, index: true },
     deliveryState: {
       type: String,
       enum: ['pending', 'delivered', 'failed', 'dismissed'],

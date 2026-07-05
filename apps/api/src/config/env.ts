@@ -21,6 +21,10 @@ const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((v) => v === 'true'),
+  DISCORD_NOTIFICATIONS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
 });
 
 const parsed = envSchema.safeParse(process.env);
