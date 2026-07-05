@@ -290,12 +290,95 @@ export class GulfOSPage {
     await this.pause(2500);
   }
 
+  /** Inject auth without page reload (preserves boot→home flow). */
+  async injectSession(session: DemoSession) {
+    await this.page.evaluate(
+      ({ token, user }) => {
+        const authPayload = {
+          state: {
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              displayName: user.displayName,
+              role: user.role,
+            },
+            tokens: { accessToken: token, refreshToken: token },
+            isAuthenticated: true,
+            isLoading: false,
+          },
+          version: 0,
+        };
+        localStorage.setItem('bananaos-auth', JSON.stringify(authPayload));
+        window.__GULFOS_E2E__?.applySession(token, user);
+      },
+      { token: session.token, user: session.user },
+    );
+  }
+
+  async cinemaPause(ms?: number) {
+    const base = process.env.DEMO_SLOW_MO ? Number(process.env.DEMO_SLOW_MO) : 120;
+    await this.pause(ms ?? Math.max(2500, base * 2));
+  }
+
+  async clickSafe(locator: Locator | ReturnType<Page['getByText']>, timeout = 4_000) {
+    await locator.click({ timeout }).catch(() => {});
+    await this.pause(800);
+  }
+
+  async navigateGovTabs(labels: string[], dwellMs = 2800) {
+    for (const label of labels) {
+      const tab = this.page.getByRole('button').filter({ hasText: new RegExp(`^${label}$`, 'i') });
+      if (await tab.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await tab.first().click({ timeout: 4_000 }).catch(() => {});
+        await this.pause(dwellMs);
+      }
+    }
+  }
+
+  async navigateGovSubScreens(screens: string[], dwellMs = 2400) {
+    for (const screen of screens) {
+      const btn = this.page.getByRole('button', { name: screen, exact: true });
+      if (await btn.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        await btn.click({ timeout: 4_000 }).catch(() => {});
+        await this.pause(dwellMs);
+        const back = this.page.getByText('‹ MDT');
+        if (await back.isVisible({ timeout: 1_500 }).catch(() => false)) {
+          await back.click({ timeout: 3_000 }).catch(() => {});
+          await this.pause(600);
+        }
+      }
+    }
+  }
+
+  async scrollAppContent(steps = 3) {
+    const box = await this.frame.boundingBox();
+    if (!box) return;
+    const cx = box.x + box.width / 2;
+    for (let i = 0; i < steps; i++) {
+      await this.page.mouse.move(cx, box.y + box.height * 0.7);
+      await this.page.mouse.wheel(0, 200);
+      await this.pause(600);
+    }
+  }
+
   async browseApp(bundleId: string, name: string, dwellMs = 3500) {
     await this.ensureHome();
     await this.closeAllPanels();
     await this.launchAppByBundleId(bundleId, name);
+    await this.scrollAppContent(2);
     await this.pause(dwellMs);
     await this.closeApp();
+  }
+
+  async showcaseApp(bundleId: string, name: string, dwellMs = 4500) {
+    await this.ensureHome();
+    await this.closeAllPanels();
+    await this.launchAppByBundleId(bundleId, name);
+    await this.scrollAppContent(3);
+    await this.cinemaPause(dwellMs);
+    await this.closeApp();
+    await this.cinemaPause(600);
   }
 
   async isAppOpen(title: string) {

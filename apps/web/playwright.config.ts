@@ -5,7 +5,7 @@ const outputDir = path.join(__dirname, 'demo-output');
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: /gulfos-(full-demo|apps-audit)\.spec\.ts/,
+  testMatch: /gulfos-(full-demo|apps-audit|preflight)\.spec\.ts/,
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,

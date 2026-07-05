@@ -6,7 +6,7 @@ const outputDir = path.join(__dirname, 'demo-output');
 /** 4K cinematic showcase — native browser frame rate (no interpolation). */
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'gulfos-cinematic-showcase.spec.ts',
+  testMatch: 'gulfos-official-showcase.spec.ts',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: 0,

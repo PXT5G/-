@@ -8,6 +8,7 @@ import { useSearchStore } from '@/stores/searchStore';
 import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
 import { usePhoneOsStore } from '@/stores/phoneOsStore';
 import { useWindowManagerStore } from '@/stores/windowManagerStore';
+import { useAuthStore } from '@/stores/authStore';
 import { getApp } from '@/services/appRouter';
 
 export interface GulfOSE2EBridge {
@@ -24,6 +25,7 @@ export interface GulfOSE2EBridge {
   closeAllApps: () => void;
   shutdown: () => void;
   swipeHome: () => void;
+  applySession: (token: string, user: { id: string; username: string; email: string; displayName: string; role: string }) => void;
 }
 
 declare global {
@@ -86,6 +88,10 @@ export function initE2EBridge(): void {
     swipeHome: () => {
       useLockStore.getState().unlock();
       useOSStore.getState().setPhase('home');
+    },
+    applySession: (token, user) => {
+      const tokens = { accessToken: token, refreshToken: token };
+      useAuthStore.getState().login(user, tokens);
     },
   };
 }

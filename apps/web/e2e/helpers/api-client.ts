@@ -4,7 +4,15 @@ import { DEMO_CREDENTIALS, GULFOS_APPS } from './app-catalog';
 const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:4000';
 
 const GOV_APPS = ['com.gulfos.police', 'com.gulfos.justice', 'com.gulfos.ems'] as const;
-const GOV_PERMS = ['location', 'camera', 'notifications', 'network', 'storage'] as const;
+const ALL_PERMS = ['location', 'camera', 'notifications', 'network', 'storage'] as const;
+
+const INIT_SERVICES = [
+  'police', 'justice', 'ems', 'poetry', 'browser', 'chat', 'business',
+  'real-estate', 'vehicles', 'aviation', 'marine', 'exchange', 'sim',
+  'phone', 'messages', 'contacts', 'mail', 'bank', 'identity',
+  'assistant', 'automation', 'shortcuts', 'focus', 'intelligence',
+  'personalization', 'security', 'communication', 'phone-os', 'premium-experience',
+] as const;
 
 export interface DemoSession {
   token: string;
@@ -48,9 +56,10 @@ export async function prepareShowcaseEnvironment(request: APIRequestContext): Pr
 
   await installGovernmentApps(request, token);
   await installAllCatalogApps(request, token);
+  await grantAllAppPermissions(request, token);
 
-  for (const bundleId of GOV_APPS) {
-    await request.post(`${API_BASE}/api/${bundleId.split('.').pop()}/initialize`, {
+  for (const service of INIT_SERVICES) {
+    await request.post(`${API_BASE}/api/${service}/initialize`, {
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
   }
@@ -73,8 +82,22 @@ async function installGovernmentApps(request: APIRequestContext, token: string) 
       headers: { Authorization: `Bearer ${token}` },
       data: {},
     }).catch(() => {});
+  }
+}
 
-    for (const permission of GOV_PERMS) {
+async function grantAllAppPermissions(request: APIRequestContext, token: string) {
+  const bundleIds = new Set<string>([...GOV_APPS, ...GULFOS_APPS.map((a) => a.bundleId)]);
+
+  const catalog = await request.get(`${API_BASE}/api/apps/catalog`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (catalog.ok()) {
+    const apps = (await catalog.json())?.data as { bundleId: string }[] | undefined;
+    apps?.forEach((a) => bundleIds.add(a.bundleId));
+  }
+
+  for (const bundleId of bundleIds) {
+    for (const permission of ALL_PERMS) {
       await request.post(`${API_BASE}/api/system/permissions/grant`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { appId: bundleId, permission },
