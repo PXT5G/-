@@ -1,6 +1,7 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
+import { initE2EBridge } from '@/utils/e2eBridge';
 import { useThemeEngine } from '@/hooks/useThemeEngine';
 import { useRealtime } from '@/hooks/useRealtime';
 import { useOSBoot } from '@/hooks/useOSBoot';
@@ -51,6 +52,10 @@ function OSInitializer() {
 }
 
 export function OSProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    initE2EBridge();
+  }, []);
+
   return (
     <>
       <OSInitializer />

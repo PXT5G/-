@@ -55,6 +55,7 @@ export function Dock() {
 
   return (
     <motion.div
+      data-testid="gulfos-dock"
       className="absolute bottom-6 left-4 right-4 z-30"
       {...dockAnimation}
     >

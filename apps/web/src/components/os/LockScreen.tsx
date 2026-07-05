@@ -80,6 +80,7 @@ export function LockScreen() {
 
   return (
     <motion.div
+      data-testid="gulfos-lock-screen"
       className="absolute inset-0 z-40 flex flex-col"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "demo": "playwright test e2e/gulfos-full-demo.spec.ts --config=playwright.config.ts",
+    "demo:audit": "playwright test e2e/gulfos-apps-audit.spec.ts --config=playwright.config.ts",
+    "demo:all": "playwright test e2e/gulfos-full-demo.spec.ts e2e/gulfos-apps-audit.spec.ts --config=playwright.config.ts",
+    "demo:ui": "playwright test e2e/gulfos-full-demo.spec.ts --config=playwright.config.ts --ui"
   },
   "dependencies": {
     "@gulfos/shared": "*",
@@ -26,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.52.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
