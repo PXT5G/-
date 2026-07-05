@@ -6,6 +6,7 @@ import {
   acknowledgeDiscordNotification,
 } from '../../services/discord/discordNotificationProvider';
 import type { DiscordNotificationCategory } from '../../constants/discordNotifications';
+import * as discordSession from '../../services/discord/discordVerifiedSessionService';
 
 export async function postLink(req: Request, res: Response, next: NextFunction) {
   try {
@@ -105,6 +106,125 @@ export async function patchPreferences(req: AuthRequest, res: Response, next: Ne
     };
     const prefs = await discordPrefs.updatePreferences(req.user.userId, characterId, body);
     res.json({ success: true, data: prefs });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postSessionJoin(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = req.body as {
+      gulfosUserId: string;
+      discordUserId: string;
+      externalUserId: string;
+      externalCharacterId: string;
+      gameServerId?: string;
+      phoneId?: string;
+      inventorySessionId?: string;
+      characterSessionId?: string;
+      dmChannelId?: string;
+      attestation?: {
+        hasPhoneItem: boolean;
+        phoneInventoryItemId?: string;
+        phoneId?: string;
+        deviceId?: string;
+      };
+    };
+    const required = ['gulfosUserId', 'discordUserId', 'externalUserId', 'externalCharacterId'] as const;
+    for (const key of required) {
+      if (!body[key]) {
+        res.status(400).json({ success: false, error: `${key} is required` });
+        return;
+      }
+    }
+    const result = await discordSession.handlePlayerJoin(body);
+    res.status(201).json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postSessionLeave(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { gulfosUserId, reason } = req.body as { gulfosUserId: string; reason?: string };
+    if (!gulfosUserId) {
+      res.status(400).json({ success: false, error: 'gulfosUserId is required' });
+      return;
+    }
+    const result = await discordSession.handlePlayerDisconnect({ gulfosUserId, reason });
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postSessionHeartbeat(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { gulfosUserId, verifiedSessionId } = req.body as {
+      gulfosUserId: string;
+      verifiedSessionId?: string;
+    };
+    if (!gulfosUserId) {
+      res.status(400).json({ success: false, error: 'gulfosUserId is required' });
+      return;
+    }
+    const session = await discordSession.recordSessionHeartbeat(gulfosUserId, verifiedSessionId);
+    if (!session) {
+      res.status(404).json({ success: false, error: 'VERIFIED_SESSION_NOT_FOUND' });
+      return;
+    }
+    res.json({ success: true, data: session });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postCharacterSwitch(req: Request, res: Response, next: NextFunction) {
+  try {
+    const body = req.body as {
+      gulfosUserId: string;
+      discordUserId: string;
+      externalUserId: string;
+      previousCharacterId?: string;
+      newCharacterId: string;
+      phoneId?: string;
+      inventorySessionId?: string;
+      gameServerId?: string;
+      attestation?: {
+        hasPhoneItem: boolean;
+        phoneInventoryItemId?: string;
+        phoneId?: string;
+        deviceId?: string;
+      };
+    };
+    if (!body.gulfosUserId || !body.discordUserId || !body.externalUserId || !body.newCharacterId) {
+      res.status(400).json({ success: false, error: 'gulfosUserId, discordUserId, externalUserId, and newCharacterId are required' });
+      return;
+    }
+    const result = await discordSession.handleCharacterSwitchForDiscord(body);
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function postPhoneRemoved(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { gulfosUserId, externalCharacterId, inventorySessionId } = req.body as {
+      gulfosUserId: string;
+      externalCharacterId: string;
+      inventorySessionId?: string;
+    };
+    if (!gulfosUserId || !externalCharacterId) {
+      res.status(400).json({ success: false, error: 'gulfosUserId and externalCharacterId are required' });
+      return;
+    }
+    const result = await discordSession.handlePhoneRemovedFromInventory({
+      gulfosUserId,
+      externalCharacterId,
+      inventorySessionId,
+    });
+    res.json({ success: true, data: result });
   } catch (err) {
     next(err);
   }

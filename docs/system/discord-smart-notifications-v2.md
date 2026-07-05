@@ -18,6 +18,8 @@ notificationBrokerService.deliverNotification()
 
 ## Delivery Rules
 
+See [Discord Notification Delivery Rules V1](./discord-delivery-rules-v1.md) — notifications only while actively playing; never queued for offline players.
+
 Discord notification is sent only when **all** conditions pass:
 
 1. Discord account linked (`DiscordLink`)

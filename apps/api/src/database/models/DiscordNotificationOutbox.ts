@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 import type { DiscordNotificationCategory } from '../../constants/discordNotifications';
 
-export type DiscordOutboxStatus = 'pending' | 'grouped' | 'delivered' | 'failed' | 'skipped';
+export type DiscordOutboxStatus = 'pending' | 'grouped' | 'delivered' | 'failed' | 'skipped' | 'cancelled';
 
 export interface IDiscordNotificationOutbox extends Document {
   outboxId: string;

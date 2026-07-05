@@ -8,6 +8,11 @@ router.use(authenticateService);
 
 router.post('/link', discordController.postLink);
 router.post('/unlink', discordController.postUnlink);
+router.post('/session/join', discordController.postSessionJoin);
+router.post('/session/leave', discordController.postSessionLeave);
+router.post('/session/heartbeat', discordController.postSessionHeartbeat);
+router.post('/session/character-switch', discordController.postCharacterSwitch);
+router.post('/inventory/phone-removed', discordController.postPhoneRemoved);
 router.get('/notifications/pending', discordController.getPending);
 router.post('/notifications/:outboxId/ack', discordController.postAck);
 

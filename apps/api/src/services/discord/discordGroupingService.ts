@@ -92,6 +92,26 @@ async function flushBatch(batch: InstanceType<typeof DiscordNotificationBatch>):
     return;
   }
 
+  const { evaluateDiscordDelivery } = await import('./discordDeliveryService');
+  const probe = batch.items[0];
+  const decision = await evaluateDiscordDelivery({
+    userId: batch.gulfosUserId.toString(),
+    appId: probe.appId,
+    notificationId: probe.notificationId,
+    queueId: probe.queueId,
+    title: probe.title,
+    body: probe.title,
+    priority: probe.priority,
+    payload: { category: probe.category },
+    externalCharacterId: batch.externalCharacterId,
+  });
+
+  if (!decision.deliver) {
+    batch.flushed = true;
+    await batch.save();
+    return;
+  }
+
   const link = await import('../../database/models/DiscordLink').then((m) =>
     m.DiscordLink.findOne({ discordUserId: batch.discordUserId })
   );

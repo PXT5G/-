@@ -12,6 +12,7 @@ export const discordNotificationProvider: NotificationProvider = {
   async deliver(context: NotificationDeliveryContext): Promise<void> {
     const decision = await evaluateDiscordDelivery(context);
     if (!decision.deliver) {
+      // V1: never queue for later — GULFOS in-app delivery already handled by socket provider
       return;
     }
 
@@ -26,11 +27,22 @@ export const discordNotificationProvider: NotificationProvider = {
 };
 
 export async function listPendingDiscordNotifications(limit = 50) {
+  const { getActiveVerifiedSession } = await import('./discordVerifiedSessionService');
   const items = await DiscordNotificationOutbox.find({ status: 'pending' })
     .sort({ createdAt: 1 })
-    .limit(limit);
+    .limit(limit * 2);
 
-  return items.map((doc) => ({
+  const deliverable = [];
+  for (const doc of items) {
+    const session = await getActiveVerifiedSession(doc.gulfosUserId.toString());
+    if (!session) continue;
+    if (session.externalCharacterId !== doc.externalCharacterId) continue;
+    if (!session.notificationsEnabled || !session.gameConnected) continue;
+    deliverable.push(doc);
+    if (deliverable.length >= limit) break;
+  }
+
+  return deliverable.map((doc) => ({
     outboxId: doc.outboxId,
     discordUserId: doc.discordUserId,
     dmChannelId: doc.dmChannelId,
