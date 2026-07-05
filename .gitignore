@@ -1,12 +1,47 @@
-# Python
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+.next/
+out/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+
+# TypeScript / Next.js
+*.tsbuildinfo
+next-env.d.ts
+
+# Python (GULFOS tooling + analysis toolkit)
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
-
-# Virtualenv
 .venv/
 venv/
 
