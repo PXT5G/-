@@ -200,6 +200,16 @@ export function startBackgroundServiceManager(): void {
     await ClipboardSession.deleteMany({ expiresAt: { $lt: now } });
   });
 
+  registerBackgroundTask('idempotency-cleanup', 60 * 60 * 1000, async () => {
+    const { purgeExpiredIdempotencyRecords } = await import('./idempotencyService');
+    await purgeExpiredIdempotencyRecords();
+  });
+
+  registerBackgroundTask('api-heartbeat', 60 * 1000, async () => {
+    const { recordServiceHeartbeat } = await import('./serviceRegistryService');
+    recordServiceHeartbeat({ serviceId: 'api', status: 'healthy', version: '1.0.0' });
+  });
+
   registerBackgroundTask('economy-tick', 60 * 60 * 1000, async () => {
     const { tickEconomy } = await import('./economyEngineService');
     await tickEconomy('system');

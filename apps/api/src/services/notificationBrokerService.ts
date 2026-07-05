@@ -5,7 +5,7 @@ import { NotificationQueue } from '../database/models/NotificationQueue';
 import { emitToUser } from './socketService';
 import { logAudit } from './auditService';
 import { checkPermission } from './permissionBrokerService';
-import { publishEvent } from './eventBusService';
+import { dispatchToNotificationProviders } from './notificationProviderRegistry';
 
 export interface BrokerNotificationInput {
   userId: string;
@@ -106,13 +106,15 @@ export async function deliverNotification(queueId: string) {
     deepLink: queued.deepLink,
   };
 
-  emitToUser(queued.userId.toString(), 'notification:new', payload);
-  await publishEvent({
+  await dispatchToNotificationProviders({
     userId: queued.userId.toString(),
-    namespace: 'system.notifications',
-    event: 'notification:delivered',
+    appId: queued.appId,
+    notificationId: notification._id.toString(),
+    queueId: queued._id.toString(),
+    title: queued.title,
+    body: queued.body,
+    priority: queued.priority,
     payload,
-    source: 'notificationBroker',
   });
 
   return formatted;

@@ -54,6 +54,9 @@ import developerRoutes from './api/routes/developer';
 import analyticsRoutes from './api/routes/analytics';
 import diagnosticsRoutes from './api/routes/diagnostics';
 import enterpriseRoutes from './api/routes/enterprise';
+import internalRoutes from './api/routes/internal';
+import { idempotencyMiddleware } from './api/middleware/idempotency';
+import { collectSystemHealth } from './services/healthService';
 
 const app = express();
 const httpServer = createServer(app);
@@ -61,17 +64,20 @@ const httpServer = createServer(app);
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
+app.use(idempotencyMiddleware);
 app.use(globalRateLimiter);
 
-app.get('/health', (_req, res) => {
-  res.json({
-    success: true,
-    data: {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    },
-  });
+app.get('/health', async (_req, res) => {
+  try {
+    const report = await collectSystemHealth();
+    const statusCode = report.status === 'down' ? 503 : 200;
+    res.status(statusCode).json({ success: true, data: report });
+  } catch {
+    res.status(503).json({
+      success: false,
+      data: { status: 'down', timestamp: new Date().toISOString() },
+    });
+  }
 });
 
 app.use('/api/auth', authRoutes);
@@ -121,6 +127,7 @@ app.use('/api/developer', developerRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/diagnostics', diagnosticsRoutes);
 app.use('/api/enterprise', enterpriseRoutes);
+app.use('/api/internal', internalRoutes);
 
 app.use(errorHandler);
 
@@ -157,6 +164,12 @@ async function bootstrap(): Promise<void> {
     });
 
     await recoverCrashedJobs();
+
+    const { registerDefaultNotificationProviders } = await import('./services/notificationProviders/defaultProviders');
+    registerDefaultNotificationProviders();
+
+    const { recordServiceHeartbeat } = await import('./services/serviceRegistryService');
+    recordServiceHeartbeat({ serviceId: 'api', status: 'healthy', version: '1.0.0' });
 
     const { seedMapDatabase } = await import('./services/mapDatabaseService');
     const { seedCellTowers } = await import('./services/cellTowerService');
