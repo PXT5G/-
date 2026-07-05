@@ -137,18 +137,23 @@ export interface IDashboard extends Document {
   updatedAt: Date;
 }
 
+const dashboardWidgetSchema = new Schema(
+  {
+    widgetId: { type: String, required: true },
+    type: { type: String, required: true },
+    config: { type: Schema.Types.Mixed, default: {} },
+    position: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
 const dashboardSchema = new Schema<IDashboard>(
   {
     dashboardId: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     type: { type: String, required: true, index: true },
     name: { type: String, required: true },
-    widgets: [{
-      widgetId: String,
-      type: String,
-      config: Schema.Types.Mixed,
-      position: Number,
-    }],
+    widgets: { type: [dashboardWidgetSchema], default: [] },
     isDefault: { type: Boolean, default: false },
     lastRefreshedAt: Date,
     snapshot: Schema.Types.Mixed,

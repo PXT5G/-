@@ -35,16 +35,22 @@ export function useGestures(handlers: GestureHandlers) {
     [handlers, haptic]
   );
 
-  const onTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
+  const onTouchMove = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const processGestureEnd = useCallback(
+    (clientX: number, clientY: number) => {
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
 
-      const touch = e.changedTouches[0];
-      const deltaX = touch.clientX - startPos.current.x;
-      const deltaY = touch.clientY - startPos.current.y;
+      const deltaX = clientX - startPos.current.x;
+      const deltaY = clientY - startPos.current.y;
 
       if (Math.abs(deltaX) < SWIPE_THRESHOLD && Math.abs(deltaY) < SWIPE_THRESHOLD) {
         return;
@@ -63,12 +69,33 @@ export function useGestures(handlers: GestureHandlers) {
     [handlers, haptic]
   );
 
-  const onTouchMove = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      startPos.current = { x: e.clientX, y: e.clientY };
+      if (handlers.onLongPress) {
+        longPressTimer.current = setTimeout(() => {
+          haptic('medium');
+          handlers.onLongPress?.();
+        }, LONG_PRESS_DURATION);
+      }
+    },
+    [handlers, haptic]
+  );
 
-  return { onTouchStart, onTouchEnd, onTouchMove };
+  const onMouseUp = useCallback(
+    (e: React.MouseEvent) => {
+      processGestureEnd(e.clientX, e.clientY);
+    },
+    [processGestureEnd]
+  );
+
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const touch = e.changedTouches[0];
+      processGestureEnd(touch.clientX, touch.clientY);
+    },
+    [processGestureEnd]
+  );
+
+  return { onTouchStart, onTouchEnd, onTouchMove, onMouseDown, onMouseUp };
 }

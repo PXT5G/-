@@ -23,45 +23,68 @@ import { logAudit } from './auditService';
 import { emitToUser } from './socketService';
 import { publishEvent } from './eventBusService';
 
-async function ensurePowerState(userId: string) {
-  let state = await PowerState.findOne({ userId: new Types.ObjectId(userId), deletedAt: null });
-  if (!state) {
-    state = await PowerState.create({
-      userId: new Types.ObjectId(userId),
-      isPoweredOn: true,
-      bootPhase: 'home',
-      lastBootAt: new Date(),
-    });
+function isDuplicateKeyError(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && 'code' in err && (err as { code: number }).code === 11000;
+}
+
+async function ensureUniqueState<T>(
+  find: () => Promise<T | null>,
+  create: () => Promise<T>
+): Promise<T> {
+  const existing = await find();
+  if (existing) return existing;
+  try {
+    return await create();
+  } catch (err) {
+    if (!isDuplicateKeyError(err)) throw err;
+    const raced = await find();
+    if (!raced) throw err;
+    return raced;
   }
-  return state;
+}
+
+async function ensurePowerState(userId: string) {
+  const oid = new Types.ObjectId(userId);
+  return ensureUniqueState(
+    () => PowerState.findOne({ userId: oid, deletedAt: null }),
+    () =>
+      PowerState.create({
+        userId: oid,
+        isPoweredOn: true,
+        bootPhase: 'home',
+        lastBootAt: new Date(),
+      })
+  );
 }
 
 async function ensureBatteryState(userId: string) {
-  let state = await BatteryState.findOne({ userId: new Types.ObjectId(userId), deletedAt: null });
-  if (!state) {
-    const power = await DevicePowerState.findOne({ userId });
-    const profile = await DeviceProfile.findOne({ userId });
-    state = await BatteryState.create({
-      userId: new Types.ObjectId(userId),
-      level: profile?.batteryLevelPercent ?? 100,
-      health: profile?.batteryHealthPercent ?? 100,
-      isCharging: power?.isCharging ?? false,
-      chargingType: power?.chargingType ?? 'none',
-      fastChargingEnabled: power?.fastChargingEnabled ?? true,
-      wirelessChargingEnabled: power?.wirelessChargingEnabled ?? true,
-      chargingCycles: power?.chargingCycles ?? 0,
-      temperatureCelsius: profile?.temperatureCelsius ?? 32,
-    });
-  }
-  return state;
+  const oid = new Types.ObjectId(userId);
+  return ensureUniqueState(
+    () => BatteryState.findOne({ userId: oid, deletedAt: null }),
+    async () => {
+      const power = await DevicePowerState.findOne({ userId });
+      const profile = await DeviceProfile.findOne({ userId });
+      return BatteryState.create({
+        userId: oid,
+        level: profile?.batteryLevelPercent ?? 100,
+        health: profile?.batteryHealthPercent ?? 100,
+        isCharging: power?.isCharging ?? false,
+        chargingType: power?.chargingType ?? 'none',
+        fastChargingEnabled: power?.fastChargingEnabled ?? true,
+        wirelessChargingEnabled: power?.wirelessChargingEnabled ?? true,
+        chargingCycles: power?.chargingCycles ?? 0,
+        temperatureCelsius: profile?.temperatureCelsius ?? 32,
+      });
+    }
+  );
 }
 
 async function ensurePerformanceState(userId: string) {
-  let state = await PerformanceState.findOne({ userId: new Types.ObjectId(userId), deletedAt: null });
-  if (!state) {
-    state = await PerformanceState.create({ userId: new Types.ObjectId(userId) });
-  }
-  return state;
+  const oid = new Types.ObjectId(userId);
+  return ensureUniqueState(
+    () => PerformanceState.findOne({ userId: oid, deletedAt: null }),
+    () => PerformanceState.create({ userId: oid })
+  );
 }
 
 function formatBattery(state: InstanceType<typeof BatteryState>) {
@@ -350,11 +373,10 @@ export async function getDeviceDiagnostics(userId: string) {
 export async function initializePhoneOs(userId: string, actorId: string) {
   await Promise.all([
     ensurePowerState(userId),
-    ensureBatteryState(userId),
     ensurePerformanceState(userId),
     initializePhoneOsConfigs(userId),
-    syncBatteryState(userId),
   ]);
+  await syncBatteryState(userId);
 
   await logAudit({
     userId,

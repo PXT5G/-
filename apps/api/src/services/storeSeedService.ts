@@ -1,3 +1,5 @@
+import { createHash } from 'crypto';
+import { Types } from 'mongoose';
 import { App } from '../database/models/App';
 import { Developer } from '../database/models/Developer';
 import { StoreListing } from '../database/models/StoreListing';
@@ -628,12 +630,15 @@ export async function seedGulfStore(): Promise<{ apps: number; developers: numbe
     ];
 
     for (const r of sampleReviews) {
+      const reviewUserId = new Types.ObjectId(
+        createHash('md5').update(`review:${r.username}`).digest('hex').slice(0, 24)
+      );
       await StoreReview.findOneAndUpdate(
-        { bundleId: 'com.gulfos.bank', username: r.username },
+        { bundleId: 'com.gulfos.bank', userId: reviewUserId },
         {
           listingId: bankListing._id,
           bundleId: 'com.gulfos.bank',
-          userId: bankListing._id,
+          userId: reviewUserId,
           ...r,
         },
         { upsert: true }

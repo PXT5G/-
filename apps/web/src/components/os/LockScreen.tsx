@@ -40,7 +40,8 @@ const CLOCK_COLOR_CLASSES: Record<string, string> = {
 export function LockScreen() {
   const [time, setTime] = useState(new Date());
   const { unlockMethod, unlock } = useLockStore();
-  const notifications = useNotificationStore((s) => s.notifications.slice(0, 3));
+  const allNotifications = useNotificationStore((s) => s.notifications);
+  const notifications = allNotifications.slice(0, 3);
   const profile = usePremiumExperienceStore((s) => s.profile);
   const lockScreen = usePhoneOsStore((s) => s.lockScreen);
   const battery = usePhoneOsStore((s) => s.battery);
