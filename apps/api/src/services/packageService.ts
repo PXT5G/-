@@ -60,6 +60,7 @@ const RUNTIME_APPS = new Set([
   'com.gulfos.diagnostics',
   'com.gulfos.analytics',
   'com.gulfos.enterprise',
+  'com.gulfos.updates',
 ]);
 
 export interface PackageManifest {

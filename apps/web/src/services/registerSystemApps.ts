@@ -92,6 +92,8 @@ import { EnterpriseApp } from '@/apps/enterprise';
 import { enterpriseManifest } from '@/apps/enterprise/manifest';
 import { PerformanceApp } from '@/apps/performance';
 import { performanceManifest } from '@/apps/performance/manifest';
+import { UpdatesApp } from '@/apps/updates';
+import { updatesManifest } from '@/apps/updates/manifest';
 
 registerApp(
   {
@@ -163,3 +165,4 @@ registerApp(analyticsManifest, AnalyticsApp);
 registerApp(diagnosticsManifest, DiagnosticsApp);
 registerApp(enterpriseManifest, EnterpriseApp);
 registerApp(performanceManifest, PerformanceApp);
+registerApp(updatesManifest, UpdatesApp);
