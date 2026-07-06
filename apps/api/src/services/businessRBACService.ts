@@ -73,6 +73,11 @@ export async function checkBusinessPermission(
   const hasApp = await checkPermission(userId, BUSINESS_APP_BUNDLE, 'location');
   if (!hasApp) return false;
 
+  if (!companyId && permission === 'company.view') {
+    const owns = await Company.countDocuments({ ownerUserId: userId, deletedAt: null });
+    if (owns > 0) return true;
+  }
+
   if (companyId) {
     const company = await Company.findOne({ companyId, deletedAt: null });
     if (company?.ownerUserId.toString() === userId) return true;

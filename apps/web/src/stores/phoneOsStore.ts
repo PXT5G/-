@@ -19,6 +19,8 @@ interface PhoneOsState {
   lockScreen: LockScreenConfigSnapshot | null;
   statusBar: StatusBarConfigSnapshot | null;
   isMultitaskingOpen: boolean;
+  pipWindow: { title: string; icon: string } | null;
+  homeEditMode: boolean;
   setInitialized: (v: boolean) => void;
   setPower: (power: PhonePowerStateSnapshot) => void;
   setBattery: (battery: BatteryStateSnapshot) => void;
@@ -30,6 +32,8 @@ interface PhoneOsState {
   setLockScreen: (config: LockScreenConfigSnapshot) => void;
   setStatusBar: (config: StatusBarConfigSnapshot) => void;
   setMultitaskingOpen: (open: boolean) => void;
+  setPipWindow: (pip: { title: string; icon: string } | null) => void;
+  setHomeEditMode: (edit: boolean) => void;
   hydrate: (data: {
     power?: PhonePowerStateSnapshot;
     battery?: BatteryStateSnapshot;
@@ -52,6 +56,8 @@ export const usePhoneOsStore = create<PhoneOsState>((set) => ({
   lockScreen: null,
   statusBar: null,
   isMultitaskingOpen: false,
+  pipWindow: null,
+  homeEditMode: false,
 
   setInitialized: (initialized) => set({ initialized }),
   setPower: (power) => set({ power }),
@@ -72,6 +78,8 @@ export const usePhoneOsStore = create<PhoneOsState>((set) => ({
   setLockScreen: (lockScreen) => set({ lockScreen }),
   setStatusBar: (statusBar) => set({ statusBar }),
   setMultitaskingOpen: (isMultitaskingOpen) => set({ isMultitaskingOpen }),
+  setPipWindow: (pipWindow) => set({ pipWindow }),
+  setHomeEditMode: (homeEditMode) => set({ homeEditMode }),
 
   hydrate: (data) =>
     set((s) => ({

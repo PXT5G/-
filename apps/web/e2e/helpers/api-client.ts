@@ -198,5 +198,14 @@ export async function stageStoreDemoApps(
   token: string,
   installTarget = 'com.gulfos.poetry',
 ): Promise<void> {
-  await uninstallApp(request, token, installTarget).catch(() => {});
+  await uninstallApp(request, token, installTarget);
+  const check = await request.get(`${API_BASE}/api/store/apps/${installTarget}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (check.ok()) {
+    const installed = (await check.json())?.data?.installed;
+    if (installed) {
+      throw new Error(`Failed to stage store demo: ${installTarget} still installed`);
+    }
+  }
 }

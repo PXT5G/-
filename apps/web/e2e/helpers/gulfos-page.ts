@@ -419,55 +419,40 @@ export class GulfOSPage {
     }
   }
 
-  async demonstrateStoreInstall(appName: string) {
-    await this.page.getByRole('button', { name: 'Apps', exact: true }).click({ timeout: 5_000 }).catch(() => {});
-    await this.cinemaPause(2000);
+  async demonstrateStoreInstall(appName: string): Promise<boolean> {
+    await this.page.getByRole('button', { name: /Search/i }).click({ timeout: 8_000 });
+    await this.pause(1000);
+    const searchInput = this.page.getByPlaceholder('Apps, games, and more');
+    if (!(await searchInput.isVisible({ timeout: 5_000 }).catch(() => false))) return false;
+    await searchInput.fill(appName.replace('GULF ', ''));
+    await this.pause(2500);
     const card = this.page.getByText(appName, { exact: false }).first();
-    if (await card.isVisible({ timeout: 4_000 }).catch(() => false)) {
-      await this.smoothClick(card);
-      await this.cinemaPause(2000);
-      const installBtn = this.page.getByRole('button', { name: /^install$/i });
-      if (await installBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await this.smoothClick(installBtn);
-        await this.cinemaPause(1500);
-        const approve = this.page.getByRole('button', { name: /^install$/i }).last();
-        if (await approve.isVisible({ timeout: 4_000 }).catch(() => false)) {
-          await this.smoothClick(approve);
-        }
-        await this.cinemaPause(5000);
-        const done = this.page.getByRole('button', { name: /done|open|continue/i });
-        if (await done.isVisible({ timeout: 8_000 }).catch(() => false)) {
-          await this.smoothClick(done);
-        }
-      }
-      await this.page.getByText('‹').first().click({ timeout: 3_000 }).catch(() => {});
-      await this.cinemaPause(800);
+    if (!(await card.isVisible({ timeout: 6_000 }).catch(() => false))) return false;
+    await this.smoothClick(card);
+    await this.pause(1500);
+    const installBtn = this.page.getByRole('button', { name: /^install$/i });
+    if (!(await installBtn.isVisible({ timeout: 5_000 }).catch(() => false))) return false;
+    await this.smoothClick(installBtn);
+    await this.pause(1000);
+    const approve = this.page.getByRole('button', { name: /^install$/i }).last();
+    if (await approve.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await this.smoothClick(approve);
+      await this.pause(500);
+      return true;
     }
+    return false;
   }
 
   async demonstrateStoreUpdate() {
-    await this.page.getByRole('button', { name: 'Updates', exact: true }).click({ timeout: 5_000 }).catch(() => {});
-    await this.cinemaPause(2500);
-    const updateBtn = this.page.getByRole('button', { name: 'Update', exact: true }).first();
-    if (await updateBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await this.smoothClick(updateBtn);
-      await this.cinemaPause(1500);
-      const approve = this.page.getByRole('button', { name: /^update$/i }).last();
-      if (await approve.isVisible({ timeout: 4_000 }).catch(() => false)) {
-        await this.smoothClick(approve);
-      }
-      await this.cinemaPause(5000);
-      const done = this.page.getByRole('button', { name: /done|open|continue/i });
-      if (await done.isVisible({ timeout: 8_000 }).catch(() => false)) {
-        await this.smoothClick(done);
-      }
-    }
-    await this.cinemaPause(2000);
+    await this.page.evaluate(() => window.__GULFOS_E2E__?.dismissStoreInstall());
+    await this.page.getByRole('button', { name: /Updates/i }).click({ timeout: 8_000 });
+    await this.pause(2000);
   }
 
   async demonstrateStoreRemove(appName: string) {
-    await this.page.getByRole('button', { name: 'Library', exact: true }).click({ timeout: 5_000 }).catch(() => {});
-    await this.cinemaPause(2500);
+    await this.page.evaluate(() => window.__GULFOS_E2E__?.dismissStoreInstall());
+    await this.page.getByRole('button', { name: /Library/i }).click({ timeout: 8_000 });
+    await this.pause(2000);
     const removeBtn = this.page
       .locator('div')
       .filter({ hasText: appName })
@@ -475,12 +460,12 @@ export class GulfOSPage {
       .first();
     if (await removeBtn.isVisible({ timeout: 4_000 }).catch(() => false)) {
       await this.smoothClick(removeBtn);
-      await this.cinemaPause(1500);
+      await this.pause(1500);
       const confirm = this.page.getByRole('button', { name: /remove|confirm|delete/i }).last();
       if (await confirm.isVisible({ timeout: 4_000 }).catch(() => false)) {
         await this.smoothClick(confirm);
       }
-      await this.cinemaPause(3000);
+      await this.pause(2000);
     }
   }
 

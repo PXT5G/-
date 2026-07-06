@@ -8,7 +8,9 @@ import { useSearchStore } from '@/stores/searchStore';
 import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
 import { usePhoneOsStore } from '@/stores/phoneOsStore';
 import { useWindowManagerStore } from '@/stores/windowManagerStore';
+import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useGulfStoreStore } from '@/apps/banana-app/store/gulfStoreStore';
 import { getApp } from '@/services/appRouter';
 import type { User } from '@/types';
 
@@ -28,6 +30,10 @@ export interface GulfOSE2EBridge {
   swipeHome: () => void;
   lock: () => void;
   applySession: (token: string, user: User) => void;
+  openPictureInPicture: (bundleId?: string, title?: string) => void;
+  closePictureInPicture: () => void;
+  swapHomeIcons: () => void;
+  dismissStoreInstall: () => void;
 }
 
 declare global {
@@ -105,6 +111,32 @@ export function initE2EBridge(): void {
     applySession: (token, user) => {
       const tokens = { accessToken: token, refreshToken: token, expiresIn: 3600 };
       useAuthStore.getState().login(user, tokens);
+    },
+    openPictureInPicture: (bundleId = 'com.gulfos.phone', title = 'Phone') => {
+      const manifest = getApp(bundleId);
+      usePhoneOsStore.getState().setPipWindow({
+        title: title ?? manifest?.name ?? 'App',
+        icon: manifest?.icon ?? '📱',
+      });
+    },
+    closePictureInPicture: () => {
+      usePhoneOsStore.getState().setPipWindow(null);
+    },
+    swapHomeIcons: () => {
+      const apps = useAppStore.getState().installedApps;
+      if (apps.length < 2) return;
+      const a = apps[0];
+      const b = apps[1];
+      const { updateAppPosition } = useAppStore.getState();
+      const defaultPos = { row: 0, col: 0 };
+      updateAppPosition(a.bundleId, a.pageIndex ?? 0, b.position ?? defaultPos);
+      updateAppPosition(b.bundleId, b.pageIndex ?? 0, a.position ?? defaultPos);
+      usePhoneOsStore.getState().setHomeEditMode(true);
+      setTimeout(() => usePhoneOsStore.getState().setHomeEditMode(false), 2000);
+    },
+    dismissStoreInstall: () => {
+      useGulfStoreStore.getState().setActiveInstall(null);
+      useGulfStoreStore.getState().setTab('today');
     },
   };
 }

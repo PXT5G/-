@@ -229,7 +229,7 @@ export async function initializeBusiness(userId: string, userRole?: string) {
     : await (async () => {
         const emp = employment[0];
         if (emp) return getRolePermissions(emp.role);
-        return ['platform.access', 'dashboard.view', 'company.create'];
+        return ['platform.access', 'dashboard.view', 'company.create', 'company.view'];
       })();
 
   emitToUser(userId, 'business:initialized', {

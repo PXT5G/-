@@ -23,6 +23,7 @@ import { Search } from '@/components/os/Search';
 import { WindowManager } from '@/components/os/WindowManager';
 import { PermissionDialog } from '@/components/os/PermissionDialog';
 import { AppLibrary } from '@/components/os/AppLibrary';
+import { PictureInPictureOverlay } from '@/components/os/PictureInPictureOverlay';
 import { PhoneFrame } from '@/layouts/PhoneFrame';
 
 export function OSLayout() {
@@ -82,6 +83,7 @@ export function OSLayout() {
         <Search />
         <WindowManager />
         <PermissionDialog />
+        <PictureInPictureOverlay />
       </div>
     </PhoneFrame>
   );

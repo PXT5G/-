@@ -79,6 +79,27 @@ async function startDownloadJob(downloadId: string, userId: string): Promise<voi
   }
   const totalSize = pkg.size;
 
+  if (process.env.GULFOS_E2E_FAST_DOWNLOAD === '1') {
+    await StoreDownload.findByIdAndUpdate(downloadId, {
+      status: 'downloading',
+      size: totalSize,
+      downloadedBytes: totalSize,
+      progress: 100,
+      startedAt: new Date(),
+      queuePosition: 0,
+    });
+    emitProgress(userId, downloadId, download.bundleId, {
+      progress: 100,
+      status: 'downloading',
+      downloadedBytes: totalSize,
+      totalBytes: totalSize,
+      downloadSpeed: totalSize,
+      etaSeconds: 0,
+    });
+    await finishDownload(downloadId, userId);
+    return;
+  }
+
   await StoreDownload.findByIdAndUpdate(downloadId, {
     status: 'downloading',
     size: totalSize,

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { useAppStore } from '@/stores/appStore';
 import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
+import { usePhoneOsStore } from '@/stores/phoneOsStore';
 import { AppIcon } from './AppIcon';
 import { WidgetRenderer } from './WidgetRenderer';
 import { staggerContainer, staggerItem } from '@/animations/transitions';
@@ -23,6 +24,7 @@ export function HomeScreen() {
   const { currentPage, setCurrentPage, pages, getAppsForPage } = useAppStore();
   const profile = usePremiumExperienceStore((s) => s.profile);
   const setAppLibraryOpen = usePremiumExperienceStore((s) => s.setAppLibraryOpen);
+  const homeEditMode = usePhoneOsStore((s) => s.homeEditMode);
   const { launchApp } = useAppLaunch();
   const { tap } = useHaptic();
   const { spring, unlockDuration, shouldReduceMotion } = useMotionPreference();
@@ -78,6 +80,15 @@ export function HomeScreen() {
       {...gestures}
     >
       <WidgetRenderer pageIndex={currentPage} />
+
+      {homeEditMode && (
+        <div
+          data-testid="gulfos-home-edit-mode"
+          className="mx-6 mb-2 px-3 py-2 rounded-xl bg-gulf-gold/20 border border-gulf-gold/40 text-center text-xs text-gulf-gold"
+        >
+          Icons rearranged
+        </div>
+      )}
 
       <motion.div
         className={cn('flex-1 px-6 grid grid-cols-4 grid-rows-6 gap-y-6 gap-x-4 content-start', iconSize)}
