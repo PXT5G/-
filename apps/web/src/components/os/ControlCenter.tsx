@@ -166,11 +166,11 @@ export function ControlCenter() {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="absolute inset-0 z-[46] ios-material-thick"
+          className="absolute inset-0 z-[46] ios-material-thick flex flex-col"
           {...controlCenterSlide}
           onClick={close}
         >
-          <div className="h-full flex flex-col px-[26px] pt-[74px]" onClick={(e) => e.stopPropagation()}>
+          <div className="px-[26px] pt-[74px]" onClick={(e) => e.stopPropagation()}>
             <div className="grid grid-cols-2 gap-[14px]">
               {/* ── Connectivity module ── */}
               <div className="ios-material-thin rounded-[24px] p-[14px] aspect-square grid grid-cols-2 gap-2 place-items-center">
@@ -241,6 +241,16 @@ export function ControlCenter() {
               <p className="text-[15px] font-medium text-white/80">{genLabel} · {signalBars}/5</p>
             </div>
           </div>
+
+          {/* Tap anywhere below to dismiss (root onClick) */}
+          <div className="flex-1" aria-hidden />
+          <button
+            className="pb-[9px] pt-2 flex justify-center w-full"
+            onClick={close}
+            aria-label="Dismiss Control Center"
+          >
+            <div className="w-[148px] h-[5px] rounded-full bg-white/90" />
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

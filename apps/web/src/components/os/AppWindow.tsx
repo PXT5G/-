@@ -65,8 +65,14 @@ export function AppWindow({ window, isActive }: AppWindowProps) {
 
       <div className="flex-1 overflow-hidden relative">
         <AppComponent appId={window.appId} appName={window.title} />
-        {/* Home indicator — overlaid, iOS style */}
-        <div className="absolute bottom-[9px] left-1/2 -translate-x-1/2 w-[148px] h-[5px] rounded-full bg-white/60 pointer-events-none z-10" />
+        {/* Home indicator — click to go home (swipe substitute) */}
+        <button
+          onClick={() => { tap(); backgroundApp(window.appId); minimizeWindow(window.id); }}
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 pb-[9px] pt-3 px-8 z-10 group"
+          aria-label="Go home"
+        >
+          <div className="w-[148px] h-[5px] rounded-full bg-white/60 group-active:bg-white transition-colors" />
+        </button>
       </div>
     </motion.div>
   );

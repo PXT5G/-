@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useOSStore } from '@/stores/osStore';
 import { useLockStore } from '@/stores/lockStore';
@@ -45,6 +46,20 @@ export function OSLayout() {
     onLongPress: () => openSearch(),
     onSwipeLeft: () => setCenterOpen(true),
   });
+
+  // Escape dismisses all system panels (desktop-friendly affordance)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        useControlCenterStore.getState().close();
+        useNotificationStore.getState().setCenterOpen(false);
+        useSearchStore.getState().close();
+        usePhoneOsStore.getState().setMultitaskingOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const showHome = phase === 'home' || (phase === 'locked' && !isLocked);
   const showLock = isLocked && phase !== 'splash' && phase !== 'booting';
