@@ -62,10 +62,11 @@ echo ""
 
 export PLAYWRIGHT_BASE_URL="$WEB_URL"
 export PLAYWRIGHT_API_URL="$API_URL"
-export DEMO_SLOW_MO="${DEMO_SLOW_MO:-100}"
+export DEMO_SLOW_MO="${DEMO_SLOW_MO:-55}"
 
 OUTPUT="$ROOT/apps/web/demo-output"
 mkdir -p "$OUTPUT"
+rm -rf "$OUTPUT/showcase-results" 2>/dev/null || true
 
 # ─── Preflight gate ──────────────────────────────────────────────────────────
 if [ "$SKIP_PREFLIGHT" != "1" ]; then
@@ -86,8 +87,9 @@ cd "$ROOT/apps/web"
 npx playwright test e2e/gulfos-official-showcase.spec.ts --config=playwright.showcase.config.ts
 
 RAW="$OUTPUT/gulfos-showcase-raw.webm"
-OUT="$OUTPUT/gulfos-showcase-4k.mp4"
-OUT_HQ="$OUTPUT/gulfos-showcase-4k-hq.mp4"
+OUT="$OUTPUT/GULFOS_Official_Showcase_4K.mp4"
+OUT_LEGACY="$OUTPUT/gulfos-showcase-4k.mp4"
+OUT_HQ="$OUTPUT/GULFOS_Official_Showcase_4K_hq.mp4"
 
 if [ -f "$RAW" ]; then
   echo ""
@@ -100,8 +102,10 @@ if [ -f "$RAW" ]; then
     -vf "scale=3840:2160:flags=lanczos" \
     "$OUT" 2>/dev/null
 
-  # Optional high-bitrate pass for distribution
-  if [ "${SHOWCASE_TWO_PASS:-0}" = "1" ]; then
+  cp -f "$OUT" "$OUT_LEGACY" 2>/dev/null || true
+
+  # High-bitrate two-pass encode for distribution (100 Mbps target)
+  if [ "${SHOWCASE_TWO_PASS:-1}" = "1" ]; then
     echo "▶ Two-pass ${BITRATE} encode..."
     PASSLOG="$OUTPUT/ffmpeg2pass"
     ffmpeg -y -i "$RAW" -c:v libx264 -preset slow -profile:v high -b:v "$BITRATE" \
@@ -117,7 +121,10 @@ if [ -f "$RAW" ]; then
   echo "  DELIVERABLES"
   echo "══════════════════════════════════════════════════════════"
   echo "  Raw:        apps/web/demo-output/gulfos-showcase-raw.webm"
-  echo "  4K Final:   apps/web/demo-output/gulfos-showcase-4k.mp4"
+  echo "  4K Final:   apps/web/demo-output/GULFOS_Official_Showcase_4K.mp4"
+  if [ -f "$OUT_HQ" ]; then
+    echo "  4K HQ:      apps/web/demo-output/GULFOS_Official_Showcase_4K_hq.mp4"
+  fi
   echo "  App Audit:  apps/web/demo-output/official/application-audit.md"
   echo "  Runtime:    apps/web/demo-output/official/runtime-audit.md"
   echo "  Performance: apps/web/demo-output/official/performance-report.md"

@@ -310,15 +310,20 @@ export class GulfOSPage {
           version: 0,
         };
         localStorage.setItem('bananaos-auth', JSON.stringify(authPayload));
-        window.__GULFOS_E2E__?.applySession(token, user);
+        window.__GULFOS_E2E__?.applySession(token, {
+          ...user,
+          role: (user.role === 'admin' ? 'admin' : 'user') as 'user' | 'admin',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
       },
       { token: session.token, user: session.user },
     );
   }
 
   async cinemaPause(ms?: number) {
-    const base = process.env.DEMO_SLOW_MO ? Number(process.env.DEMO_SLOW_MO) : 120;
-    await this.pause(ms ?? Math.max(2500, base * 2));
+    const base = process.env.DEMO_SLOW_MO ? Number(process.env.DEMO_SLOW_MO) : 80;
+    await this.pause(ms ?? Math.max(2000, Math.round(base * 1.5)));
   }
 
   async clickSafe(locator: Locator | ReturnType<Page['getByText']>, timeout = 4_000) {
@@ -352,11 +357,12 @@ export class GulfOSPage {
   }
 
   async scrollAppContent(steps = 3) {
-    const box = await this.frame.boundingBox();
+    if (this.page.isClosed()) return;
+    const box = await this.frame.boundingBox().catch(() => null);
     if (!box) return;
     const cx = box.x + box.width / 2;
     for (let i = 0; i < steps; i++) {
-      await this.page.mouse.move(cx, box.y + box.height * 0.7);
+      await this.page.mouse.move(cx, box.y + box.height * 0.7, { steps: 8 });
       await this.page.mouse.wheel(0, 200);
       await this.pause(600);
     }
@@ -371,14 +377,128 @@ export class GulfOSPage {
     await this.closeApp();
   }
 
-  async showcaseApp(bundleId: string, name: string, dwellMs = 4500) {
+  async shutdown() {
+    await this.closeAllApps();
+    await this.page.evaluate(() => window.__GULFOS_E2E__?.shutdown());
+    await this.pause(2500);
+  }
+
+  async lockPhone() {
+    await this.closeAllApps();
+    await this.page.evaluate(() => window.__GULFOS_E2E__?.lock());
+    await this.cinemaPause(2500);
+  }
+
+  async smoothClick(locator: Locator, timeout = 5_000) {
+    const box = await locator.boundingBox({ timeout }).catch(() => null);
+    if (box) {
+      await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 18 });
+      await this.pause(200);
+    }
+    await locator.click({ timeout }).catch(() => {});
+    await this.pause(400);
+  }
+
+  async deepExploreApp(dwellMs = 2000) {
+    if (this.page.isClosed()) return;
+    await this.scrollAppContent(3);
+    const navButtons = this.frame.getByRole('button');
+    const count = Math.min(await navButtons.count().catch(() => 0), 6);
+    const clicked = new Set<string>();
+    for (let i = 0; i < count; i++) {
+      const btn = navButtons.nth(i);
+      const label = (await btn.innerText({ timeout: 500 }).catch(() => '')).trim();
+      if (!label || label.length > 30 || clicked.has(label)) continue;
+      if (/close|cancel|done|back|remove|delete/i.test(label)) continue;
+      if (await btn.isVisible({ timeout: 800 }).catch(() => false)) {
+        await this.smoothClick(btn);
+        await this.pause(dwellMs);
+        clicked.add(label);
+        await this.scrollAppContent(2);
+      }
+    }
+  }
+
+  async demonstrateStoreInstall(appName: string) {
+    await this.page.getByRole('button', { name: 'Apps', exact: true }).click({ timeout: 5_000 }).catch(() => {});
+    await this.cinemaPause(2000);
+    const card = this.page.getByText(appName, { exact: false }).first();
+    if (await card.isVisible({ timeout: 4_000 }).catch(() => false)) {
+      await this.smoothClick(card);
+      await this.cinemaPause(2000);
+      const installBtn = this.page.getByRole('button', { name: /^install$/i });
+      if (await installBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await this.smoothClick(installBtn);
+        await this.cinemaPause(1500);
+        const approve = this.page.getByRole('button', { name: /^install$/i }).last();
+        if (await approve.isVisible({ timeout: 4_000 }).catch(() => false)) {
+          await this.smoothClick(approve);
+        }
+        await this.cinemaPause(5000);
+        const done = this.page.getByRole('button', { name: /done|open|continue/i });
+        if (await done.isVisible({ timeout: 8_000 }).catch(() => false)) {
+          await this.smoothClick(done);
+        }
+      }
+      await this.page.getByText('‹').first().click({ timeout: 3_000 }).catch(() => {});
+      await this.cinemaPause(800);
+    }
+  }
+
+  async demonstrateStoreUpdate() {
+    await this.page.getByRole('button', { name: 'Updates', exact: true }).click({ timeout: 5_000 }).catch(() => {});
+    await this.cinemaPause(2500);
+    const updateBtn = this.page.getByRole('button', { name: 'Update', exact: true }).first();
+    if (await updateBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await this.smoothClick(updateBtn);
+      await this.cinemaPause(1500);
+      const approve = this.page.getByRole('button', { name: /^update$/i }).last();
+      if (await approve.isVisible({ timeout: 4_000 }).catch(() => false)) {
+        await this.smoothClick(approve);
+      }
+      await this.cinemaPause(5000);
+      const done = this.page.getByRole('button', { name: /done|open|continue/i });
+      if (await done.isVisible({ timeout: 8_000 }).catch(() => false)) {
+        await this.smoothClick(done);
+      }
+    }
+    await this.cinemaPause(2000);
+  }
+
+  async demonstrateStoreRemove(appName: string) {
+    await this.page.getByRole('button', { name: 'Library', exact: true }).click({ timeout: 5_000 }).catch(() => {});
+    await this.cinemaPause(2500);
+    const removeBtn = this.page
+      .locator('div')
+      .filter({ hasText: appName })
+      .getByRole('button', { name: 'Remove' })
+      .first();
+    if (await removeBtn.isVisible({ timeout: 4_000 }).catch(() => false)) {
+      await this.smoothClick(removeBtn);
+      await this.cinemaPause(1500);
+      const confirm = this.page.getByRole('button', { name: /remove|confirm|delete/i }).last();
+      if (await confirm.isVisible({ timeout: 4_000 }).catch(() => false)) {
+        await this.smoothClick(confirm);
+      }
+      await this.cinemaPause(3000);
+    }
+  }
+
+  async showcaseApp(bundleId: string, name: string, dwellMs = 3200) {
     await this.ensureHome();
     await this.closeAllPanels();
     await this.launchAppByBundleId(bundleId, name);
-    await this.scrollAppContent(3);
+    await this.cinemaPause(1200);
+    await this.deepExploreApp(1600);
+    await this.scrollAppContent(2);
     await this.cinemaPause(dwellMs);
+    const hasError = await this.page
+      .getByText(/failed to load|permission denied|something went wrong/i)
+      .isVisible({ timeout: 400 })
+      .catch(() => false);
     await this.closeApp();
-    await this.cinemaPause(600);
+    await this.cinemaPause(800);
+    return !hasError;
   }
 
   async isAppOpen(title: string) {

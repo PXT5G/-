@@ -10,6 +10,7 @@ import { usePhoneOsStore } from '@/stores/phoneOsStore';
 import { useWindowManagerStore } from '@/stores/windowManagerStore';
 import { useAuthStore } from '@/stores/authStore';
 import { getApp } from '@/services/appRouter';
+import type { User } from '@/types';
 
 export interface GulfOSE2EBridge {
   unlock: () => void;
@@ -25,7 +26,8 @@ export interface GulfOSE2EBridge {
   closeAllApps: () => void;
   shutdown: () => void;
   swipeHome: () => void;
-  applySession: (token: string, user: { id: string; username: string; email: string; displayName: string; role: string }) => void;
+  lock: () => void;
+  applySession: (token: string, user: User) => void;
 }
 
 declare global {
@@ -89,8 +91,19 @@ export function initE2EBridge(): void {
       useLockStore.getState().unlock();
       useOSStore.getState().setPhase('home');
     },
+    lock: () => {
+      const { windows, closeWindow } = useWindowManagerStore.getState();
+      for (const w of windows) closeWindow(w.id);
+      useControlCenterStore.getState().close();
+      useNotificationStore.getState().setCenterOpen(false);
+      useSearchStore.getState().close();
+      usePremiumExperienceStore.getState().setAppLibraryOpen(false);
+      usePhoneOsStore.getState().setMultitaskingOpen(false);
+      useLockStore.getState().lock();
+      useOSStore.getState().setPhase('locked');
+    },
     applySession: (token, user) => {
-      const tokens = { accessToken: token, refreshToken: token };
+      const tokens = { accessToken: token, refreshToken: token, expiresIn: 3600 };
       useAuthStore.getState().login(user, tokens);
     },
   };

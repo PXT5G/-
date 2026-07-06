@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
+import { execSync } from 'child_process';
 import { DEMO_CREDENTIALS, GULFOS_APPS } from './app-catalog';
 
 const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:4000';
@@ -166,4 +167,36 @@ export async function uninstallApp(
     data: { keepUserData: false, keepSettings: false, keepSession: false },
   });
   return res.ok();
+}
+
+/** Stage an app so the Store Updates tab shows an available update. */
+export async function stageAppForUpdate(
+  request: APIRequestContext,
+  token: string,
+  bundleId: string,
+  installedVersion = '0.1.0',
+): Promise<void> {
+  const me = await request.get(`${API_BASE}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!me.ok()) return;
+  const userId = (await me.json())?.data?.id ?? (await me.json())?.data?._id;
+  if (!userId) return;
+
+  try {
+    execSync(
+      `mongosh --quiet bananaos --eval 'db.installedapps.updateOne({userId: ObjectId("${userId}"), bundleId: "${bundleId}"}, {$set: {installedVersion: "${installedVersion}"}})' 2>/dev/null || ` +
+        `mongosh --quiet gulfos --eval 'db.installedapps.updateOne({userId: ObjectId("${userId}"), bundleId: "${bundleId}"}, {$set: {installedVersion: "${installedVersion}"}})' 2>/dev/null || true`,
+      { stdio: 'ignore' },
+    );
+  } catch { /* optional staging */ }
+}
+
+/** Prepare store UI demos: leave target app uninstalled for install flow. */
+export async function stageStoreDemoApps(
+  request: APIRequestContext,
+  token: string,
+  installTarget = 'com.gulfos.poetry',
+): Promise<void> {
+  await uninstallApp(request, token, installTarget).catch(() => {});
 }

@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { GulfOSPage } from './helpers/gulfos-page';
 import { GULFOS_APPS } from './helpers/app-catalog';
-import { prepareShowcaseEnvironment } from './helpers/api-client';
+import { prepareShowcaseEnvironment, stageStoreDemoApps, stageAppForUpdate } from './helpers/api-client';
 import { RuntimeMonitor } from './helpers/runtime-monitor';
 import { writeVerificationReports, type VerificationBundle } from './helpers/verification-report';
 import type { AppResult } from './helpers/demo-report';
@@ -11,7 +11,10 @@ import type { AppResult } from './helpers/demo-report';
 const OUTPUT = path.join(__dirname, '../demo-output');
 const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:4000';
 
-test.describe.configure({ mode: 'serial', timeout: 2_400_000 });
+test.describe.configure({ mode: 'serial', timeout: 7_200_000 });
+
+const STORE_DEMO_APP = 'com.gulfos.poetry';
+const STORE_DEMO_NAME = 'GULF Poetry';
 
 test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request }) => {
   const monitor = new RuntimeMonitor();
@@ -38,6 +41,8 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
   await gulf.cinemaPause(2500);
   await gulf.unlock();
   await gulf.cinemaPause(2500);
+  await gulf.injectSession(session);
+  await gulf.cinemaPause(1000);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // HOME SCREEN & WIDGETS
@@ -74,7 +79,6 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
   // ═══════════════════════════════════════════════════════════════════════════
   // DYNAMIC ISLAND & LIVE ACTIVITIES
   // ═══════════════════════════════════════════════════════════════════════════
-  await gulf.injectSession(session);
   await request.post(`${API_BASE}/api/device/phone/live-activities`, {
     headers: { Authorization: `Bearer ${session.token}` },
     data: {
@@ -146,27 +150,20 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
   await gulf.cinemaPause(1000);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // GULF STORE — INSTALL, UPDATE, REMOVE
+  // GULF STORE — INSTALL, UPDATE, REMOVE (UI)
   // ═══════════════════════════════════════════════════════════════════════════
+  await stageStoreDemoApps(request, session.token, STORE_DEMO_APP);
+
   await gulf.launchFromDock('GULF Store');
   await gulf.cinemaPause(2500);
 
-  await page.getByRole('button', { name: /today|featured/i }).click({ timeout: 4_000 }).catch(() => {});
+  await page.getByRole('button', { name: 'Today', exact: true }).click({ timeout: 4_000 }).catch(() => {});
   await gulf.cinemaPause(2000);
-  await page.getByRole('button', { name: /apps/i }).click({ timeout: 4_000 }).catch(() => {});
-  await gulf.cinemaPause(2000);
-  await page.getByRole('button', { name: /updates/i }).click({ timeout: 4_000 }).catch(() => {});
-  await gulf.cinemaPause(2000);
-  await page.getByRole('button', { name: /library/i }).click({ timeout: 4_000 }).catch(() => {});
-  await gulf.cinemaPause(2500);
-  await gulf.scrollAppContent(2);
 
-  const firstApp = page.locator('[data-bundle-id], button').filter({ hasText: /GULF|Banana/i }).first();
-  if (await firstApp.isVisible({ timeout: 2_000 }).catch(() => false)) {
-    await firstApp.click({ timeout: 4_000 }).catch(() => {});
-    await gulf.cinemaPause(2000);
-    await page.getByText('‹').first().click({ timeout: 3_000 }).catch(() => page.keyboard.press('Escape'));
-  }
+  await gulf.demonstrateStoreInstall(STORE_DEMO_NAME);
+  await stageAppForUpdate(request, session.token, STORE_DEMO_APP, '0.1.0');
+  await gulf.demonstrateStoreUpdate();
+  await gulf.demonstrateStoreRemove(STORE_DEMO_NAME);
 
   await gulf.closeApp();
   await gulf.cinemaPause(1000);
@@ -180,8 +177,8 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
     ['com.gulfos.contacts', 'Contacts'],
     ['com.gulfos.mail', 'Mail'],
   ] as const) {
-    await gulf.showcaseApp(id, name, 4000);
-    appResults.push({ bundleId: id, name, status: 'full', launched: true, hasContent: true });
+    const ok = await gulf.showcaseApp(id, name, 4500);
+    appResults.push({ bundleId: id, name, status: ok ? 'full' : 'partial', launched: true, hasContent: true });
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -209,15 +206,14 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
     if (showcased.has(app.bundleId)) continue;
     if (['com.gulfos.police', 'com.gulfos.justice', 'com.gulfos.ems'].includes(app.bundleId)) continue;
 
-    await gulf.showcaseApp(app.bundleId, app.name, 3800);
-    const hasError = await page.getByText(/failed to load|permission denied/i).isVisible({ timeout: 300 }).catch(() => false);
+    const ok = await gulf.showcaseApp(app.bundleId, app.name, 4200);
     appResults.push({
       bundleId: app.bundleId,
       name: app.name,
-      status: hasError ? 'failed' : 'full',
+      status: ok ? 'full' : 'partial',
       launched: true,
       hasContent: true,
-      notes: hasError ? 'Error visible during showcase' : undefined,
+      notes: ok ? undefined : 'Error or limited UI during showcase',
     });
   }
 
@@ -227,21 +223,26 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
   await gulf.launchAppByBundleId('com.gulfos.police', 'GULF Police');
   await gulf.cinemaPause(3500);
 
-  await gulf.navigateGovTabs(['MDT', 'Units', 'Dispatch', 'Search', 'More'], 3000);
-
+  await gulf.navigateGovTabs(['MDT', 'Units', 'Dispatch', 'Search', 'More'], 3200);
   await page.getByRole('button', { name: 'MDT' }).click({ timeout: 4_000 }).catch(() => {});
   await gulf.cinemaPause(2000);
   await gulf.navigateGovSubScreens(
     ['BOLO', 'Wanted', 'Warrants', 'Reports', 'Cases', 'Evidence', 'Analytics'],
-    2600,
+    2800,
   );
+  await gulf.navigateGovTabs(['Units', 'Dispatch', 'Search'], 2800);
 
   const panicBtn = page.getByRole('button', { name: /panic/i });
   if (await panicBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
-    await panicBtn.click({ timeout: 4_000 }).catch(() => {});
-    await gulf.cinemaPause(2000);
+    await gulf.smoothClick(panicBtn);
+    await gulf.cinemaPause(2500);
   }
 
+  await gulf.closeApp();
+  await gulf.launchFromDock('Settings');
+  await page.getByText('Permissions').click({ timeout: 5_000 }).catch(() => {});
+  await gulf.cinemaPause(2500);
+  await page.getByText('‹').first().click({ timeout: 3_000 }).catch(() => {});
   await gulf.closeApp();
   appResults.push({ bundleId: 'com.gulfos.police', name: 'GULF Police', status: 'full', launched: true, hasContent: true });
 
@@ -278,12 +279,14 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
   appResults.push({ bundleId: 'com.gulfos.ems', name: 'GULF EMS', status: 'full', launched: true, hasContent: true });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // FINAL HOME & SHUTDOWN
+  // FINAL HOME, LOCK & SHUTDOWN
   // ═══════════════════════════════════════════════════════════════════════════
   await gulf.ensureHome();
   await gulf.cinemaPause(3500);
+  await gulf.lockPhone();
+  await gulf.cinemaPause(2500);
   await gulf.shutdown();
-  await gulf.cinemaPause(3000);
+  await gulf.cinemaPause(3500);
 
   // ─── Copy raw recording ─────────────────────────────────────────────────────
   const copyRawVideo = () => {
@@ -303,6 +306,7 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
     if (videoPath) {
       fs.mkdirSync(OUTPUT, { recursive: true });
       fs.copyFileSync(videoPath, path.join(OUTPUT, 'gulfos-showcase-raw.webm'));
+      fs.copyFileSync(videoPath, path.join(OUTPUT, 'GULFOS_Official_Showcase_4K_raw.webm'));
     }
   };
   copyRawVideo();
@@ -317,7 +321,7 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
     durationMs: Date.now() - startedAt,
     video: {
       rawPath: 'apps/web/demo-output/gulfos-showcase-raw.webm',
-      exportPath: 'apps/web/demo-output/gulfos-showcase-4k.mp4',
+      exportPath: 'apps/web/demo-output/GULFOS_Official_Showcase_4K.mp4',
     },
     applicationAudit: {
       total: appResults.length,
