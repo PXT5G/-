@@ -7,6 +7,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useHaptic } from '@/hooks/useSound';
 import { useAppLaunch } from '@/hooks/useAppLaunch';
 import { useGlobalSearch } from '@/hooks/usePhoneOs';
+import { getAllApps } from '@/services/appRouter';
 import type { GlobalSearchResult } from '@/types';
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -36,7 +37,17 @@ export function Search() {
   const localResults = useMemo(() => {
     if (!query.trim()) return [];
     const q = query.toLowerCase();
-    return installedApps
+    const seen = new Set<string>();
+    const candidates = [
+      ...installedApps,
+      // Registered system apps are always searchable, mirroring iOS Spotlight
+      ...getAllApps().map((m) => ({ bundleId: m.bundleId, name: m.name, icon: m.icon })),
+    ].filter((app) => {
+      if (seen.has(app.bundleId)) return false;
+      seen.add(app.bundleId);
+      return true;
+    });
+    return candidates
       .filter(
         (app) =>
           app.name.toLowerCase().includes(q) ||

@@ -258,7 +258,7 @@ test('GULFOS Professional Full Demo — 38 steps (strict)', async ({ page, reque
   await gulf.openSearch();
   await page.getByLabel('Global search').fill('Settings');
   await page.waitForTimeout(800);
-  const searchResult = await page.getByText('Settings').isVisible({ timeout: 4_000 }).catch(() => false);
+  const searchResult = await page.getByText('Settings').first().isVisible({ timeout: 4_000 }).catch(() => false);
   await page.getByText('Cancel').click({ timeout: 3_000 }).catch(() => gulf.closeAllPanels());
   requirePass(36, 'System-wide Search', searchResult);
 
