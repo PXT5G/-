@@ -49,10 +49,11 @@ export const GULF_SPRING = {
   gentle: { type: 'spring' as const, stiffness: 200, damping: 25 },
 };
 
-export const APP_GRADIENT = 'bg-gradient-to-b from-[#0a1628] to-[#1a1a2e]';
+/** iOS system-grouped background (dark) */
+export const APP_GRADIENT = 'bg-[#000000]';
 
 export const GLASS_CLASSES = {
-  low: 'rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md',
-  medium: 'rounded-2xl bg-white/10 border border-white/15 backdrop-blur-xl',
-  high: 'rounded-2xl bg-white/15 border border-white/20 backdrop-blur-2xl',
+  low: 'rounded-[16px] bg-[#1C1C1E]',
+  medium: 'rounded-[16px] bg-[#1C1C1E]',
+  high: 'rounded-[16px] bg-[#2C2C2E]',
 } as const;

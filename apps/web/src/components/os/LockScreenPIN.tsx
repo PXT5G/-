@@ -52,41 +52,51 @@ export function LockScreenPIN({ onSuccess }: LockScreenPINProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <p className="text-sm text-white/70 mb-4">Enter PIN</p>
+      <p className="text-[17px] font-medium text-white mb-5">Enter Passcode</p>
 
-      <div className="flex gap-3 mb-6">
+      <div className="flex gap-[22px] mb-8">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
             className={cn(
-              'w-3 h-3 rounded-full border-2 transition-all',
+              'w-[13px] h-[13px] rounded-full border transition-all',
               i < entered.length
-                ? 'bg-gulf-gold border-gulf-gold'
-                : 'border-white/30'
+                ? 'bg-white border-white'
+                : 'border-white/60'
             )}
           />
         ))}
       </div>
 
       {pinAttempts > 0 && (
-        <p className="text-xs text-red-400 mb-4">
+        <p className="text-[13px] text-ios-red mb-4">
           {maxPinAttempts - pinAttempts} attempts remaining
         </p>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      {/* iOS passcode keypad — 78pt circles */}
+      <div className="grid grid-cols-3 gap-x-[26px] gap-y-[16px]">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'].map((key) => (
           <button
             key={key || 'empty'}
             onClick={() => (key === 'del' ? handleDelete() : key && handleDigit(key))}
             disabled={!key}
             className={cn(
-              'w-16 h-16 rounded-full flex items-center justify-center text-xl font-light text-white transition-all',
-              key ? 'bg-white/10 hover:bg-white/20 active:scale-95' : 'invisible'
+              'w-[78px] h-[78px] rounded-full flex items-center justify-center transition-all',
+              key && key !== 'del' && 'ios-material-ultrathin text-white active:bg-white/40',
+              key === 'del' && 'text-white/80 active:opacity-50',
+              !key && 'invisible'
             )}
             aria-label={key === 'del' ? 'Delete' : key || undefined}
           >
-            {key === 'del' ? '⌫' : key}
+            {key === 'del' ? (
+              <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor" aria-hidden>
+                <path d="M9 0h16a3 3 0 013 3v14a3 3 0 01-3 3H9L0 10 9 0z" opacity="0.35" />
+                <path d="M13 6l8 8M21 6l-8 8" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <span className="text-[32px] font-light font-display leading-none">{key}</span>
+            )}
           </button>
         ))}
       </div>

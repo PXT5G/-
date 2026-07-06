@@ -7,13 +7,14 @@ interface SettingsSectionProps {
   children: ReactNode;
 }
 
+/** iOS grouped inset section */
 export function SettingsSection({ title, children }: SettingsSectionProps) {
   return (
-    <section className="mb-6">
-      <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2 px-1">
+    <section className="mb-[26px]">
+      <h2 className="text-[13px] font-normal text-ios-label-secondary uppercase mb-[7px] px-4">
         {title}
       </h2>
-      <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden divide-y divide-white/5">
+      <div className="rounded-[12px] bg-[#1C1C1E] overflow-hidden divide-y divide-[rgba(84,84,88,0.4)]">
         {children}
       </div>
     </section>

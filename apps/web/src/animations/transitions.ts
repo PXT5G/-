@@ -58,10 +58,26 @@ export const unlockAnimation = {
     transition: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
   },
   homeScreen: {
-    initial: { scale: 0.95, opacity: 0 },
+    initial: { scale: 1.1, opacity: 0 },
     animate: { scale: 1, opacity: 1 },
-    transition: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+    transition: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
   },
+};
+
+/** iOS app open: icon-zoom morph (scale from center with fade) */
+export const appOpenTransition = {
+  initial: { scale: 0.35, opacity: 0, borderRadius: 40 },
+  animate: { scale: 1, opacity: 1, borderRadius: 0 },
+  exit: { scale: 0.35, opacity: 0, borderRadius: 40 },
+  transition: { type: 'spring' as const, stiffness: 380, damping: 34, mass: 0.9 },
+};
+
+/** iOS sheet presentation (page sheet slides from bottom) */
+export const sheetTransition = {
+  initial: { y: '100%' },
+  animate: { y: 0 },
+  exit: { y: '100%' },
+  transition: { type: 'spring' as const, stiffness: 320, damping: 34 },
 };
 
 export const appIconBounce = {
@@ -75,10 +91,12 @@ export const dockAnimation = {
   transition: { delay: 0.2, ...springTransition },
 };
 
+/** iPhone 16 Pro Max Dynamic Island — idle 126×37pt, top inset 11pt */
 export const islandExpand = {
-  compact: { width: 126, height: 37, borderRadius: 20 },
-  expanded: { width: 360, height: 120, borderRadius: 40 },
-  activity: { width: 200, height: 37, borderRadius: 20 },
+  idle: { width: 126, height: 37, borderRadius: 20 },
+  compact: { width: 236, height: 37, borderRadius: 20 },
+  expanded: { width: 384, height: 172, borderRadius: 44 },
+  activity: { width: 236, height: 37, borderRadius: 20 },
 };
 
 export const controlCenterSlide = {

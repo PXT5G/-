@@ -8,6 +8,11 @@ interface PhoneFrameProps {
   className?: string;
 }
 
+/**
+ * iPhone 16 Pro Max device chrome.
+ * Logical viewport: 440 × 956 pt. Display corner radius ≈ 55 pt.
+ * Titanium band + Dynamic Island cutout (126 × 37 pt).
+ */
 export function PhoneFrame({ children, className }: PhoneFrameProps) {
   const [cinema, setCinema] = useState(false);
 
@@ -22,7 +27,7 @@ export function PhoneFrame({ children, className }: PhoneFrameProps) {
         'min-h-screen flex items-center justify-center p-4',
         cinema
           ? 'bg-gradient-to-br from-[#030308] via-[#0a0a14] to-[#0d1b2a]'
-          : 'bg-[#0a0a0a]',
+          : 'bg-[#050505]',
       )}
       data-showcase={cinema ? 'true' : undefined}
     >
@@ -36,19 +41,29 @@ export function PhoneFrame({ children, className }: PhoneFrameProps) {
           aria-hidden
         />
       )}
+      {/* Titanium band */}
       <div
         className={cn(
-          'relative w-full rounded-[3rem] overflow-hidden',
-          'border-[3px] border-gray-800 shadow-2xl shadow-black/50',
-          'bg-black',
-          cinema ? 'w-[900px] h-[1944px] border-gray-700/80 shadow-black/80' : 'max-w-[390px] h-[844px]',
-          className,
+          'relative p-[3px] rounded-[71px]',
+          'bg-gradient-to-b from-[#4a4a4c] via-[#2e2e30] to-[#48484a]',
+          'shadow-[0_30px_80px_rgba(0,0,0,0.7),0_8px_24px_rgba(0,0,0,0.5)]',
+          cinema && 'rounded-[145px] p-[6px]',
         )}
-        role="application"
-        aria-label="GULFOS"
       >
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-b-2xl z-[55]" />
-        {children}
+        <div
+          className={cn(
+            'relative overflow-hidden bg-black',
+            'rounded-[68px] border-[6px] border-black',
+            cinema
+              ? 'w-[900px] h-[1955px] rounded-[139px] border-[12px]'
+              : 'w-[440px] h-[956px]',
+            className,
+          )}
+          role="application"
+          aria-label="GULFOS"
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

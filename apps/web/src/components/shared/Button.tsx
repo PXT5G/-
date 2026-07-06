@@ -14,17 +14,19 @@ interface ButtonProps {
   className?: string;
 }
 
+/* iOS button styles: filled / gray / plain / destructive-filled */
 const variants = {
-  primary: 'bg-gulf-gold text-black font-semibold hover:bg-gulf-gold/90',
-  secondary: 'bg-white/10 text-white border border-white/15 hover:bg-white/15',
-  ghost: 'bg-transparent text-gulf-gold hover:bg-white/5',
-  destructive: 'bg-red-500/90 text-white hover:bg-red-500',
+  primary: 'bg-gulf-gold text-black font-semibold active:opacity-80',
+  secondary: 'bg-[rgba(120,120,128,0.24)] text-white active:bg-[rgba(120,120,128,0.36)]',
+  ghost: 'bg-transparent text-gulf-gold active:opacity-50',
+  destructive: 'bg-ios-red text-white font-semibold active:opacity-80',
 };
 
+/* iOS control sizes: small 28pt, medium 34pt, large 50pt */
 const sizes = {
-  sm: 'px-3 py-1.5 text-xs rounded-lg',
-  md: 'px-4 py-2.5 text-sm rounded-xl',
-  lg: 'px-6 py-3 text-base rounded-xl',
+  sm: 'px-[14px] h-[28px] text-[15px] rounded-[14px]',
+  md: 'px-4 h-[34px] text-[15px] rounded-[17px]',
+  lg: 'px-5 h-[50px] text-[17px] rounded-[14px]',
 };
 
 export function Button({
@@ -44,7 +46,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 transition-all active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none',
+        'inline-flex items-center justify-center gap-2 font-medium transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none',
         variants[variant],
         sizes[size],
         fullWidth && 'w-full',

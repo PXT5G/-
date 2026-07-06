@@ -42,19 +42,19 @@ export function MultitaskingView({ onClose }: MultitaskingViewProps) {
 
   return (
     <motion.div
-      className="absolute inset-0 z-[48] bg-black/80 backdrop-blur-xl p-4 pt-14"
+      className="absolute inset-0 z-[48] ios-material-thick p-4 pt-[70px]"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 35 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 34 }}
     >
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-semibold text-white">Recent Apps</h2>
-        <button onClick={onClose} className="text-sm text-gulf-gold">Done</button>
+      <div className="flex items-center justify-between mb-6 px-2">
+        <h2 className="text-[22px] font-bold font-display text-white">Recent Apps</h2>
+        <button onClick={onClose} className="text-[17px] text-gulf-gold">Done</button>
       </div>
 
       {performance && (
-        <div className="mb-4 grid grid-cols-4 gap-2 text-xs text-white/50">
+        <div className="mb-4 px-2 grid grid-cols-4 gap-2 text-[12px] text-ios-label-secondary">
           <span>CPU {performance.cpuUsagePercent}%</span>
           <span>GPU {performance.gpuUsagePercent}%</span>
           <span>RAM {Math.round(performance.memoryPressure * 100)}%</span>

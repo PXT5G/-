@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { useWidgetStore } from '@/stores/widgetStore';
 import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
 import { WidgetContent } from '@/components/widgets/WidgetContent';
-import { GlassPanel } from '@/components/ui/GlassPanel';
 import { cn } from '@/utils/cn';
 
 interface WidgetRendererProps {
@@ -23,11 +22,11 @@ export function WidgetRenderer({ pageIndex }: WidgetRendererProps) {
 
   if (instances.length === 0 && pageIndex === 0) {
     return (
-      <div className="px-6 pb-4 grid grid-cols-2 gap-3">
+      <div className="px-[22px] pb-[22px] grid grid-cols-2 gap-[16px]">
         {DEFAULT_WIDGETS.map((w) => (
-          <GlassPanel key={w.type} className="col-span-1 p-4" intensity="low">
+          <div key={w.type} className="ios-material-widget rounded-[24px] p-[16px] aspect-square ios-card-shadow">
             <WidgetContent type={w.type} size={w.size} interactive />
-          </GlassPanel>
+          </div>
         ))}
       </div>
     );
@@ -37,7 +36,7 @@ export function WidgetRenderer({ pageIndex }: WidgetRendererProps) {
 
   return (
     <div
-      className="px-6 pb-4 grid grid-cols-2 gap-3"
+      className="px-[22px] pb-[22px] grid grid-cols-2 gap-[16px]"
       style={{ filter: profile?.homeBlurIntensity ? `blur(${profile.homeBlurIntensity * 0.1}px)` : undefined }}
     >
       {instances.map((instance) => {
@@ -46,17 +45,19 @@ export function WidgetRenderer({ pageIndex }: WidgetRendererProps) {
         const type = widget?.appId?.replace('com.gulfos.', '') ?? instance.widgetId.replace('widget.', '');
 
         return (
-          <GlassPanel
+          <div
             key={instance.id}
-            className={cn('p-4', instance.size === 'large' && 'col-span-2')}
-            intensity="low"
+            className={cn(
+              'ios-material-widget rounded-[24px] p-[16px] ios-card-shadow',
+              instance.size === 'large' ? 'col-span-2' : 'aspect-square',
+            )}
           >
             <WidgetContent
               type={type}
               size={instance.size as 'small' | 'medium' | 'large'}
               interactive
             />
-          </GlassPanel>
+          </div>
         );
       })}
     </div>

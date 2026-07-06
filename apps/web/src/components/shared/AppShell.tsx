@@ -26,15 +26,13 @@ export function AppShell({ title, subtitle, icon, headerRight, children, classNa
       animate={{ opacity: 1 }}
       transition={spring}
     >
-      <header className="px-4 pt-4 pb-2 flex items-start justify-between gap-3 shrink-0">
+      {/* iOS large-title header */}
+      <header className="px-5 pt-4 pb-2 flex items-end justify-between gap-3 shrink-0">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            {icon && <span className="text-xl" aria-hidden>{icon}</span>}
-            <h1 className="text-xl font-bold text-gulf-gold truncate">{title}</h1>
-          </div>
-          {subtitle && <p className="text-xs text-white/40 mt-0.5 truncate">{subtitle}</p>}
+          <h1 className="ios-large-title text-white truncate">{title}</h1>
+          {subtitle && <p className="text-[15px] text-ios-label-secondary mt-0.5 truncate">{subtitle}</p>}
         </div>
-        {headerRight && <div className="shrink-0">{headerRight}</div>}
+        {headerRight && <div className="shrink-0 pb-1">{headerRight}</div>}
       </header>
       <main className="flex-1 overflow-y-auto min-h-0">{children}</main>
       {footer && <footer className="shrink-0">{footer}</footer>}
@@ -50,8 +48,8 @@ export function AppGlassCard({ children, className, onClick }: {
   return (
     <div
       className={cn(
-        'rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md',
-        onClick && 'cursor-pointer active:scale-[0.98] transition-transform',
+        'rounded-[16px] bg-[#1C1C1E]',
+        onClick && 'cursor-pointer active:bg-[#2C2C2E] transition-colors',
         className
       )}
       onClick={onClick}

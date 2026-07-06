@@ -70,8 +70,8 @@ export function HomeScreen() {
   return (
     <motion.div
       data-testid="gulfos-home-screen"
-      className="absolute inset-0 flex flex-col pt-14 pb-24"
-      initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0 }}
+      className="absolute inset-0 flex flex-col pt-[62px] pb-[118px]"
+      initial={shouldReduceMotion ? false : { scale: 1.08, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: unlockDuration, ease: [0.32, 0.72, 0, 1] }}
       style={{
@@ -84,14 +84,15 @@ export function HomeScreen() {
       {homeEditMode && (
         <div
           data-testid="gulfos-home-edit-mode"
-          className="mx-6 mb-2 px-3 py-2 rounded-xl bg-gulf-gold/20 border border-gulf-gold/40 text-center text-xs text-gulf-gold"
+          className="mx-7 mb-2 px-3 py-2 rounded-[14px] ios-material-thin text-center text-[13px] font-medium text-white"
         >
           Icons rearranged
         </div>
       )}
 
+      {/* iOS home grid — 4 columns, generous vertical rhythm */}
       <motion.div
-        className={cn('flex-1 px-6 grid grid-cols-4 grid-rows-6 gap-y-6 gap-x-4 content-start', iconSize)}
+        className={cn('flex-1 px-[22px] grid grid-cols-4 gap-y-[26px] gap-x-[8px] content-start justify-items-center', iconSize)}
         variants={staggerContainer}
         initial="initial"
         animate="animate"
@@ -101,22 +102,24 @@ export function HomeScreen() {
             <AppIcon
               name={app.name}
               icon={app.icon}
+              bundleId={app.bundleId}
               onPress={() => handleAppPress(app)}
             />
           </motion.div>
         ))}
       </motion.div>
 
-      <div className="flex justify-center gap-1.5 pb-2" role="tablist" aria-label="Home screen pages">
+      {/* Page dots */}
+      <div className="flex justify-center items-center gap-[9px] pb-1" role="tablist" aria-label="Home screen pages">
         {visiblePages.map((page) => (
           <motion.button
             key={page.index}
             onClick={() => { tap(); setCurrentPage(page.index); }}
             className={cn(
-              'h-1.5 rounded-full',
-              page.index === currentPage ? 'bg-white' : 'bg-white/30'
+              'w-[8px] h-[8px] rounded-full',
+              page.index === currentPage ? 'bg-white' : 'bg-white/35'
             )}
-            animate={{ width: page.index === currentPage ? 16 : 6 }}
+            animate={{ scale: page.index === currentPage ? 1 : 0.85 }}
             transition={spring}
             aria-label={`Page ${page.index + 1}`}
             aria-selected={page.index === currentPage}

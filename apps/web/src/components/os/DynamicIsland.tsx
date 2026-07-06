@@ -31,18 +31,19 @@ export function DynamicIsland() {
   const displayIcon = hasStoreActivity ? icon : currentLive?.icon;
   const displayProgress = hasStoreActivity ? progress : currentLive?.progress;
 
-  const dimensions = islandExpand[displayMode === 'idle' ? 'compact' : displayMode];
+  const dimensions = islandExpand[displayMode];
 
   return (
-    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[60]">
+    <div className="absolute top-[11px] left-1/2 -translate-x-1/2 z-[60]">
       <AnimatePresence mode="wait">
         <motion.div
           key={`${displayMode}-${activeIndex}`}
           className={cn(
-            'bg-black rounded-full flex items-center justify-center overflow-hidden',
-            'shadow-lg shadow-black/50 border border-white/5',
+            'bg-black flex items-center justify-center overflow-hidden',
+            displayMode !== 'idle' && 'shadow-[0_8px_28px_rgba(0,0,0,0.6)]',
             displayMode === 'idle' && 'cursor-pointer'
           )}
+          style={{ borderRadius: 20 }}
           initial={false}
           animate={dimensions}
           transition={spring}
@@ -62,7 +63,10 @@ export function DynamicIsland() {
           aria-live="polite"
         >
           {displayMode === 'idle' && (
-            <div className="w-3 h-3 rounded-full bg-black" />
+            <div className="flex items-center justify-end w-full h-full pr-[14px]">
+              {/* TrueDepth camera lens */}
+              <div className="w-[11px] h-[11px] rounded-full bg-[#0d0d10] ring-1 ring-[#1a1a20]" />
+            </div>
           )}
 
           {displayMode === 'compact' && (

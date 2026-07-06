@@ -56,22 +56,27 @@ export function Dock() {
   return (
     <motion.div
       data-testid="gulfos-dock"
-      className="absolute bottom-6 left-4 right-4 z-30"
+      className="absolute bottom-[14px] left-[13px] right-[13px] z-30"
       {...dockAnimation}
     >
-      <div className="mx-auto max-w-sm rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/15 shadow-2xl px-4 py-3">
+      {/* iOS dock — frosted material, no labels */}
+      <div className="ios-material-widget rounded-[34px] px-[14px] pt-[15px] pb-[15px]">
         <div className="flex items-center justify-around">
           {dockApps.map((app) => (
             <AppIcon
               key={app.bundleId}
               name={app.name}
               icon={app.icon}
+              bundleId={app.bundleId}
               size="sm"
+              showLabel={false}
               onPress={() => handlePress(app)}
             />
           ))}
         </div>
       </div>
+      {/* Home indicator */}
+      <div className="mx-auto mt-[10px] w-[148px] h-[5px] rounded-full bg-white/95" />
     </motion.div>
   );
 }

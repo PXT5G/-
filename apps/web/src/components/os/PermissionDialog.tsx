@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import { usePermissionStore } from '@/stores/permissionStore';
-import { GlassPanel } from '@/components/ui/GlassPanel';
 import { useHaptic } from '@/hooks/useSound';
 import type { PermissionType } from '@/types';
 
@@ -47,40 +46,41 @@ export function PermissionDialog() {
 
   return (
     <motion.div
-      className="absolute inset-0 z-[60] flex items-end justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="absolute inset-0 z-[60] flex items-center justify-center bg-black/40 p-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
+      {/* Native UIAlertController — 270pt centered alert */}
       <motion.div
-        initial={{ y: 40, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-        className="w-full"
+        initial={{ scale: 1.15, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+        className="w-[280px] ios-material-thick rounded-[14px] overflow-hidden"
       >
-        <GlassPanel className="w-full p-6" intensity="high">
-          <h3 className="text-lg font-semibold text-white mb-1">
-            &quot;{pending.appId}&quot; would like to access {info.title}
+        <div className="px-5 pt-5 pb-4 text-center">
+          <h3 className="text-[17px] font-semibold text-white leading-snug">
+            &ldquo;{pending.appId.replace('com.gulfos.', '')}&rdquo; Would Like to Access Your {info.title}
           </h3>
-          <p className="text-sm text-white/60 mb-6">{info.description}</p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => { tap(); denyPermission(); }}
-              className="flex-1 py-3 rounded-xl bg-white/10 text-white text-sm font-medium"
-            >
-              Don&apos;t Allow
-            </button>
-            <button
-              onClick={() => {
-                tap();
-                grantPermission(pending.appId, pending.permission);
-              }}
-              className="flex-1 py-3 rounded-xl bg-gulf-gold text-black text-sm font-medium"
-            >
-              Allow
-            </button>
-          </div>
-        </GlassPanel>
+          <p className="text-[13px] text-white/70 mt-1.5 leading-snug">{info.description}</p>
+        </div>
+        <div className="grid grid-cols-2 border-t border-[rgba(84,84,88,0.6)] divide-x divide-[rgba(84,84,88,0.6)]">
+          <button
+            onClick={() => { tap(); denyPermission(); }}
+            className="h-[44px] text-[17px] text-gulf-gold active:bg-white/10 transition-colors"
+          >
+            Don&apos;t Allow
+          </button>
+          <button
+            onClick={() => {
+              tap();
+              grantPermission(pending.appId, pending.permission);
+            }}
+            className="h-[44px] text-[17px] font-semibold text-gulf-gold active:bg-white/10 transition-colors"
+          >
+            Allow
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );

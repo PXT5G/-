@@ -11,16 +11,16 @@ interface GlassPanelProps {
 }
 
 const intensityMap = {
-  low: 'bg-white/5 backdrop-blur-md border-white/10',
-  medium: 'bg-white/10 backdrop-blur-xl border-white/15',
-  high: 'bg-white/15 backdrop-blur-2xl border-white/20',
+  low: 'ios-material-ultrathin',
+  medium: 'ios-material-thin',
+  high: 'ios-material-thick',
 };
 
 export function GlassPanel({ children, className, intensity = 'medium', onClick }: GlassPanelProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border shadow-lg',
+        'rounded-[22px] ios-card-shadow',
         intensityMap[intensity],
         onClick && 'cursor-pointer active:scale-[0.98] transition-transform',
         className

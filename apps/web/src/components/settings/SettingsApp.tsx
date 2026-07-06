@@ -97,8 +97,10 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
   if (activeSection === 'wallpaper') {
     return (
       <div className="h-full overflow-y-auto bg-black p-4">
-        <button type="button" onClick={() => setActiveSection(null)} className="text-gulf-gold text-sm mb-4">‹ {t('common.settings')}</button>
-        <h2 className="text-xl font-bold text-white mb-4">{t('settings.wallpaper')}</h2>
+        <button type="button" onClick={() => setActiveSection(null)} className="flex items-center gap-1 text-gulf-gold text-[17px] mb-3">
+          ‹ {t('common.settings')}
+        </button>
+        <h2 className="text-[28px] font-bold font-display text-white mb-4">{t('settings.wallpaper')}</h2>
         <div className="grid grid-cols-2 gap-3">
           {WALLPAPERS.map((wp) => (
             <button
@@ -133,8 +135,8 @@ export function SettingsApp(_props: { appId?: string; appName?: string } = {}) {
 
   return (
     <div className="h-full overflow-y-auto bg-black">
-      <div className="p-4 pb-8">
-        <h1 className="text-2xl font-bold text-white mb-6">{t('settings.title')}</h1>
+      <div className="px-4 pt-3 pb-10">
+        <h1 className="ios-large-title text-white mb-5">{t('settings.title')}</h1>
 
         <SettingsSection title={t('settings.general')}>
           <SettingsRow label={t('settings.language')} value={langLabel} chevron onClick={() => setActiveSection('language')} />

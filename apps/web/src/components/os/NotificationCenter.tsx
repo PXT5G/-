@@ -8,12 +8,15 @@ import { useNotificationHistory } from '@/hooks/usePremiumExperience';
 import { formatRelativeTime } from '@/utils/date';
 import { notificationSlide } from '@/animations/transitions';
 import { useHaptic } from '@/hooks/useSound';
-import { GlassPanel } from '@/components/ui/GlassPanel';
 import { cn } from '@/utils/cn';
 import type { OSNotification } from '@/types';
 
 type Tab = 'active' | 'history';
 
+/**
+ * Native iOS Notification Center — slides down over the wallpaper
+ * with heavy material blur and stacked rounded notification cards.
+ */
 export function NotificationCenter() {
   const { notifications, isCenterOpen, setCenterOpen, markAsRead, markAllAsRead, removeNotification } =
     useNotificationStore();
@@ -38,122 +41,121 @@ export function NotificationCenter() {
   return (
     <AnimatePresence>
       <motion.div
-        className="absolute inset-0 z-[45] flex flex-col"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        className="absolute inset-0 z-[45] flex flex-col ios-material-thick"
+        initial={{ y: '-100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '-100%' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 36 }}
       >
-        <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setCenterOpen(false)} />
+        {/* Header */}
+        <div className="pt-[72px] px-6 pb-3">
+          <div className="flex items-end justify-between">
+            <h2 className="ios-large-title text-white">Notifications</h2>
+            <button
+              onClick={() => { tap(); setCenterOpen(false); }}
+              className="w-[30px] h-[30px] mb-1 rounded-full bg-ios-fill-tertiary flex items-center justify-center text-white/80 active:opacity-50"
+              aria-label="Close"
+            >
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
+                <path d="M1 1l9 9M10 1l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
 
-        <motion.div
-          className="max-h-[70%] overflow-hidden"
-          initial={{ y: '100%' }}
-          animate={{ y: 0 }}
-          exit={{ y: '100%' }}
-          transition={{ type: 'spring', stiffness: 300, damping: 35 }}
-        >
-          <GlassPanel className="rounded-t-3xl rounded-b-none p-4" intensity="high">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">Notifications</h2>
-              <div className="flex gap-2">
-                {notifications.some((n) => !n.read) && tab === 'active' && (
-                  <button
-                    onClick={() => { tap(); markAllAsRead(); }}
-                    className="text-xs text-gulf-gold"
-                  >
-                    Mark all read
-                  </button>
+          {/* Segmented control */}
+          <div className="mt-3 flex p-[2px] rounded-[9px] bg-ios-fill-tertiary w-fit">
+            {(['active', 'history'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => { tap(); setTab(t); }}
+                className={cn(
+                  'px-5 py-[5px] rounded-[7px] text-[13px] font-medium capitalize transition-colors',
+                  tab === t ? 'bg-[#636366] text-white shadow-sm' : 'text-white/60'
                 )}
-                <button
-                  onClick={() => { tap(); setCenterOpen(false); }}
-                  className="text-xs text-white/50"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+              >
+                {t === 'active' ? 'Active' : 'History'}
+              </button>
+            ))}
+            {notifications.some((n) => !n.read) && tab === 'active' && (
+              <button
+                onClick={() => { tap(); markAllAsRead(); }}
+                className="px-4 text-[13px] font-medium text-gulf-gold"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
 
-            <div className="flex gap-2 mb-4">
-              {(['active', 'history'] as const).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => { tap(); setTab(t); }}
-                  className={cn(
-                    'px-3 py-1 rounded-full text-xs capitalize',
-                    tab === t ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white/70'
-                  )}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+          <input
+            type="search"
+            value={searchQ}
+            onChange={(e) => setSearchQ(e.target.value)}
+            placeholder="Search"
+            aria-label="Search notifications"
+            className="mt-3 w-full px-4 py-[8px] rounded-[12px] bg-ios-fill-tertiary text-white text-[17px] placeholder:text-white/40 outline-none"
+          />
+        </div>
 
-            <input
-              type="search"
-              value={searchQ}
-              onChange={(e) => setSearchQ(e.target.value)}
-              placeholder="Search notifications..."
-              aria-label="Search notifications"
-              className="w-full mb-4 px-4 py-2 rounded-xl bg-white/10 border border-white/10 text-white text-sm placeholder:text-white/40 outline-none"
-            />
-
-            <div className="overflow-y-auto max-h-[50vh] space-y-3">
-              {tab === 'active' && (
-                <>
-                  {filteredNotifications.length === 0 ? (
-                    <p className="text-center text-white/40 py-8 text-sm">No notifications</p>
-                  ) : (
-                    grouped.map((group) => (
-                      <div key={group.key}>
-                        {group.label && (
-                          <p className="text-[10px] font-semibold text-white/40 uppercase mb-1">{group.label}</p>
-                        )}
-                        <div className="space-y-2">
-                          {group.items.map((n) => (
-                            <NotificationRow
-                              key={n.id}
-                              notification={n}
-                              pinned={pinnedIds.has(n.id)}
-                              onRead={() => { tap(); markAsRead(n.id); }}
-                              onDismiss={(e) => { e.stopPropagation(); tap(); removeNotification(n.id); }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </>
+        {/* Notification stack */}
+        <div className="flex-1 overflow-y-auto px-[13px] pb-10 space-y-[9px]">
+          {tab === 'active' && (
+            <>
+              {filteredNotifications.length === 0 ? (
+                <p className="text-center text-white/40 py-12 text-[17px]">No Notifications</p>
+              ) : (
+                grouped.map((group) => (
+                  <div key={group.key}>
+                    {group.label && (
+                      <p className="text-[13px] font-semibold text-white/50 capitalize mb-[6px] px-2">{group.label}</p>
+                    )}
+                    <div className="space-y-[9px]">
+                      {group.items.map((n) => (
+                        <NotificationRow
+                          key={n.id}
+                          notification={n}
+                          pinned={pinnedIds.has(n.id)}
+                          onRead={() => { tap(); markAsRead(n.id); }}
+                          onDismiss={(e) => { e.stopPropagation(); tap(); removeNotification(n.id); }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
               )}
+            </>
+          )}
 
-              {tab === 'history' && (
-                <>
-                  {history.length === 0 ? (
-                    <p className="text-center text-white/40 py-8 text-sm">No notification history</p>
-                  ) : (
-                    history.map((n) => (
-                      <div
-                        key={n.id}
-                        className="p-3 rounded-xl bg-white/5 border border-white/5"
-                      >
-                        <div className="flex items-start gap-3">
-                          <span className="text-lg">{n.icon ?? '🔔'}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">{n.title}</p>
-                            <p className="text-xs text-white/60 mt-0.5">{n.body}</p>
-                            <span className="text-[10px] text-white/40">
-                              {formatRelativeTime(n.deliveredAt)}
-                            </span>
-                          </div>
-                          {n.pinned && <span className="text-[10px] text-gulf-gold">📌</span>}
-                        </div>
+          {tab === 'history' && (
+            <>
+              {history.length === 0 ? (
+                <p className="text-center text-white/40 py-12 text-[17px]">No History</p>
+              ) : (
+                history.map((n) => (
+                  <div key={n.id} className="ios-material-thin rounded-[24px] px-4 py-[13px] ios-card-shadow">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[26px] leading-none">{n.icon ?? '🔔'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[15px] font-semibold text-white truncate leading-tight">{n.title}</p>
+                        <p className="text-[15px] text-white/75 truncate leading-tight">{n.body}</p>
+                        <span className="text-[12px] text-white/40">{formatRelativeTime(n.deliveredAt)}</span>
                       </div>
-                    ))
-                  )}
-                </>
+                      {n.pinned && <span className="text-[12px]">📌</span>}
+                    </div>
+                  </div>
+                ))
               )}
-            </div>
-          </GlassPanel>
-        </motion.div>
+            </>
+          )}
+        </div>
+
+        {/* Home indicator — swipe area to close */}
+        <button
+          className="pb-[9px] pt-2 flex justify-center w-full"
+          onClick={() => { tap(); setCenterOpen(false); }}
+          aria-label="Dismiss notification center"
+        >
+          <div className="w-[148px] h-[5px] rounded-full bg-white/90" />
+        </button>
       </motion.div>
     </AnimatePresence>
   );
@@ -174,33 +176,33 @@ function NotificationRow({
     <motion.div
       {...notificationSlide}
       className={cn(
-        'p-3 rounded-xl border transition-colors',
-        n.read ? 'bg-white/5 border-white/5' : 'bg-white/10 border-white/15',
-        pinned && 'border-gulf-gold/30'
+        'ios-material-thin rounded-[24px] px-4 py-[13px] ios-card-shadow',
+        !n.read && 'ring-1 ring-white/20',
+        pinned && 'ring-1 ring-gulf-gold/40'
       )}
       onClick={onRead}
     >
-      <div className="flex items-start gap-3">
-        <span className="text-lg">{n.icon ?? '🔔'}</span>
+      <div className="flex items-center gap-3">
+        <span className="text-[26px] leading-none">{n.icon ?? '🔔'}</span>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-white truncate">{n.title}</p>
-            <span className="text-[10px] text-white/40 shrink-0 ml-2">
-              {formatRelativeTime(n.timestamp)}
-            </span>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[15px] font-semibold text-white truncate leading-tight">{n.title}</p>
+            <span className="text-[12px] text-white/45 shrink-0">{formatRelativeTime(n.timestamp)}</span>
           </div>
-          <p className="text-xs text-white/60 mt-0.5">{n.body}</p>
+          <p className="text-[15px] text-white/75 truncate leading-tight">{n.body}</p>
           {n.priority === 'high' && (
-            <span className="text-[10px] text-red-400 mt-1 inline-block">Priority</span>
+            <span className="text-[12px] text-ios-red font-medium">Time Sensitive</span>
           )}
         </div>
-        {pinned && <span className="text-[10px] text-gulf-gold">📌</span>}
+        {pinned && <span className="text-[12px]">📌</span>}
         <button
           onClick={onDismiss}
-          className="text-white/30 hover:text-white/60 text-xs"
+          className="w-[24px] h-[24px] rounded-full bg-ios-fill-tertiary flex items-center justify-center text-white/60 shrink-0"
           aria-label="Dismiss notification"
         >
-          ✕
+          <svg width="9" height="9" viewBox="0 0 11 11" fill="none" aria-hidden>
+            <path d="M1 1l9 9M10 1l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
     </motion.div>

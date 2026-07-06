@@ -24,9 +24,9 @@ export default defineConfig({
     screenshot: 'on',
     video: {
       mode: 'on',
-      size: { width: 1280, height: 900 },
+      size: { width: 1280, height: 1040 },
     },
-    viewport: { width: 1280, height: 900 },
+    viewport: { width: 1280, height: 1040 },
     launchOptions: {
       slowMo: process.env.DEMO_SLOW_MO ? Number(process.env.DEMO_SLOW_MO) : 60,
     },
@@ -36,7 +36,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1280, height: 900 },
+        viewport: { width: 1280, height: 1040 },
       },
     },
   ],

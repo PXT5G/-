@@ -15,7 +15,10 @@ interface WidgetContentProps {
 export function WidgetContent({ type, size = 'medium', interactive = false }: WidgetContentProps) {
   const { data, isLoading } = useWidgetData(type);
 
-  if (isLoading || !data) {
+  // Clock and weather render locally so home/lock widgets never show skeletons
+  const selfSufficient = type === 'clock' || type === 'weather';
+
+  if ((isLoading || !data) && !selfSufficient) {
     return <WidgetSkeleton size={size} />;
   }
 
@@ -26,7 +29,7 @@ export function WidgetContent({ type, size = 'medium', interactive = false }: Wi
       animate={{ opacity: 1 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
-      <WidgetBody type={type} data={data} size={size} />
+      <WidgetBody type={type} data={data ?? {}} size={size} />
     </motion.div>
   );
 }
@@ -52,17 +55,21 @@ function WidgetBody({
   switch (type) {
     case 'weather':
       return (
-        <div>
-          <p className="text-xs text-white/50">Weather</p>
-          <p className={cn('font-light text-white', size === 'small' ? 'text-2xl' : 'text-3xl')}>
-            {String(data.temperature ?? '—')}°
-          </p>
-          <p className="text-xs text-white/60">{String(data.label ?? '')}</p>
-          {size !== 'small' && (
-            <p className="text-[10px] text-white/40 mt-1">
-              Humidity {String(data.humidity ?? '—')}% · Wind {String(data.windKph ?? '—')} km/h
+        <div className="h-full flex flex-col justify-between">
+          <div>
+            <p className="text-[13px] font-semibold text-white/90">Weather</p>
+            <p className={cn('font-display font-light text-white leading-tight', size === 'small' ? 'text-[42px]' : 'text-[48px]')}>
+              {String(data.temperature ?? 24)}°
             </p>
-          )}
+          </div>
+          <div>
+            <p className="text-[15px] font-medium text-white/90">{String(data.label ?? 'Mostly Sunny')}</p>
+            {size !== 'small' && (
+              <p className="text-[12px] text-white/60 mt-0.5">
+                Humidity {String(data.humidity ?? '—')}% · Wind {String(data.windKph ?? '—')} km/h
+              </p>
+            )}
+          </div>
         </div>
       );
     case 'calendar':
@@ -269,11 +276,14 @@ function ClockWidget({ size }: { size: string }) {
   }, []);
 
   return (
-    <div>
-      <p className={cn('font-extralight text-white tabular-nums', size === 'small' ? 'text-3xl' : 'text-4xl')}>
-        {formatTime(time)}
-      </p>
-      <p className="text-xs text-white/50 mt-1">{formatShortDate(time)}</p>
+    <div className="h-full flex flex-col justify-between">
+      <p className="text-[13px] font-semibold text-white/90">Clock</p>
+      <div>
+        <p className={cn('font-display font-light text-white tabular-nums leading-none', size === 'small' ? 'text-[40px]' : 'text-[46px]')}>
+          {formatTime(time)}
+        </p>
+        <p className="text-[13px] font-medium text-white/70 mt-1.5">{formatShortDate(time)}</p>
+      </div>
     </div>
   );
 }

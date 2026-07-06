@@ -7,7 +7,6 @@ import { useAppLaunch } from '@/hooks/useAppLaunch';
 import { getApp } from '@/services/appRouter';
 import { AppIcon } from './AppIcon';
 import { useState } from 'react';
-import { GlassPanel } from '@/components/ui/GlassPanel';
 import { useHaptic } from '@/hooks/useSound';
 
 interface AppEntry {
@@ -69,35 +68,45 @@ export function AppLibrary() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        <div className="flex-1 bg-black/50 backdrop-blur-md" onClick={() => setOpen(false)} />
+        <div className="flex-1 bg-black/40 backdrop-blur-[6px]" onClick={() => setOpen(false)} />
         <motion.div
           className="max-h-[85%] overflow-hidden"
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
-          transition={{ type: 'spring', stiffness: 300, damping: 35 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 34 }}
         >
-          <GlassPanel className="rounded-t-3xl rounded-b-none p-4 h-full" intensity="high">
+          <div className="ios-material-thick rounded-t-[34px] p-5 h-full">
+            {/* Sheet grabber */}
+            <div className="mx-auto w-[36px] h-[5px] rounded-full bg-white/30 mb-4" />
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white">App Library</h2>
-              <button onClick={() => setOpen(false)} className="text-xs text-white/50">Close</button>
+              <h2 className="text-[22px] font-bold font-display text-white">App Library</h2>
+              <button
+                onClick={() => setOpen(false)}
+                className="w-[30px] h-[30px] rounded-full bg-ios-fill-tertiary flex items-center justify-center text-white/80"
+                aria-label="Close"
+              >
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
+                  <path d="M1 1l9 9M10 1l-9 9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
 
             <input
               type="search"
-              placeholder="Search apps..."
+              placeholder="Search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full mb-4 px-4 py-2 rounded-xl bg-white/10 border border-white/10 text-white text-sm placeholder:text-white/40"
+              className="w-full mb-4 px-4 h-[36px] rounded-[12px] bg-[rgba(118,118,128,0.24)] text-white text-[17px] placeholder:text-[rgba(235,235,245,0.6)] outline-none"
             />
 
-            <div className="flex gap-2 mb-4">
+            <div className="flex p-[2px] rounded-[9px] bg-ios-fill-tertiary w-fit mb-4">
               {(['categories', 'recent', 'suggestions'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => { tap(); setTab(t); }}
-                  className={`px-3 py-1 rounded-full text-xs capitalize ${
-                    tab === t ? 'bg-gulf-gold text-black' : 'bg-white/10 text-white/70'
+                  className={`px-4 py-[5px] rounded-[7px] text-[13px] font-medium capitalize transition-colors ${
+                    tab === t ? 'bg-[#636366] text-white shadow-sm' : 'text-white/60'
                   }`}
                 >
                   {t}
@@ -116,6 +125,7 @@ export function AppLibrary() {
                           key={app.bundleId}
                           name={app.name}
                           icon={app.icon ?? getApp(app.bundleId)?.icon ?? '📱'}
+                          bundleId={app.bundleId}
                           size="sm"
                           onPress={() => handleLaunch(app)}
                         />
@@ -131,6 +141,7 @@ export function AppLibrary() {
                       key={app.bundleId}
                       name={app.name}
                       icon={app.icon ?? getApp(app.bundleId)?.icon ?? '📱'}
+                      bundleId={app.bundleId}
                       size="sm"
                       onPress={() => handleLaunch(app)}
                     />
@@ -148,6 +159,7 @@ export function AppLibrary() {
                       key={app.bundleId}
                       name={app.name}
                       icon={app.icon ?? getApp(app.bundleId)?.icon ?? '📱'}
+                      bundleId={app.bundleId}
                       size="sm"
                       onPress={() => handleLaunch(app)}
                     />
@@ -158,7 +170,7 @@ export function AppLibrary() {
                 </div>
               )}
             </div>
-          </GlassPanel>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>

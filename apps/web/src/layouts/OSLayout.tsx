@@ -59,12 +59,10 @@ export function OSLayout() {
           {phase === 'booting' && <BootAnimation key="boot" />}
         </AnimatePresence>
 
-        {(showHome || showLock) && (
-          <>
-            <StatusBar />
-            <DynamicIsland />
-          </>
-        )}
+        {(showHome || showLock) && <StatusBar />}
+
+        {/* Dynamic Island is a hardware cutout — always visible after boot */}
+        {phase !== 'splash' && phase !== 'booting' && <DynamicIsland />}
 
         <AnimatePresence>
           {showLock && <LockScreen key="lock" />}

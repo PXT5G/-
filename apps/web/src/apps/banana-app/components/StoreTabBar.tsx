@@ -17,10 +17,11 @@ interface StoreTabBarProps {
   updateCount?: number;
 }
 
+/** Native UITabBar — 49pt bar + home-indicator safe area, chrome material */
 export function StoreTabBar({ active, onChange, updateCount = 0 }: StoreTabBarProps) {
   return (
     <nav
-      className="flex items-center justify-around border-t border-white/10 bg-black/90 backdrop-blur-xl py-2 pb-4"
+      className="ios-material-chrome border-t border-[rgba(84,84,88,0.35)] flex items-start justify-around pt-[7px] pb-[24px]"
       aria-label="Store navigation"
     >
       {TABS.map((tab) => (
@@ -29,15 +30,15 @@ export function StoreTabBar({ active, onChange, updateCount = 0 }: StoreTabBarPr
           type="button"
           onClick={() => onChange(tab.id)}
           className={cn(
-            'flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors relative',
-            active === tab.id ? 'text-gulf-gold' : 'text-white/40'
+            'flex flex-col items-center gap-[3px] px-3 transition-colors relative min-w-[64px]',
+            active === tab.id ? 'text-gulf-gold' : 'text-[rgba(235,235,245,0.6)]'
           )}
           aria-current={active === tab.id ? 'page' : undefined}
         >
-          <span className="text-lg">{tab.icon}</span>
-          <span className="text-[10px] font-medium">{tab.label}</span>
+          <span className="text-[24px] leading-none">{tab.icon}</span>
+          <span className="text-[10px] font-medium tracking-tight">{tab.label}</span>
           {tab.id === 'updates' && updateCount > 0 && (
-            <span className="absolute -top-0.5 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+            <span className="absolute -top-1 right-2 min-w-[17px] h-[17px] px-1 bg-ios-red text-white text-[11px] font-semibold rounded-full flex items-center justify-center">
               {updateCount > 9 ? '9+' : updateCount}
             </span>
           )}
