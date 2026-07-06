@@ -91,7 +91,7 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
   }).catch(() => {});
 
   await page.waitForTimeout(1500);
-  const island = page.getByRole('status', { name: 'Dynamic Island' });
+  const island = page.locator('[role="status"][aria-live="polite"]');
   if (await island.isVisible({ timeout: 3_000 }).catch(() => false)) {
     await island.click({ timeout: 5_000 }).catch(() => {});
     await gulf.cinemaPause(2500);
@@ -157,10 +157,22 @@ test('GULFOS Official Showcase — power-on to shutdown', async ({ page, request
   await gulf.launchFromDock('GULF Store');
   await gulf.cinemaPause(2500);
 
-  await page.getByRole('button', { name: 'Today', exact: true }).click({ timeout: 4_000 }).catch(() => {});
+  await page.getByRole('button', { name: /Today/i }).click({ timeout: 4_000 }).catch(() => {});
   await gulf.cinemaPause(2000);
 
   await gulf.demonstrateStoreInstall(STORE_DEMO_NAME);
+  for (let i = 0; i < 45; i++) {
+    const res = await request.get(`${API_BASE}/api/store/apps/${STORE_DEMO_APP}`, {
+      headers: { Authorization: `Bearer ${session.token}` },
+    });
+    if (res.ok() && (await res.json())?.data?.installed === true) break;
+    await page.waitForTimeout(1000);
+  }
+  await page.evaluate(() => window.__GULFOS_E2E__?.dismissStoreInstall());
+  await gulf.closeApp();
+  await gulf.launchFromDock('GULF Store');
+  await gulf.cinemaPause(2000);
+
   await stageAppForUpdate(request, session.token, STORE_DEMO_APP, '0.1.0');
   await gulf.demonstrateStoreUpdate();
   await gulf.demonstrateStoreRemove(STORE_DEMO_NAME);
