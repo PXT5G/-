@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import { createServer } from 'http';
 import { env } from './config/env';
 import { connectDatabase } from './database/connection';
@@ -65,6 +66,7 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(helmet());
+app.use(compression());
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(idempotencyMiddleware);

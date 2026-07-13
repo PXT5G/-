@@ -22,6 +22,14 @@ export async function ensureDatabaseIndexes(): Promise<{ ensured: number }> {
     { model: 'SimCard', indexes: [{ phoneId: 1, slot: 1 }] },
     { model: 'Contact', indexes: [{ phoneId: 1, displayName: 1 }] },
     { model: 'PhoneCall', indexes: [{ phoneId: 1, startedAt: -1 }] },
+    // Hot paths measured in the request-flood audit
+    { model: 'InstalledApp', indexes: [{ userId: 1, bundleId: 1 }] },
+    { model: 'StoreDownload', indexes: [{ userId: 1, status: 1, createdAt: -1 }] },
+    { model: 'DeviceState', indexes: [{ userId: 1, deletedAt: 1 }] },
+    { model: 'WorldState', indexes: [{ userId: 1, deletedAt: 1 }] },
+    { model: 'AppRegistry', indexes: [{ userId: 1, bundleId: 1 }] },
+    { model: 'AppPermission', indexes: [{ userId: 1, appId: 1, permission: 1 }] },
+    { model: 'OSNotification', indexes: [{ userId: 1, createdAt: -1 }] },
   ];
 
   let ensured = 0;

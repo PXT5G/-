@@ -1,168 +1,150 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { registerApp } from '@/services/appRouter';
-import { SettingsApp } from '@/components/settings/SettingsApp';
-import { GulfStoreApp } from '@/apps/banana-app';
+import type { AppManifest } from '@/types';
+
+// Manifests are tiny — keep them in the boot bundle for instant metadata
 import { gulfStoreManifest } from '@/apps/banana-app/manifest';
-import { MapsApp } from '@/apps/maps';
 import { mapsManifest } from '@/apps/maps/manifest';
-import { CameraApp } from '@/apps/camera';
 import { cameraManifest } from '@/apps/camera/manifest';
-import { GalleryApp } from '@/apps/gallery';
 import { galleryManifest } from '@/apps/gallery/manifest';
-import { FilesApp } from '@/apps/files';
 import { filesManifest } from '@/apps/files/manifest';
-import { CalendarApp } from '@/apps/calendar';
 import { calendarManifest } from '@/apps/calendar/manifest';
-import { ClockApp } from '@/apps/clock';
 import { clockManifest } from '@/apps/clock/manifest';
-import { CalculatorApp } from '@/apps/calculator';
 import { calculatorManifest } from '@/apps/calculator/manifest';
-import { NotesApp } from '@/apps/notes';
 import { notesManifest } from '@/apps/notes/manifest';
-import { VoiceRecorderApp } from '@/apps/voice-recorder';
 import { voiceRecorderManifest } from '@/apps/voice-recorder/manifest';
-import { WeatherApp } from '@/apps/weather';
 import { weatherManifest } from '@/apps/weather/manifest';
-import { PoliceApp } from '@/apps/police';
 import { policeManifest } from '@/apps/police/manifest';
-import { PoetryApp } from '@/apps/poetry';
 import { poetryManifest } from '@/apps/poetry/manifest';
-import { BrowserApp } from '@/apps/browser';
 import { browserManifest } from '@/apps/browser/manifest';
-import { ChatApp } from '@/apps/chat';
 import { chatManifest } from '@/apps/chat/manifest';
-import { JusticeApp } from '@/apps/justice';
 import { justiceManifest } from '@/apps/justice/manifest';
-import { EmsApp } from '@/apps/ems';
 import { emsManifest } from '@/apps/ems/manifest';
-import { BusinessApp } from '@/apps/business';
 import { businessManifest } from '@/apps/business/manifest';
-import { RealEstateApp } from '@/apps/real-estate';
 import { realEstateManifest } from '@/apps/real-estate/manifest';
-import { VehiclesApp } from '@/apps/vehicles';
 import { vehiclesManifest } from '@/apps/vehicles/manifest';
-import { AviationApp } from '@/apps/aviation';
 import { aviationManifest } from '@/apps/aviation/manifest';
-import { MarineApp } from '@/apps/marine';
 import { marineManifest } from '@/apps/marine/manifest';
-import { ExchangeApp } from '@/apps/exchange';
 import { exchangeManifest } from '@/apps/exchange/manifest';
-import { PhoneApp } from '@/apps/phone';
 import { phoneManifest } from '@/apps/phone/manifest';
-import { ContactsApp } from '@/apps/contacts';
 import { contactsManifest } from '@/apps/contacts/manifest';
-import { MessagesApp } from '@/apps/messages';
 import { messagesManifest } from '@/apps/messages/manifest';
-import { MailApp } from '@/apps/mail';
 import { mailManifest } from '@/apps/mail/manifest';
-import { SimApp } from '@/apps/sim';
 import { simManifest } from '@/apps/sim/manifest';
-import { BankApp } from '@/apps/bank';
 import { bankManifest } from '@/apps/bank/manifest';
-import { IdentityApp } from '@/apps/identity';
 import { identityManifest } from '@/apps/identity/manifest';
-import { AssistantApp } from '@/apps/assistant';
 import { assistantManifest } from '@/apps/assistant/manifest';
-import { AutomationApp } from '@/apps/automation';
 import { automationManifest } from '@/apps/automation/manifest';
-import { ShortcutsApp } from '@/apps/shortcuts';
 import { shortcutsManifest } from '@/apps/shortcuts/manifest';
-import { FocusApp } from '@/apps/focus';
 import { focusManifest } from '@/apps/focus/manifest';
-import { IntelligenceHubApp } from '@/apps/intelligence';
 import { intelligenceManifest } from '@/apps/intelligence/manifest';
-import { PersonalizationApp } from '@/apps/personalization';
 import { personalizationManifest } from '@/apps/personalization/manifest';
-import { SecurityApp } from '@/apps/security';
 import { securityManifest } from '@/apps/security/manifest';
-import { PrivacyApp } from '@/apps/privacy';
 import { privacyManifest } from '@/apps/privacy/manifest';
-import { CloudApp } from '@/apps/cloud';
 import { cloudManifest } from '@/apps/cloud/manifest';
-import { FindMyApp } from '@/apps/find-my';
 import { findMyManifest } from '@/apps/find-my/manifest';
-import { DeveloperApp } from '@/apps/developer';
 import { developerManifest } from '@/apps/developer/manifest';
-import { AnalyticsApp } from '@/apps/analytics';
 import { analyticsManifest } from '@/apps/analytics/manifest';
-import { DiagnosticsApp } from '@/apps/diagnostics';
 import { diagnosticsManifest } from '@/apps/diagnostics/manifest';
-import { EnterpriseApp } from '@/apps/enterprise';
 import { enterpriseManifest } from '@/apps/enterprise/manifest';
-import { PerformanceApp } from '@/apps/performance';
 import { performanceManifest } from '@/apps/performance/manifest';
-import { UpdatesApp } from '@/apps/updates';
 import { updatesManifest } from '@/apps/updates/manifest';
 
-registerApp(
-  {
-    id: 'com.gulfos.settings',
-    bundleId: 'com.gulfos.settings',
-    name: 'Settings',
-    version: '1.0.0',
-    description: 'System settings and preferences',
-    icon: '⚙️',
-    category: 'system',
-    permissions: [],
-    minOSVersion: '1.0.0',
-    isSystemApp: true,
-    route: '/settings',
-  },
-  SettingsApp
-);
+const settingsManifest: AppManifest = {
+  id: 'com.gulfos.settings',
+  bundleId: 'com.gulfos.settings',
+  name: 'Settings',
+  version: '1.0.0',
+  description: 'System settings and preferences',
+  icon: '⚙️',
+  category: 'system',
+  permissions: [],
+  minOSVersion: '1.0.0',
+  isSystemApp: true,
+  route: '/settings',
+};
 
-registerApp(gulfStoreManifest, GulfStoreApp);
+/**
+ * App components are code-split: each app ships as its own chunk that
+ * loads on first launch instead of at boot. Behavior is unchanged — the
+ * chunk resolves inside the 400ms window-open animation.
+ */
+type Loader = () => Promise<{ default: React.ComponentType<{ appId?: string; appName?: string }> }>;
 
-const SYSTEM_APPS = [
-  [mapsManifest, MapsApp],
-  [cameraManifest, CameraApp],
-  [galleryManifest, GalleryApp],
-  [filesManifest, FilesApp],
-  [calendarManifest, CalendarApp],
-  [clockManifest, ClockApp],
-  [calculatorManifest, CalculatorApp],
-  [notesManifest, NotesApp],
-  [voiceRecorderManifest, VoiceRecorderApp],
-  [weatherManifest, WeatherApp],
-] as const;
+const lazy = (load: Loader) => dynamic(load, { ssr: false, loading: () => null });
 
-for (const [manifest, component] of SYSTEM_APPS) {
+const APPS: Array<[AppManifest, ReturnType<typeof lazy>]> = [
+  [settingsManifest, lazy(() => import('@/components/settings/SettingsApp').then((m) => ({ default: m.SettingsApp })))],
+  [gulfStoreManifest, lazy(() => import('@/apps/banana-app').then((m) => ({ default: m.GulfStoreApp })))],
+  [mapsManifest, lazy(() => import('@/apps/maps').then((m) => ({ default: m.MapsApp })))],
+  [cameraManifest, lazy(() => import('@/apps/camera').then((m) => ({ default: m.CameraApp })))],
+  [galleryManifest, lazy(() => import('@/apps/gallery').then((m) => ({ default: m.GalleryApp })))],
+  [filesManifest, lazy(() => import('@/apps/files').then((m) => ({ default: m.FilesApp })))],
+  [calendarManifest, lazy(() => import('@/apps/calendar').then((m) => ({ default: m.CalendarApp })))],
+  [clockManifest, lazy(() => import('@/apps/clock').then((m) => ({ default: m.ClockApp })))],
+  [calculatorManifest, lazy(() => import('@/apps/calculator').then((m) => ({ default: m.CalculatorApp })))],
+  [notesManifest, lazy(() => import('@/apps/notes').then((m) => ({ default: m.NotesApp })))],
+  [voiceRecorderManifest, lazy(() => import('@/apps/voice-recorder').then((m) => ({ default: m.VoiceRecorderApp })))],
+  [weatherManifest, lazy(() => import('@/apps/weather').then((m) => ({ default: m.WeatherApp })))],
+  [policeManifest, lazy(() => import('@/apps/police').then((m) => ({ default: m.PoliceApp })))],
+  [poetryManifest, lazy(() => import('@/apps/poetry').then((m) => ({ default: m.PoetryApp })))],
+  [browserManifest, lazy(() => import('@/apps/browser').then((m) => ({ default: m.BrowserApp })))],
+  [chatManifest, lazy(() => import('@/apps/chat').then((m) => ({ default: m.ChatApp })))],
+  [justiceManifest, lazy(() => import('@/apps/justice').then((m) => ({ default: m.JusticeApp })))],
+  [emsManifest, lazy(() => import('@/apps/ems').then((m) => ({ default: m.EmsApp })))],
+  [businessManifest, lazy(() => import('@/apps/business').then((m) => ({ default: m.BusinessApp })))],
+  [realEstateManifest, lazy(() => import('@/apps/real-estate').then((m) => ({ default: m.RealEstateApp })))],
+  [vehiclesManifest, lazy(() => import('@/apps/vehicles').then((m) => ({ default: m.VehiclesApp })))],
+  [aviationManifest, lazy(() => import('@/apps/aviation').then((m) => ({ default: m.AviationApp })))],
+  [marineManifest, lazy(() => import('@/apps/marine').then((m) => ({ default: m.MarineApp })))],
+  [exchangeManifest, lazy(() => import('@/apps/exchange').then((m) => ({ default: m.ExchangeApp })))],
+  [phoneManifest, lazy(() => import('@/apps/phone').then((m) => ({ default: m.PhoneApp })))],
+  [contactsManifest, lazy(() => import('@/apps/contacts').then((m) => ({ default: m.ContactsApp })))],
+  [messagesManifest, lazy(() => import('@/apps/messages').then((m) => ({ default: m.MessagesApp })))],
+  [mailManifest, lazy(() => import('@/apps/mail').then((m) => ({ default: m.MailApp })))],
+  [simManifest, lazy(() => import('@/apps/sim').then((m) => ({ default: m.SimApp })))],
+  [bankManifest, lazy(() => import('@/apps/bank').then((m) => ({ default: m.BankApp })))],
+  [identityManifest, lazy(() => import('@/apps/identity').then((m) => ({ default: m.IdentityApp })))],
+  [assistantManifest, lazy(() => import('@/apps/assistant').then((m) => ({ default: m.AssistantApp })))],
+  [automationManifest, lazy(() => import('@/apps/automation').then((m) => ({ default: m.AutomationApp })))],
+  [shortcutsManifest, lazy(() => import('@/apps/shortcuts').then((m) => ({ default: m.ShortcutsApp })))],
+  [focusManifest, lazy(() => import('@/apps/focus').then((m) => ({ default: m.FocusApp })))],
+  [intelligenceManifest, lazy(() => import('@/apps/intelligence').then((m) => ({ default: m.IntelligenceHubApp })))],
+  [personalizationManifest, lazy(() => import('@/apps/personalization').then((m) => ({ default: m.PersonalizationApp })))],
+  [securityManifest, lazy(() => import('@/apps/security').then((m) => ({ default: m.SecurityApp })))],
+  [privacyManifest, lazy(() => import('@/apps/privacy').then((m) => ({ default: m.PrivacyApp })))],
+  [cloudManifest, lazy(() => import('@/apps/cloud').then((m) => ({ default: m.CloudApp })))],
+  [findMyManifest, lazy(() => import('@/apps/find-my').then((m) => ({ default: m.FindMyApp })))],
+  [developerManifest, lazy(() => import('@/apps/developer').then((m) => ({ default: m.DeveloperApp })))],
+  [analyticsManifest, lazy(() => import('@/apps/analytics').then((m) => ({ default: m.AnalyticsApp })))],
+  [diagnosticsManifest, lazy(() => import('@/apps/diagnostics').then((m) => ({ default: m.DiagnosticsApp })))],
+  [enterpriseManifest, lazy(() => import('@/apps/enterprise').then((m) => ({ default: m.EnterpriseApp })))],
+  [performanceManifest, lazy(() => import('@/apps/performance').then((m) => ({ default: m.PerformanceApp })))],
+  [updatesManifest, lazy(() => import('@/apps/updates').then((m) => ({ default: m.UpdatesApp })))],
+];
+
+for (const [manifest, component] of APPS) {
   registerApp(manifest, component);
 }
 
-registerApp(policeManifest, PoliceApp);
-registerApp(poetryManifest, PoetryApp);
-registerApp(browserManifest, BrowserApp);
-registerApp(chatManifest, ChatApp);
-registerApp(justiceManifest, JusticeApp);
-registerApp(emsManifest, EmsApp);
-registerApp(businessManifest, BusinessApp);
-registerApp(realEstateManifest, RealEstateApp);
-registerApp(vehiclesManifest, VehiclesApp);
-registerApp(aviationManifest, AviationApp);
-registerApp(marineManifest, MarineApp);
-registerApp(exchangeManifest, ExchangeApp);
-registerApp(phoneManifest, PhoneApp);
-registerApp(contactsManifest, ContactsApp);
-registerApp(messagesManifest, MessagesApp);
-registerApp(mailManifest, MailApp);
-registerApp(simManifest, SimApp);
-registerApp(bankManifest, BankApp);
-registerApp(identityManifest, IdentityApp);
-registerApp(assistantManifest, AssistantApp);
-registerApp(automationManifest, AutomationApp);
-registerApp(shortcutsManifest, ShortcutsApp);
-registerApp(focusManifest, FocusApp);
-registerApp(intelligenceManifest, IntelligenceHubApp);
-registerApp(personalizationManifest, PersonalizationApp);
-registerApp(securityManifest, SecurityApp);
-registerApp(privacyManifest, PrivacyApp);
-registerApp(cloudManifest, CloudApp);
-registerApp(findMyManifest, FindMyApp);
-registerApp(developerManifest, DeveloperApp);
-registerApp(analyticsManifest, AnalyticsApp);
-registerApp(diagnosticsManifest, DiagnosticsApp);
-registerApp(enterpriseManifest, EnterpriseApp);
-registerApp(performanceManifest, PerformanceApp);
-registerApp(updatesManifest, UpdatesApp);
+/**
+ * Warm the chunks for dock apps + Settings during idle time after boot,
+ * so the first launch is as instant as it was before code-splitting.
+ */
+const PREFETCH = [
+  () => import('@/components/settings/SettingsApp'),
+  () => import('@/apps/banana-app'),
+  () => import('@/apps/phone'),
+  () => import('@/apps/chat'),
+];
+
+if (typeof window !== 'undefined') {
+  const warm = () => PREFETCH.forEach((load) => { void load().catch(() => {}); });
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(warm, { timeout: 2500 });
+  } else {
+    setTimeout(warm, 2500);
+  }
+}

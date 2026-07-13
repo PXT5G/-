@@ -5,49 +5,49 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('/fonts/SF-Pro-Display-Light.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Display-Light.woff2') format('woff2');
   font-weight: 100 300;
   font-display: swap;
 }
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('/fonts/SF-Pro-Display-Regular.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Display-Regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('/fonts/SF-Pro-Display-Medium.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Display-Medium.woff2') format('woff2');
   font-weight: 500;
   font-display: swap;
 }
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('/fonts/SF-Pro-Display-Semibold.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Display-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
 @font-face {
   font-family: 'SF Pro Display';
-  src: url('/fonts/SF-Pro-Display-Bold.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Display-Bold.woff2') format('woff2');
   font-weight: 700;
   font-display: swap;
 }
 @font-face {
   font-family: 'SF Pro Text';
-  src: url('/fonts/SF-Pro-Text-Regular.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Text-Regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: 'SF Pro Text';
-  src: url('/fonts/SF-Pro-Text-Medium.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Text-Medium.woff2') format('woff2');
   font-weight: 500;
   font-display: swap;
 }
 @font-face {
   font-family: 'SF Pro Text';
-  src: url('/fonts/SF-Pro-Text-Semibold.otf') format('opentype');
+  src: url('/fonts/SF-Pro-Text-Semibold.woff2') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
@@ -60,10 +60,6 @@
   --color-gulf-gold: #D4AF37;
   --color-gulf-black: #000000;
   --color-gulf-white: #ffffff;
-  /* Legacy aliases */
-  --color-banana-gold: var(--color-gulf-gold);
-  --color-banana-black: var(--color-gulf-black);
-  --color-banana-white: var(--color-gulf-white);
 
   /* iOS system colors (dark appearance) */
   --ios-blue: #0A84FF;
@@ -115,9 +111,6 @@
   --color-gulf-gold: #D4AF37;
   --color-gulf-black: #000000;
   --color-gulf-white: #ffffff;
-  --color-banana-gold: var(--color-gulf-gold);
-  --color-banana-black: var(--color-gulf-black);
-  --color-banana-white: var(--color-gulf-white);
 
   /* iOS palette exposed as Tailwind utilities: bg-ios-blue, text-ios-label etc. */
   --color-ios-blue: #0A84FF;
@@ -213,6 +206,8 @@ h1, h2, h3, .font-display {
   background: rgba(24, 24, 24, 0.78);
   backdrop-filter: blur(50px) saturate(180%);
   -webkit-backdrop-filter: blur(50px) saturate(180%);
+  /* Full-screen sliding panels: promote to a compositor layer */
+  will-change: transform;
 }
 .ios-material-chrome {
   background: rgba(18, 18, 18, 0.85);
@@ -229,26 +224,6 @@ h1, h2, h3, .font-display {
 /* iOS-style continuous-corner shadow for cards */
 .ios-card-shadow {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-}
-.ios-icon-shadow {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
-}
-
-/* iOS grouped inset list (Settings style) */
-.ios-inset-group {
-  border-radius: 12px;
-  background: var(--ios-bg-secondary);
-  overflow: hidden;
-}
-.ios-list-row {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 16px;
-}
-.ios-list-separator {
-  border-bottom: 0.5px solid var(--ios-separator);
-  margin-left: 16px;
 }
 
 /* iOS large-title nav bar */
@@ -271,8 +246,7 @@ h1, h2, h3, .font-display {
 /* ═══════════════════════════════════════════════════════════════════════════
    WALLPAPERS
    ═══════════════════════════════════════════════════════════════════════════ */
-.wallpaper-gulf,
-.wallpaper-banana {
+.wallpaper-gulf {
   background:
     radial-gradient(120% 90% at 80% -10%, #3d2f0e 0%, transparent 50%),
     radial-gradient(120% 100% at 15% 110%, #14233f 0%, transparent 55%),
