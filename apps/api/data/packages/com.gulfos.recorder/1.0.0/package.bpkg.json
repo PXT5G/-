@@ -1,0 +1,27 @@
+{
+  "bundleId": "com.gulfos.recorder",
+  "version": "1.0.0",
+  "checksum": "3f65c01464351bbd4a541efe8fd1a1cbba9446000d36d4b3fc49c3a52d45ce51",
+  "size": 120000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "microphone",
+    "storage"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 120000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "🎙️"
+  ],
+  "screenshots": [
+    "🎙️",
+    "✂️",
+    "📤"
+  ],
+  "changelog": "Initial release of GULF Recorder",
+  "hasRuntime": true
+}

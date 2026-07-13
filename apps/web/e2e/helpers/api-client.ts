@@ -5,7 +5,14 @@ import { DEMO_CREDENTIALS, GULFOS_APPS } from './app-catalog';
 const API_BASE = process.env.PLAYWRIGHT_API_URL ?? 'http://localhost:4000';
 
 const GOV_APPS = ['com.gulfos.police', 'com.gulfos.justice', 'com.gulfos.ems'] as const;
-const ALL_PERMS = ['location', 'camera', 'notifications', 'network', 'storage'] as const;
+/** Full system permission set (mirrors shared PermissionType) */
+const ALL_PERMS = [
+  'camera', 'microphone', 'location', 'contacts', 'photos', 'videos',
+  'notifications', 'storage', 'network', 'biometrics', 'phone', 'bluetooth',
+  'sim', 'files', 'calendar', 'sms', 'background_refresh', 'motion',
+  'clipboard', 'nearby_devices', 'media_library', 'vpn', 'health',
+  'bank', 'identity', 'mail',
+] as const;
 
 const INIT_SERVICES = [
   'police', 'justice', 'ems', 'poetry', 'browser', 'chat', 'business',
@@ -51,13 +58,15 @@ export async function prepareShowcaseEnvironment(request: APIRequestContext): Pr
     throw new Error(`Failed to obtain demo auth token: ${body?.error ?? login.status()}`);
   }
 
-  await request.post(`${API_BASE}/api/system/ready`, {
-    headers: { Authorization: `Bearer ${token}` },
-  }).catch(() => {});
-
+  // Grant permissions before any service initialization so phone/contacts/
+  // bank init never hits PHONE_PERMISSION_DENIED on a fresh database.
   await installGovernmentApps(request, token);
   await installAllCatalogApps(request, token);
   await grantAllAppPermissions(request, token);
+
+  await request.post(`${API_BASE}/api/system/ready`, {
+    headers: { Authorization: `Bearer ${token}` },
+  }).catch(() => {});
 
   for (const service of INIT_SERVICES) {
     await request.post(`${API_BASE}/api/${service}/initialize`, {
@@ -98,12 +107,14 @@ async function grantAllAppPermissions(request: APIRequestContext, token: string)
   }
 
   for (const bundleId of bundleIds) {
-    for (const permission of ALL_PERMS) {
-      await request.post(`${API_BASE}/api/system/permissions/grant`, {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { appId: bundleId, permission },
-      }).catch(() => {});
-    }
+    await Promise.all(
+      ALL_PERMS.map((permission) =>
+        request.post(`${API_BASE}/api/system/permissions/grant`, {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { appId: bundleId, permission },
+        }).catch(() => {}),
+      ),
+    );
   }
 }
 

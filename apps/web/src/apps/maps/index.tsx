@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { systemAppsService } from '@/services/systemAppsService';
 import { useMapsState } from '@/hooks/useSystemApps';
+import { useRealGeo } from '@/hooks/useRealGeo';
 import { useHaptic } from '@/hooks/useSound';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 
@@ -15,6 +16,7 @@ export function MapsApp() {
   const [tab, setTab] = useState<Tab>('map');
   const [searchQ, setSearchQ] = useState('');
   const { data: mapsState } = useMapsState();
+  const { data: geo } = useRealGeo();
 
   const world = mapsState?.world as Record<string, unknown> | undefined;
   const gps = mapsState?.gps as Record<string, unknown> | undefined;
@@ -62,8 +64,40 @@ export function MapsApp() {
       <div className="flex-1 overflow-y-auto p-4">
         {tab === 'map' && (
           <>
+            {/* Real device GPS position */}
             <GlassPanel className="p-4 mb-4" intensity="low">
-              <p className="text-gulf-gold text-xs uppercase tracking-wider mb-2">Live Position</p>
+              <p className="text-ios-blue text-xs uppercase tracking-wider mb-2">📍 My Location (GPS)</p>
+              <p className="text-white text-lg font-semibold">
+                {geo ? `${geo.city}${geo.region ? `, ${geo.region}` : ''}` : 'Locating…'}
+              </p>
+              <p className="text-white/60 text-sm">{geo?.country ?? ''}</p>
+              <p className="text-white/40 text-xs font-mono mt-1 tabular-nums">
+                {geo ? `${geo.latitude.toFixed(5)}, ${geo.longitude.toFixed(5)}` : '— , —'}
+              </p>
+              {geo && (
+                <p className="text-white/50 text-xs mt-2">
+                  {geo.weather ? `${geo.weather.icon} ${geo.weather.tempC}° ${geo.weather.label} · ` : ''}
+                  {geo.source === 'gps' ? 'Device GPS' : geo.source === 'ip' ? 'Network location' : 'Default location'} · {geo.timezone}
+                </p>
+              )}
+            </GlassPanel>
+
+            <div className="relative h-48 rounded-2xl bg-gradient-to-br from-emerald-900/40 via-black to-gulf-gold/10 border border-white/10 mb-4 overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="relative flex">
+                  <span className="animate-ping absolute inline-flex h-5 w-5 rounded-full bg-ios-blue opacity-40" />
+                  <span className="relative inline-flex w-5 h-5 rounded-full bg-ios-blue border-[3px] border-white shadow-lg" />
+                </span>
+              </div>
+              {geo && (
+                <p className="absolute top-2 left-3 text-[11px] text-white/70 font-medium">{geo.city}</p>
+              )}
+              <p className="absolute bottom-2 left-3 text-[10px] text-white/40">GULF Maps · Live GPS</p>
+            </div>
+
+            {/* Simulated world position (game engine) */}
+            <GlassPanel className="p-4 mb-4" intensity="low">
+              <p className="text-gulf-gold text-xs uppercase tracking-wider mb-2">World Position</p>
               <p className="text-white text-lg font-semibold">{String(world?.district ?? '—')}</p>
               <p className="text-white/60 text-sm">{String(world?.street ?? '')}</p>
               <p className="text-white/40 text-xs font-mono mt-1">
@@ -71,13 +105,6 @@ export function MapsApp() {
               </p>
               <p className="text-white/50 text-xs mt-2">Weather: {String(world?.weather ?? 'clear')} · Speed: {Number(world?.speed ?? 0).toFixed(0)} km/h</p>
             </GlassPanel>
-
-            <div className="relative h-48 rounded-2xl bg-gradient-to-br from-emerald-900/40 via-black to-gulf-gold/10 border border-white/10 mb-4 overflow-hidden">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-4 h-4 rounded-full bg-gulf-gold shadow-lg shadow-gulf-gold/50 animate-pulse" />
-              </div>
-              <p className="absolute bottom-2 left-3 text-[10px] text-white/40">GTA Map · World Engine</p>
-            </div>
 
             {gps?.navigating ? (
               <GlassPanel className="p-4 mb-4 border-gulf-gold/30" intensity="low">

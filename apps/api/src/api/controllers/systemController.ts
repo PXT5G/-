@@ -55,6 +55,16 @@ function param(value: string | string[]): string {
 
 const appIdSchema = z.object({ appId: z.string().default('com.gulfos.system') });
 
+// ─── Real-world GPS geolocation ─────────────────────────────────────────────
+
+export const getRealGeoHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const lat = req.query.lat !== undefined ? Number(req.query.lat) : undefined;
+  const lon = req.query.lon !== undefined ? Number(req.query.lon) : undefined;
+  const { getRealGeo } = await import('../../services/geoService');
+  const data = await getRealGeo(lat, lon);
+  res.json({ success: true, data });
+});
+
 // ─── Location ───────────────────────────────────────────────────────────────
 
 export const getLocationHandler = asyncHandler(async (req: AuthRequest, res: Response) => {

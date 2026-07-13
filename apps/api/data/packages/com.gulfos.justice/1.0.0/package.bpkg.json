@@ -1,0 +1,29 @@
+{
+  "bundleId": "com.gulfos.justice",
+  "version": "1.0.0",
+  "checksum": "aaec5c3949aa2d7d2f98d0d5163271fa261a74b03cc2d2d6d74b818055a0f5ba",
+  "size": 950000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "location",
+    "network",
+    "notifications",
+    "storage"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 950000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "⚖️"
+  ],
+  "screenshots": [
+    "⚖️",
+    "📋",
+    "🏛️"
+  ],
+  "changelog": "Initial release of GULF Justice",
+  "hasRuntime": true
+}

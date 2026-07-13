@@ -1,0 +1,31 @@
+{
+  "bundleId": "com.gulfos.real-estate",
+  "version": "1.0.0",
+  "checksum": "70d7ca16f9b588293201c5db17b906e6e2b817d16ecf073afb587087654b270d",
+  "size": 1300000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "location",
+    "network",
+    "notifications",
+    "storage"
+  ],
+  "optionalPermissions": [
+    "camera"
+  ],
+  "storageRequired": 1300000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "🏠"
+  ],
+  "screenshots": [
+    "🏠",
+    "📍",
+    "💰"
+  ],
+  "changelog": "Initial release of GULF Real Estate",
+  "hasRuntime": true
+}

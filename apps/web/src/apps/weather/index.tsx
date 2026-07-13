@@ -1,14 +1,16 @@
 'use client';
 
 import { useWeather } from '@/hooks/useSystemApps';
+import { useRealGeo } from '@/hooks/useRealGeo';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 
 const WEATHER_ICONS: Record<string, string> = {
-  clear: '☀️', clouds: '☁️', fog: '🌫️', rain: '🌧️', thunderstorm: '⛈️', smog: '😷',
+  clear: '☀️', clouds: '☁️', fog: '🌫️', rain: '🌧️', thunderstorm: '⛈️', smog: '😷', snow: '🌨️',
 };
 
 export function WeatherApp() {
   const { data: weather, isLoading } = useWeather();
+  const { data: geo } = useRealGeo();
 
   if (isLoading || !weather) {
     return (
@@ -23,15 +25,28 @@ export function WeatherApp() {
   const weekly = (weather.weekly as Array<Record<string, unknown>>) ?? [];
   const alerts = (weather.alerts as Array<Record<string, unknown>>) ?? [];
 
+  // Live conditions from the device's real GPS position (Open-Meteo)
+  const place = geo ? `${geo.city}${geo.country ? `, ${geo.country}` : ''}` : String(current.district);
+  const temp = geo?.weather?.tempC ?? Number(current.tempC);
+  const feels = geo?.weather?.feelsLikeC ?? Number(current.feelsLikeC);
+  const label = geo?.weather?.label ?? String(current.label);
+  const icon = geo?.weather?.icon ?? WEATHER_ICONS[String(current.condition)] ?? '🌤️';
+  const wind = geo?.weather?.windKmh ?? Number(current.windKmh);
+
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-b from-sky-900/80 via-black to-black">
       <div className="p-6 pt-12">
-        <p className="text-white/60 text-sm">{String(current.district)}</p>
+        <p className="text-white/90 text-[17px] font-medium font-display">{place}</p>
+        {geo && (
+          <p className="text-white/40 text-[12px] tabular-nums">
+            📍 {geo.latitude.toFixed(4)}, {geo.longitude.toFixed(4)} · {geo.source === 'gps' ? 'GPS' : geo.source === 'ip' ? 'Network location' : 'Default'}
+          </p>
+        )}
         <div className="flex items-center gap-4 mt-2">
-          <span className="text-6xl">{WEATHER_ICONS[String(current.condition)] ?? '🌤️'}</span>
+          <span className="text-6xl">{icon}</span>
           <div>
-            <p className="text-6xl font-extralight text-white">{Number(current.tempC)}°</p>
-            <p className="text-white/60">{String(current.label)} · Feels {Number(current.feelsLikeC)}°</p>
+            <p className="text-6xl font-extralight text-white">{temp}°</p>
+            <p className="text-white/60">{label} · Feels {feels}°</p>
           </div>
         </div>
 
@@ -42,7 +57,7 @@ export function WeatherApp() {
           </GlassPanel>
           <GlassPanel className="p-3 text-center" intensity="low">
             <p className="text-white/40 text-xs">Wind</p>
-            <p className="text-white text-lg">{Number(current.windKmh)} km/h</p>
+            <p className="text-white text-lg">{wind} km/h</p>
           </GlassPanel>
           <GlassPanel className="p-3 text-center" intensity="low">
             <p className="text-white/40 text-xs">Visibility</p>

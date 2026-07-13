@@ -1,0 +1,34 @@
+{
+  "bundleId": "com.gulfos.chat",
+  "version": "1.0.0",
+  "checksum": "bb719e1c779a08cfea21117c53d2547b46dde072beb43d2b1064c3fa667eb3b4",
+  "size": 280000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "network",
+    "contacts",
+    "storage",
+    "notifications"
+  ],
+  "optionalPermissions": [
+    "microphone",
+    "camera",
+    "photos",
+    "biometrics"
+  ],
+  "storageRequired": 280000000,
+  "internetRequired": true,
+  "backgroundActivity": true,
+  "icons": [
+    "💬"
+  ],
+  "screenshots": [
+    "💬",
+    "📞",
+    "🔒"
+  ],
+  "changelog": "Initial release of GULF Chat",
+  "hasRuntime": true
+}

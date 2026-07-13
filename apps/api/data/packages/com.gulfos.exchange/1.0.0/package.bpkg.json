@@ -1,0 +1,29 @@
+{
+  "bundleId": "com.gulfos.exchange",
+  "version": "1.0.0",
+  "checksum": "4055f3b7f43a3c6c77210d4edabbc9312386d341ab7d7f7fc6d3a82a666971e3",
+  "size": 1200000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "location",
+    "network",
+    "notifications",
+    "storage"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 1200000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "📈"
+  ],
+  "screenshots": [
+    "📈",
+    "💹",
+    "🏦"
+  ],
+  "changelog": "Initial release of GULF Exchange",
+  "hasRuntime": true
+}

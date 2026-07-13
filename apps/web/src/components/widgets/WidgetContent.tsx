@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useWidgetData } from '@/hooks/usePremiumExperience';
+import { useRealGeo } from '@/hooks/useRealGeo';
 import { formatTime, formatShortDate } from '@/utils/date';
 import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
@@ -54,24 +55,7 @@ function WidgetBody({
 }) {
   switch (type) {
     case 'weather':
-      return (
-        <div className="h-full flex flex-col justify-between">
-          <div>
-            <p className="text-[13px] font-semibold text-white/90">Weather</p>
-            <p className={cn('font-display font-light text-white leading-tight', size === 'small' ? 'text-[42px]' : 'text-[48px]')}>
-              {String(data.temperature ?? 24)}°
-            </p>
-          </div>
-          <div>
-            <p className="text-[15px] font-medium text-white/90">{String(data.label ?? 'Mostly Sunny')}</p>
-            {size !== 'small' && (
-              <p className="text-[12px] text-white/60 mt-0.5">
-                Humidity {String(data.humidity ?? '—')}% · Wind {String(data.windKph ?? '—')} km/h
-              </p>
-            )}
-          </div>
-        </div>
-      );
+      return <WeatherWidget size={size} fallback={data} />;
     case 'calendar':
       return (
         <div>
@@ -265,6 +249,35 @@ function WidgetBody({
         </div>
       );
   }
+}
+
+/** iOS weather widget bound to the device's real GPS location */
+function WeatherWidget({ size, fallback }: { size: string; fallback: Record<string, unknown> }) {
+  const { data: geo } = useRealGeo();
+  const temp = geo?.weather?.tempC ?? (fallback.temperature as number | undefined) ?? 24;
+  const label = geo?.weather?.label ?? (fallback.label as string | undefined) ?? 'Mostly Sunny';
+  const city = geo?.city;
+  const humidity = geo?.weather?.humidity ?? (fallback.humidity as number | undefined);
+  const wind = geo?.weather?.windKmh ?? (fallback.windKph as number | undefined);
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      <div>
+        <p className="text-[13px] font-semibold text-white/90 truncate">{city ?? 'Weather'}</p>
+        <p className={cn('font-display font-light text-white leading-tight', size === 'small' ? 'text-[42px]' : 'text-[48px]')}>
+          {temp}°
+        </p>
+      </div>
+      <div>
+        <p className="text-[15px] font-medium text-white/90">{label}</p>
+        {size !== 'small' && (
+          <p className="text-[12px] text-white/60 mt-0.5">
+            Humidity {humidity ?? '—'}% · Wind {wind ?? '—'} km/h
+          </p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function ClockWidget({ size }: { size: string }) {

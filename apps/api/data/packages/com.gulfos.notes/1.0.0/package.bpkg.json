@@ -1,0 +1,27 @@
+{
+  "bundleId": "com.gulfos.notes",
+  "version": "1.0.0",
+  "checksum": "1950fb76f087119bc4632dc2deb8c373debec60d20ea4b594ee27674ca6baa08",
+  "size": 150000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "storage",
+    "microphone"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 150000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "📝"
+  ],
+  "screenshots": [
+    "📝",
+    "✅",
+    "🔒"
+  ],
+  "changelog": "Initial release of GULF Notes",
+  "hasRuntime": true
+}

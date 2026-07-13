@@ -1,0 +1,28 @@
+{
+  "bundleId": "com.gulfos.camera",
+  "version": "1.0.0",
+  "checksum": "c5a3765ea9d0263af43626599ec1262d7281ef10f7e32e477966393b92d2b4d7",
+  "size": 620000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "camera",
+    "microphone",
+    "storage"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 620000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "📷"
+  ],
+  "screenshots": [
+    "📷",
+    "🎬",
+    "✨"
+  ],
+  "changelog": "Initial release of GULF Camera",
+  "hasRuntime": true
+}

@@ -1,0 +1,28 @@
+{
+  "bundleId": "com.gulfos.maps",
+  "version": "1.0.0",
+  "checksum": "35a67044204778bf1d34aaa0d15316e659e812140e2549cf15f103ebce5a3905",
+  "size": 520000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "location",
+    "network",
+    "storage"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 520000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "🗺️"
+  ],
+  "screenshots": [
+    "🗺️",
+    "📍",
+    "🚗"
+  ],
+  "changelog": "Initial release of GULF Maps",
+  "hasRuntime": true
+}

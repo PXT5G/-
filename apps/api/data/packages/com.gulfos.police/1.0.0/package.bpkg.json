@@ -1,0 +1,29 @@
+{
+  "bundleId": "com.gulfos.police",
+  "version": "1.0.0",
+  "checksum": "8db42fc38af975cc803b5be76a43343d3e207504484f6b11521d97948918ed2c",
+  "size": 1400000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "location",
+    "camera",
+    "notifications",
+    "network"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 1400000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "🚔"
+  ],
+  "screenshots": [
+    "🚔",
+    "📋",
+    "🗺️"
+  ],
+  "changelog": "Initial release of GULF Police",
+  "hasRuntime": true
+}

@@ -1,0 +1,29 @@
+{
+  "bundleId": "com.gulfos.business",
+  "version": "1.0.0",
+  "checksum": "178bb538a4f09760b7498cc49cc0541f9a64289f3d2ad0f2c79b1e5fb46feaaf",
+  "size": 1250000000,
+  "minOSVersion": "1.0.0",
+  "requiredGULFOSVersion": "1.0.0",
+  "dependencies": [],
+  "requiredPermissions": [
+    "location",
+    "network",
+    "notifications",
+    "storage"
+  ],
+  "optionalPermissions": [],
+  "storageRequired": 1250000000,
+  "internetRequired": true,
+  "backgroundActivity": false,
+  "icons": [
+    "🏢"
+  ],
+  "screenshots": [
+    "🏢",
+    "📊",
+    "💼"
+  ],
+  "changelog": "Initial release of GULF Business",
+  "hasRuntime": true
+}
