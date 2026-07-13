@@ -31,7 +31,23 @@ export const useAppStore = create<AppState>()(
       currentPage: 0,
       isLauncherOpen: false,
 
-      setInstalledApps: (installedApps) => set({ installedApps }),
+      setInstalledApps: (apps) => {
+        // Lay apps out on home pages iOS-style, preserving any
+        // server-provided grid placement. 4 rows fit below the widgets.
+        const perPage = GRID_COLS * 4;
+        const installedApps = apps.map((a, i) => {
+          if (a.pageIndex !== undefined && a.position) return a;
+          const slot = i % perPage;
+          return {
+            ...a,
+            pageIndex: Math.floor(i / perPage),
+            position: { row: Math.floor(slot / GRID_COLS), col: slot % GRID_COLS },
+          };
+        });
+        const pageCount = Math.max(1, Math.ceil(installedApps.length / perPage));
+        const pages = Array.from({ length: pageCount }, (_, index) => ({ index, apps: [], widgets: [] }));
+        set({ installedApps, pages });
+      },
 
       addApp: (app) =>
         set((s) => ({

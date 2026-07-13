@@ -8,6 +8,9 @@ import { evaluateLowStorage } from './lowStorageService';
 import { emitToUser } from './socketService';
 import { publishEvent } from './eventBusService';
 
+/** Last device:update emit per user (feedback-loop guard) */
+const emitThrottle = new Map<string, number>();
+
 function formatState(doc: InstanceType<typeof DeviceState>) {
   return {
     batteryLevel: doc.batteryLevel,
@@ -69,13 +72,19 @@ export async function refreshDeviceState(userId: string) {
 
   const data = formatState(state);
 
-  emitToUser(userId, 'device:update', data);
-  emitToUser(userId, 'battery:update', {
-    level: data.batteryLevel,
-    health: data.batteryHealth,
-    isCharging: data.isCharging,
-    temperature: data.temperature,
-  });
+  // Throttle socket emissions: reads trigger refreshes, and unthrottled
+  // emits cause clients to invalidate + refetch in a feedback loop.
+  const lastEmit = emitThrottle.get(userId) ?? 0;
+  if (Date.now() - lastEmit > 10_000) {
+    emitThrottle.set(userId, Date.now());
+    emitToUser(userId, 'device:update', data);
+    emitToUser(userId, 'battery:update', {
+      level: data.batteryLevel,
+      health: data.batteryHealth,
+      isCharging: data.isCharging,
+      temperature: data.temperature,
+    });
+  }
 
   await publishEvent({
     userId,

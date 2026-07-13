@@ -141,12 +141,15 @@ function formatPower(state: InstanceType<typeof PowerState>) {
 }
 
 export async function getFullDeviceInfo(userId: string) {
+  // getDeviceState (not refreshDeviceState): reads must not re-emit
+  // device:update sockets or clients refetch in an endless loop.
+  const { getDeviceState } = await import('./deviceStateService');
   const [hardware, power, battery, performance, deviceState, configs] = await Promise.all([
     getHardwareProfile(userId),
     ensurePowerState(userId),
     syncBatteryState(userId),
     refreshPerformanceState(userId),
-    refreshDeviceState(userId),
+    getDeviceState(userId),
     initializePhoneOsConfigs(userId),
   ]);
 
