@@ -448,7 +448,9 @@ function IncidentsScreen() {
   const { tap } = useHaptic();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [severity, setSeverity] = useState('moderate');
+  const [type, setType] = useState('multi_vehicle');
+  const [location, setLocation] = useState('');
+  const [district, setDistrict] = useState('');
   const [open, setOpen] = useState<string | null>(null);
   if (isLoading) return <LoadingState />;
   const list = earr(data).map(erec);
@@ -458,11 +460,13 @@ function IncidentsScreen() {
       <CreatePanel label="Report Incident">
         <Field label="Title" value={title} onChange={setTitle} />
         <TextArea label="Description" value={description} onChange={setDescription} />
-        <Segmented options={[['minor', 'Minor'], ['moderate', 'Moderate'], ['severe', 'Severe'], ['mass_casualty', 'MCI']]} value={severity} onChange={setSeverity} />
+        <Segmented options={[['multi_vehicle', 'Multi-Vehicle'], ['mass_casualty', 'MCI'], ['disaster', 'Disaster'], ['hazmat', 'Hazmat'], ['other', 'Other']]} value={type} onChange={setType} />
+        <Field label="Location" value={location} onChange={setLocation} />
+        <Field label="District" value={district} onChange={setDistrict} />
         <PrimaryButton
           label={create.incident.isPending ? 'Reporting...' : 'Report Incident'}
-          disabled={!title || !description || create.incident.isPending}
-          onClick={() => { tap(); create.incident.mutate({ title, description, severity }, { onSuccess: () => { setTitle(''); setDescription(''); } }); }}
+          disabled={!title || !description || !location || !district || create.incident.isPending}
+          onClick={() => { tap(); create.incident.mutate({ title, description, type, location, district }, { onSuccess: () => { setTitle(''); setDescription(''); setLocation(''); setDistrict(''); } }); }}
         />
       </CreatePanel>
       {list.length === 0 ? <GovEmpty message="No incidents reported" /> : list.map((inc) => {
