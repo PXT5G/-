@@ -1345,10 +1345,12 @@ export async function reviseDocument(
   if (!prev) throw new Error('DOCUMENT_NOT_FOUND');
 
   const rootId = prev.rootId ?? prev.documentId;
-  const latest = await JusticeDocument.findOne({ rootId, deletedAt: null }).sort({ version: -1 });
+  // $or also matches documents created before versioning existed (no rootId stored).
+  const family = { $or: [{ rootId }, { documentId: rootId }], deletedAt: null };
+  const latest = await JusticeDocument.findOne(family).sort({ version: -1 });
   const nextVersion = (latest?.version ?? 1) + 1;
 
-  await JusticeDocument.updateMany({ rootId, deletedAt: null }, { $set: { isLatest: false } });
+  await JusticeDocument.updateMany(family, { $set: { isLatest: false, rootId } });
   const doc = await JusticeDocument.create({
     documentId: `JDOC-${uuidv4().slice(0, 8).toUpperCase()}`,
     rootId,
@@ -1376,7 +1378,7 @@ export async function listDocumentVersions(userId: string, documentId: string, u
   const doc = await JusticeDocument.findOne({ documentId, deletedAt: null });
   if (!doc) throw new Error('DOCUMENT_NOT_FOUND');
   const rootId = doc.rootId ?? doc.documentId;
-  return JusticeDocument.find({ rootId, deletedAt: null }).sort({ version: -1 });
+  return JusticeDocument.find({ $or: [{ rootId }, { documentId: rootId }], deletedAt: null }).sort({ version: -1 });
 }
 
 export async function listAuditLog(userId: string, userRole?: string, limit = 100) {
