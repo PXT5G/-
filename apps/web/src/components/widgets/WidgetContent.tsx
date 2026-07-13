@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import { useWidgetData } from '@/hooks/usePremiumExperience';
-import { useRealGeo } from '@/hooks/useRealGeo';
 import { formatTime, formatShortDate } from '@/utils/date';
 import { useState, useEffect } from 'react';
 import { cn } from '@/utils/cn';
@@ -251,19 +250,18 @@ function WidgetBody({
   }
 }
 
-/** iOS weather widget bound to the device's real GPS location */
+/** iOS weather widget — conditions at your position on the Los Santos map */
 function WeatherWidget({ size, fallback }: { size: string; fallback: Record<string, unknown> }) {
-  const { data: geo } = useRealGeo();
-  const temp = geo?.weather?.tempC ?? (fallback.temperature as number | undefined) ?? 24;
-  const label = geo?.weather?.label ?? (fallback.label as string | undefined) ?? 'Mostly Sunny';
-  const city = geo?.city;
-  const humidity = geo?.weather?.humidity ?? (fallback.humidity as number | undefined);
-  const wind = geo?.weather?.windKmh ?? (fallback.windKph as number | undefined);
+  const temp = (fallback.temperature as number | undefined) ?? 24;
+  const label = (fallback.label as string | undefined) ?? 'Mostly Sunny';
+  const district = fallback.district as string | undefined;
+  const humidity = fallback.humidity as number | undefined;
+  const wind = fallback.windKph as number | undefined;
 
   return (
     <div className="h-full flex flex-col justify-between">
       <div>
-        <p className="text-[13px] font-semibold text-white/90 truncate">{city ?? 'Weather'}</p>
+        <p className="text-[13px] font-semibold text-white/90 truncate">{district ?? 'Weather'}</p>
         <p className={cn('font-display font-light text-white leading-tight', size === 'small' ? 'text-[42px]' : 'text-[48px]')}>
           {temp}°
         </p>

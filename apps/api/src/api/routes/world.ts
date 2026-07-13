@@ -15,6 +15,7 @@ router.get('/towers/nearby', authenticate, worldController.getNearbyTowersHandle
 router.get('/towers/:uuid', authenticate, worldController.getTowerHandler);
 
 router.get('/gps', authenticate, worldController.getGpsHandler);
+router.post('/gps/position', authenticate, worldController.setPositionHandler);
 router.post('/gps/navigate', authenticate, worldController.startNavigationHandler);
 router.post('/gps/stop', authenticate, worldController.stopNavigationHandler);
 router.post('/gps/save', authenticate, worldController.savePlaceHandler);

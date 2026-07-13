@@ -91,18 +91,6 @@ app.use('/api/filesystem', ...withPhonePresenceGuard(filesystemRoutes));
 app.use('/api/admin', adminRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/device', ...withPhonePresenceGuard(deviceRoutes));
-// Public physical geolocation + live weather (registered before the guarded
-// /api/system mount so the lock screen widget works pre-authentication)
-app.get('/api/system/geo', async (req, res, next) => {
-  try {
-    const { getRealGeo } = await import('./services/geoService');
-    const lat = req.query.lat !== undefined ? Number(req.query.lat) : undefined;
-    const lon = req.query.lon !== undefined ? Number(req.query.lon) : undefined;
-    res.json({ success: true, data: await getRealGeo(lat, lon) });
-  } catch (err) {
-    next(err);
-  }
-});
 app.use('/api/system', ...withPhonePresenceGuard(systemRoutes));
 app.use('/api/world', worldRoutes);
 app.use('/api/communication', ...withPhonePresenceGuard(communicationRoutes));

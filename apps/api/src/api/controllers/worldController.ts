@@ -111,6 +111,16 @@ export const getGpsHandler = asyncHandler(async (req: AuthRequest, res: Response
   res.json({ success: true, data: { ...gps, currentPosition: location } });
 });
 
+export const setPositionHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+  }).parse(req.body);
+  const { setWorldPosition } = await import('../../services/worldEngineService');
+  const data = await setWorldPosition(req.user!.userId, body.latitude, body.longitude);
+  res.json({ success: true, data });
+});
+
 export const startNavigationHandler = asyncHandler(async (req: AuthRequest, res: Response) => {
   const body = z.object({
     locationId: z.string().optional(),

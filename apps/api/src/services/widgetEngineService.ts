@@ -124,6 +124,7 @@ async function getWeatherWidgetData(userId: string) {
     type: 'weather',
     temperature: current?.tempC ?? 24,
     label: current?.label ?? 'Clear',
+    district: current?.district ?? 'Los Santos',
     humidity: current?.humidity ?? 45,
     windKph: current?.windKph ?? 12,
     updatedAt: new Date().toISOString(),

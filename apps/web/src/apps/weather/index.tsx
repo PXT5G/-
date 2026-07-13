@@ -1,7 +1,6 @@
 'use client';
 
 import { useWeather } from '@/hooks/useSystemApps';
-import { useRealGeo } from '@/hooks/useRealGeo';
 import { GlassPanel } from '@/components/ui/GlassPanel';
 
 const WEATHER_ICONS: Record<string, string> = {
@@ -10,7 +9,6 @@ const WEATHER_ICONS: Record<string, string> = {
 
 export function WeatherApp() {
   const { data: weather, isLoading } = useWeather();
-  const { data: geo } = useRealGeo();
 
   if (isLoading || !weather) {
     return (
@@ -25,23 +23,17 @@ export function WeatherApp() {
   const weekly = (weather.weekly as Array<Record<string, unknown>>) ?? [];
   const alerts = (weather.alerts as Array<Record<string, unknown>>) ?? [];
 
-  // Live conditions from the device's real GPS position (Open-Meteo)
-  const place = geo ? `${geo.city}${geo.country ? `, ${geo.country}` : ''}` : String(current.district);
-  const temp = geo?.weather?.tempC ?? Number(current.tempC);
-  const feels = geo?.weather?.feelsLikeC ?? Number(current.feelsLikeC);
-  const label = geo?.weather?.label ?? String(current.label);
-  const icon = geo?.weather?.icon ?? WEATHER_ICONS[String(current.condition)] ?? '🌤️';
-  const wind = geo?.weather?.windKmh ?? Number(current.windKmh);
+  const temp = Number(current.tempC);
+  const feels = Number(current.feelsLikeC);
+  const label = String(current.label);
+  const icon = WEATHER_ICONS[String(current.condition)] ?? '🌤️';
+  const wind = Number(current.windKmh);
 
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-b from-sky-900/80 via-black to-black">
       <div className="p-6 pt-12">
-        <p className="text-white/90 text-[17px] font-medium font-display">{place}</p>
-        {geo && (
-          <p className="text-white/40 text-[12px] tabular-nums">
-            📍 {geo.latitude.toFixed(4)}, {geo.longitude.toFixed(4)} · {geo.source === 'gps' ? 'GPS' : geo.source === 'ip' ? 'Network location' : 'Default'}
-          </p>
-        )}
+        <p className="text-white/90 text-[17px] font-medium font-display">{String(current.district)}</p>
+        <p className="text-white/40 text-[12px]">📍 Your position on the Los Santos map</p>
         <div className="flex items-center gap-4 mt-2">
           <span className="text-6xl">{icon}</span>
           <div>

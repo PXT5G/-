@@ -77,6 +77,32 @@ export async function getWorldState(userId: string) {
   return formatWorldState(state);
 }
 
+/**
+ * Set the player's current position manually (tap on the GTA map).
+ * Recomputes district, street and zone flags from the new coordinates.
+ */
+export async function setWorldPosition(userId: string, latitude: number, longitude: number) {
+  const state = await ensureWorldState(userId);
+  state.latitude = Math.max(MAP_BOUNDS.minLat, Math.min(MAP_BOUNDS.maxLat, latitude));
+  state.longitude = Math.max(MAP_BOUNDS.minLng, Math.min(MAP_BOUNDS.maxLng, longitude));
+  state.speed = 0;
+  state.vehicleState = 'on_foot';
+
+  const district = findDistrict(state.latitude, state.longitude);
+  state.district = district.name;
+  state.zone = district.zone;
+  state.street = await resolveStreetAt(state.latitude, state.longitude);
+  state.safeZone = isInSafeZone(state.latitude, state.longitude);
+  state.restrictedZone = isInRestrictedZone(state.latitude, state.longitude);
+
+  const nearest = await resolveNearestLocation(state.latitude, state.longitude);
+  state.nearestLocationId = nearest?.locationId;
+
+  await state.save();
+  emitToUser(userId, 'world:update', formatWorldState(state));
+  return formatWorldState(state);
+}
+
 export async function tickWorld(userId: string) {
   const state = await ensureWorldState(userId);
   const loc = await DeviceLocation.findOne({ userId });
