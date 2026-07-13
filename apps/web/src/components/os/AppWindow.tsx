@@ -18,7 +18,11 @@ interface AppWindowProps {
  * icon-zoom open transition, UINavigationBar, overlaid home indicator.
  */
 export function AppWindow({ window, isActive }: AppWindowProps) {
-  const { closeWindow, minimizeWindow, focusWindow } = useWindowManagerStore();
+  // Actions are stable references — selecting them individually keeps the
+  // window from re-rendering when sibling windows change
+  const closeWindow = useWindowManagerStore((s) => s.closeWindow);
+  const minimizeWindow = useWindowManagerStore((s) => s.minimizeWindow);
+  const focusWindow = useWindowManagerStore((s) => s.focusWindow);
   const { backgroundApp, stopApp } = useAppLaunch();
   const { tap } = useHaptic();
 

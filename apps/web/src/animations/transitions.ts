@@ -64,21 +64,6 @@ export const unlockAnimation = {
   },
 };
 
-/** iOS app open: icon-zoom morph (scale from center with fade) */
-export const appOpenTransition = {
-  initial: { scale: 0.35, opacity: 0, borderRadius: 40 },
-  animate: { scale: 1, opacity: 1, borderRadius: 0 },
-  exit: { scale: 0.35, opacity: 0, borderRadius: 40 },
-  transition: { type: 'spring' as const, stiffness: 380, damping: 34, mass: 0.9 },
-};
-
-/** iOS sheet presentation (page sheet slides from bottom) */
-export const sheetTransition = {
-  initial: { y: '100%' },
-  animate: { y: 0 },
-  exit: { y: '100%' },
-  transition: { type: 'spring' as const, stiffness: 320, damping: 34 },
-};
 
 export const appIconBounce = {
   whileTap: { scale: 0.85 },

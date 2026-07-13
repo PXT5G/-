@@ -24,6 +24,16 @@ export function useSystemInit() {
   }, [isAuthenticated, token, setInitialized]);
 }
 
+/**
+ * Ref-counted singleton: several hooks below share these socket
+ * subscriptions. Listeners are registered once for the whole app and
+ * removed when the last consumer unmounts — previously every consumer
+ * (StatusBar, ControlCenter, Settings screens…) re-registered all 9
+ * handlers, multiplying invalidations and re-renders.
+ */
+let systemSocketSubscribers = 0;
+let systemSocketUnsubs: Array<() => void> = [];
+
 function useSystemSocketInvalidation() {
   const queryClient = useQueryClient();
   const setLocation = useSystemStore((s) => s.setLocation);
@@ -36,6 +46,16 @@ function useSystemSocketInvalidation() {
 
   useEffect(() => {
     if (!isAuthenticated || !token) return;
+    systemSocketSubscribers += 1;
+    if (systemSocketSubscribers > 1) {
+      return () => {
+        systemSocketSubscribers -= 1;
+        if (systemSocketSubscribers === 0) {
+          systemSocketUnsubs.forEach((u) => u());
+          systemSocketUnsubs = [];
+        }
+      };
+    }
 
     const unsubs = [
       realtimeService.on('location:update', (p) => {
@@ -73,7 +93,15 @@ function useSystemSocketInvalidation() {
       }),
     ];
 
-    return () => unsubs.forEach((u) => u());
+    systemSocketUnsubs = unsubs;
+
+    return () => {
+      systemSocketSubscribers -= 1;
+      if (systemSocketSubscribers === 0) {
+        systemSocketUnsubs.forEach((u) => u());
+        systemSocketUnsubs = [];
+      }
+    };
   }, [isAuthenticated, token, queryClient, setLocation, setNetwork, setDeviceState, setDiagnostics, setServiceHealth]);
 }
 

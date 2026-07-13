@@ -284,12 +284,6 @@ export class GulfOSPage {
     await this.waitForLockScreen();
   }
 
-  async shutdown() {
-    await this.closeAllApps();
-    await this.page.evaluate(() => window.__GULFOS_E2E__?.shutdown());
-    await this.pause(2500);
-  }
-
   /** Inject auth without page reload (preserves boot→home flow). */
   async injectSession(session: DemoSession) {
     await this.page.evaluate(

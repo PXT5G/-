@@ -282,7 +282,8 @@ function ClockWidget({ size }: { size: string }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
+    // Widget shows HH:MM — 10s resolution is indistinguishable
+    const interval = setInterval(() => setTime(new Date()), 10_000);
     return () => clearInterval(interval);
   }, []);
 

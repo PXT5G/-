@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { appIconBounce } from '@/animations/transitions';
 import { IOSIconArt } from './IOSIconArt';
@@ -48,8 +49,9 @@ const sizeMap = {
 /**
  * iOS home-screen icon. Apple iOS 18 icon artwork where available,
  * Apple-Settings-style squircles for GULF-specific apps.
+ * Memoized: a home page renders up to 20 instances.
  */
-export function AppIcon({ name, icon, bundleId, size = 'md', onPress, onLongPress, badge, showLabel = true, className }: AppIconProps) {
+export const AppIcon = memo(function AppIcon({ name, icon, bundleId, size = 'md', onPress, onLongPress, badge, showLabel = true, className }: AppIconProps) {
   const { px, label } = sizeMap[size];
   const stock = bundleId ? STOCK_ICONS[bundleId] : undefined;
   let longPressTimer: ReturnType<typeof setTimeout>;
@@ -98,4 +100,4 @@ export function AppIcon({ name, icon, bundleId, size = 'md', onPress, onLongPres
       )}
     </motion.button>
   );
-}
+});

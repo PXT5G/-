@@ -21,7 +21,12 @@ const SYSTEM_APPS = [
 const ICON_SIZE_MAP = { small: 'text-xs', medium: 'text-sm', large: 'text-base' };
 
 export function HomeScreen() {
-  const { currentPage, setCurrentPage, pages, getAppsForPage } = useAppStore();
+  // Field-level selectors: avoid re-rendering the home screen on unrelated
+  // appStore changes (downloads, folders, launcher state…)
+  const currentPage = useAppStore((s) => s.currentPage);
+  const setCurrentPage = useAppStore((s) => s.setCurrentPage);
+  const pages = useAppStore((s) => s.pages);
+  const getAppsForPage = useAppStore((s) => s.getAppsForPage);
   const profile = usePremiumExperienceStore((s) => s.profile);
   const setAppLibraryOpen = usePremiumExperienceStore((s) => s.setAppLibraryOpen);
   const homeEditMode = usePhoneOsStore((s) => s.homeEditMode);

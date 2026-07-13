@@ -19,13 +19,6 @@ class RealtimeService {
       reconnectionDelay: 1000,
     });
 
-    this.socket.on('connect', () => {
-      console.log('[Realtime] Connected');
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      console.log('[Realtime] Disconnected:', reason);
-    });
 
     const events: SocketEvent[] = [
       'notification:new',

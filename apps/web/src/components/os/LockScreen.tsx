@@ -59,7 +59,8 @@ export function LockScreen() {
   const showChargingAnim = profile?.chargingAnimation && battery?.isCharging;
 
   useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
+    // Clock shows HH:MM — 10s resolution is indistinguishable
+    const interval = setInterval(() => setTime(new Date()), 10_000);
     return () => clearInterval(interval);
   }, []);
 

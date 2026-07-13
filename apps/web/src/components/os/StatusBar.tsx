@@ -90,7 +90,8 @@ export function StatusBar() {
   const vpnEnabled = network?.vpnEnabled ?? false;
 
   useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
+    // Display is HH:MM — a 10s tick is visually identical at 1/10 the renders
+    const interval = setInterval(() => setTime(new Date()), 10_000);
     return () => clearInterval(interval);
   }, []);
 

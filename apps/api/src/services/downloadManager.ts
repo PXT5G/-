@@ -411,5 +411,3 @@ export async function prepareDownloadStorage(
   await reserveStorage(userId, bundleId, required, downloadId);
 }
 
-/** @deprecated Use enqueueDownload instead */
-export const startDownloadSimulation = enqueueDownload;
