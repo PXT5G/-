@@ -51,3 +51,6 @@ analysis_results.db-wal
 analysis_results.db-shm
 *.db-wal
 *.db-shm
+
+# Runtime-generated store packages
+apps/api/data/
