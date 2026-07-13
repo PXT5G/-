@@ -61,7 +61,6 @@ function getBrowserCoords(): Promise<{ lat: number; lon: number } | null> {
  * live conditions from Open-Meteo (proxied through the GULFOS API).
  */
 export function useRealGeo() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const token = useAuthStore((s) => s.getAccessToken());
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null | undefined>(cachedCoords);
 
@@ -75,10 +74,13 @@ export function useRealGeo() {
     queryKey: ['system', 'real-geo', coords?.lat ?? 'ip', coords?.lon ?? 'ip'],
     queryFn: async (): Promise<RealGeo> => {
       const params = coords ? `?lat=${coords.lat}&lon=${coords.lon}` : '';
-      const res = await apiRequest<{ success: boolean; data: RealGeo }>(`/api/system/geo${params}`, { token: token! });
+      const res = await apiRequest<{ success: boolean; data: RealGeo }>(
+        `/api/system/geo${params}`,
+        token ? { token } : {},
+      );
       return res.data;
     },
-    enabled: isAuthenticated && !!token && coords !== undefined,
+    enabled: coords !== undefined,
     staleTime: 10 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
     retry: 1,

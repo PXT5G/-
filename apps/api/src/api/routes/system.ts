@@ -7,7 +7,7 @@ const router = Router();
 
 router.post('/ready', authenticate, systemController.systemReadyHandler);
 
-router.get('/geo', authenticate, systemController.getRealGeoHandler);
+router.get('/geo', systemController.getRealGeoHandler);
 router.get('/location', authenticate, systemController.getLocationHandler);
 router.post('/location/refresh', authenticate, systemController.refreshLocationHandler);
 router.patch('/location', authenticate, systemController.setLocationEnabledHandler);
