@@ -38,6 +38,7 @@ export function useJusticeSocketSync() {
       'justice:trial:update', 'justice:evidence:update', 'justice:warrant:review',
       'justice:appeal:update', 'justice:judgment:issued', 'justice:sentence:issued',
       'justice:courtroom:live', 'justice:docket:update', 'justice:citation:resolved',
+      'justice:subpoena:issued', 'justice:notification',
     ];
     const unsubs = events.map((ev) =>
       realtimeService.on(ev as never, () => {
@@ -192,4 +193,37 @@ export function useResolveCitation() {
       justiceService.resolveCitation(token!, citationId, resolution, reducedAmount),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['justice'] }),
   });
+}
+
+export function useJusticeSentences() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['justice', 'sentences'], queryFn: () => justiceService.getSentences(token!), enabled: Boolean(token) });
+}
+
+export function useJusticeNotes() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['justice', 'notes'], queryFn: () => justiceService.getNotes(token!), enabled: Boolean(token) });
+}
+
+export function useJusticeDocuments() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['justice', 'documents'], queryFn: () => justiceService.getDocuments(token!), enabled: Boolean(token) });
+}
+
+export function useJusticeAuditLog() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['justice', 'audit-log'], queryFn: () => justiceService.getAuditLog(token!), enabled: Boolean(token) });
+}
+
+export function useJusticeCreate() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['justice'] });
+  return {
+    caseFile: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.createCase(token!, b), onSuccess: invalidate }),
+    hearing: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.scheduleHearingFor(token!, b), onSuccess: invalidate }),
+    sentence: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.issueSentence(token!, b), onSuccess: invalidate }),
+    note: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.createNote(token!, b), onSuccess: invalidate }),
+    document: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.createDocument(token!, b), onSuccess: invalidate }),
+  };
 }

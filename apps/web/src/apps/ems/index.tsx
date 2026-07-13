@@ -7,9 +7,19 @@ import {
   useEmsHospitals, useEmsAmbulances, useEmsIncidents, useEmsPersonnel,
   useEmsAnalytics, useUpdateEmsStatus, useEmsSearch, useAssignAmbulance,
   useRouteHospital, useHelicopterDispatch, useEmsSocketSync, useEmsInit,
+  useEmsRecords, useEmsTreatments, useEmsNotes, useEmsAuditLog, useEmsCreate,
 } from '@/hooks/useEms';
 import { useHaptic } from '@/hooks/useSound';
 import { cn } from '@/utils/cn';
+import {
+  RecordCard, SectionTitle, PrimaryButton, Field, TextArea, Segmented,
+  CreatePanel, EmptyState as GovEmpty, StructuredResults,
+} from '@/apps/gov-shared/GovKit';
+
+function erec(item: unknown) { return item as Record<string, unknown>; }
+function estr(v: unknown) { return v === undefined || v === null ? '' : String(v); }
+function earr(v: unknown): unknown[] { return Array.isArray(v) ? v : []; }
+function edate(v: unknown) { return v ? new Date(String(v)).toLocaleString() : ''; }
 
 type Tab = 'mdt' | 'units' | 'dispatch' | 'patients' | 'search' | 'more';
 type SubScreen = string | null;
@@ -345,13 +355,7 @@ function SearchScreen() {
       >
         {search.isPending ? 'Searching...' : 'Search'}
       </button>
-      {search.data && (
-        <GlassCard className="p-4">
-          <pre className="text-white/80 text-xs overflow-auto max-h-64 whitespace-pre-wrap">
-            {JSON.stringify((search.data as Record<string, unknown>).results, null, 2)}
-          </pre>
-        </GlassCard>
-      )}
+      {search.data !== undefined && <StructuredResults results={(search.data as Record<string, unknown>).results} type={searchType} />}
       {search.isError && <ErrorState message="Search failed or permission denied" />}
     </div>
   );
@@ -413,16 +417,225 @@ function AnalyticsScreen() {
   );
 }
 
-function ListScreen({ title, useHook }: { title: string; useHook: () => { data?: unknown[]; isLoading: boolean } }) {
-  const { data, isLoading } = useHook();
+function AmbulancesScreen() {
+  const { data, isLoading } = useEmsAmbulances();
   if (isLoading) return <LoadingState />;
-  if (!data?.length) return <EmptyState message={`No ${title.toLowerCase()} records`} />;
+  const list = earr(data).map(erec);
+  if (!list.length) return <GovEmpty message="Fleet is empty" />;
   return (
     <div className="p-4 space-y-3">
-      <h2 className="text-white font-bold text-lg">{title}</h2>
-      {data.map((item, i) => (
-        <GlassCard key={i} className="p-4">
-          <pre className="text-white/80 text-xs whitespace-pre-wrap">{JSON.stringify(item, null, 2)}</pre>
+      <SectionTitle>Ambulance Fleet</SectionTitle>
+      {list.map((a) => (
+        <RecordCard
+          key={estr(a.ambulanceId)}
+          title={estr(a.callSign)}
+          subtitle={`${estr(a.plateNumber)} · ${estr(a.type)}`}
+          status={estr(a.status)}
+          chips={earr(a.equipment).map(String)}
+          rows={[
+            { label: 'Mileage', value: a.mileage ? `${Number(a.mileage).toLocaleString()} km` : '—' },
+            { label: 'Last service', value: edate(a.lastServiceAt) || '—' },
+          ]}
+        />
+      ))}
+    </div>
+  );
+}
+
+function IncidentsScreen() {
+  const { data, isLoading } = useEmsIncidents();
+  const create = useEmsCreate();
+  const { tap } = useHaptic();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [severity, setSeverity] = useState('moderate');
+  const [open, setOpen] = useState<string | null>(null);
+  if (isLoading) return <LoadingState />;
+  const list = earr(data).map(erec);
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Live Incidents</SectionTitle>
+      <CreatePanel label="Report Incident">
+        <Field label="Title" value={title} onChange={setTitle} />
+        <TextArea label="Description" value={description} onChange={setDescription} />
+        <Segmented options={[['minor', 'Minor'], ['moderate', 'Moderate'], ['severe', 'Severe'], ['mass_casualty', 'MCI']]} value={severity} onChange={setSeverity} />
+        <PrimaryButton
+          label={create.incident.isPending ? 'Reporting...' : 'Report Incident'}
+          disabled={!title || !description || create.incident.isPending}
+          onClick={() => { tap(); create.incident.mutate({ title, description, severity }, { onSuccess: () => { setTitle(''); setDescription(''); } }); }}
+        />
+      </CreatePanel>
+      {list.length === 0 ? <GovEmpty message="No incidents reported" /> : list.map((inc) => {
+        const timeline = earr(inc.timeline).map(erec);
+        const isOpen = open === estr(inc.incidentId);
+        return (
+          <RecordCard
+            key={estr(inc.incidentId)}
+            title={estr(inc.title)}
+            subtitle={estr(inc.incidentId)}
+            status={estr(inc.severity ?? inc.status)}
+            meta={`${estr(inc.district ?? inc.address)} · ${edate(inc.createdAt)}`}
+            onClick={() => { tap(); setOpen(isOpen ? null : estr(inc.incidentId)); }}
+            rows={[{ label: 'Description', value: estr(inc.description) }, { label: 'Status', value: estr(inc.status) }]}
+            footer={isOpen && timeline.length > 0 ? (
+              <div className="border-t border-white/5 pt-2">
+                <p className="text-white/40 text-[10px] uppercase mb-2">Activity Timeline</p>
+                {timeline.map((t, i) => (
+                  <div key={i} className="flex gap-2 py-1">
+                    <span className="text-gulf-gold text-xs">•</span>
+                    <div>
+                      <p className="text-white/80 text-xs">{estr(t.event ?? t.description)}</p>
+                      <p className="text-white/30 text-[10px]">{edate(t.at ?? t.date)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function PersonnelScreen() {
+  const { data, isLoading } = useEmsPersonnel();
+  if (isLoading) return <LoadingState />;
+  const list = earr(data).map(erec);
+  if (!list.length) return <GovEmpty message="No EMS staff registered" />;
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Medical Staff</SectionTitle>
+      {list.map((p) => (
+        <GlassCard key={estr(p.badgeNumber)} className="p-3 flex justify-between items-center">
+          <div>
+            <p className="text-white text-sm">{estr(p.displayName ?? p.badgeNumber)}</p>
+            <p className="text-white/40 text-xs">{estr(p.badgeNumber)} · {estr(p.title ?? p.role)}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-white/50 text-xs capitalize">{estr(p.status).replace('_', ' ')}</span>
+            <span className={cn('w-2 h-2 rounded-full', STATUS_COLORS[estr(p.status)] ?? 'bg-gray-500')} />
+          </div>
+        </GlassCard>
+      ))}
+    </div>
+  );
+}
+
+function RecordsScreen() {
+  const { data, isLoading, error } = useEmsRecords();
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message="Records access denied" />;
+  const list = earr(data).map(erec);
+  if (!list.length) return <GovEmpty message="No medical records" />;
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Medical Records</SectionTitle>
+      {list.map((r) => (
+        <RecordCard
+          key={estr(r.recordId)}
+          title={estr(r.patientName ?? r.patientId)}
+          subtitle={estr(r.recordType ?? 'medical record')}
+          status={estr(r.status)}
+          meta={`${estr(r.recordId)} · ${edate(r.createdAt)}`}
+          chips={earr(r.diagnoses).map(String)}
+          rows={[{ label: 'Summary', value: estr(r.summary ?? r.notes) }, { label: 'Physician', value: estr(r.physicianBadge ?? r.createdByBadge) || '—' }]}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TreatmentsScreen() {
+  const { data, isLoading, error } = useEmsTreatments();
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message="Treatments access denied" />;
+  const list = earr(data).map(erec);
+  if (!list.length) return <GovEmpty message="No treatments logged" />;
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Treatments</SectionTitle>
+      {list.map((t) => (
+        <RecordCard
+          key={estr(t.treatmentId)}
+          title={estr(t.treatmentType ?? t.type)}
+          subtitle={`Patient ${estr(t.patientId)}`}
+          status={estr(t.status)}
+          meta={`${estr(t.performedByBadge ?? t.badgeNumber)} · ${edate(t.createdAt)}`}
+          rows={[{ label: 'Details', value: estr(t.description ?? t.notes) }, { label: 'Medication', value: estr(t.medication) || '—' }]}
+        />
+      ))}
+    </div>
+  );
+}
+
+function NotesScreen() {
+  const { data, isLoading } = useEmsNotes();
+  const create = useEmsCreate();
+  const { tap } = useHaptic();
+  const [content, setContent] = useState('');
+  if (isLoading) return <LoadingState />;
+  const list = earr(data).map(erec);
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Internal Notes</SectionTitle>
+      <CreatePanel label="Add Note" defaultOpen>
+        <TextArea label="Note" value={content} onChange={setContent} />
+        <PrimaryButton
+          label={create.note.isPending ? 'Saving...' : 'Save Note'}
+          disabled={!content || create.note.isPending}
+          onClick={() => { tap(); create.note.mutate({ content }, { onSuccess: () => setContent('') }); }}
+        />
+      </CreatePanel>
+      {list.length === 0 ? <GovEmpty message="No internal notes" /> : list.map((n) => (
+        <GlassCard key={estr(n.noteId)} className="p-4">
+          <p className="text-white/80 text-sm">{estr(n.content)}</p>
+          <p className="text-white/30 text-[10px] mt-2">{estr(n.personnelName)} · {edate(n.createdAt)}</p>
+        </GlassCard>
+      ))}
+    </div>
+  );
+}
+
+function AlertsScreen() {
+  const create = useEmsCreate();
+  const { tap } = useHaptic();
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Emergency Alerts</SectionTitle>
+      <CreatePanel label="Broadcast Alert" defaultOpen>
+        <Field label="Alert Title" value={title} onChange={setTitle} />
+        <TextArea label="Message" value={body} onChange={setBody} />
+        <PrimaryButton
+          tone="red"
+          label={create.alert.isPending ? 'Broadcasting...' : 'Broadcast to All EMS'}
+          disabled={!title || !body || create.alert.isPending}
+          onClick={() => { tap(); create.alert.mutate({ title, body }, { onSuccess: () => { setTitle(''); setBody(''); } }); }}
+        />
+      </CreatePanel>
+      {create.alert.isSuccess && <p className="text-green-400 text-xs text-center">Alert broadcast to all on-duty personnel</p>}
+      {create.alert.isError && <ErrorState message="Broadcast failed — requires alert permission" />}
+    </div>
+  );
+}
+
+function AuditScreen() {
+  const { data, isLoading, error } = useEmsAuditLog();
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message="Audit access denied" />;
+  const list = earr(data).map(erec);
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Audit Log</SectionTitle>
+      {list.length === 0 ? <GovEmpty message="No audit records" /> : list.map((l) => (
+        <GlassCard key={estr(l.logId)} className="p-3">
+          <div className="flex justify-between">
+            <span className="text-white text-xs font-medium capitalize">{estr(l.action).replace(/_/g, ' ')}</span>
+            <span className="text-white/30 text-[10px]">{edate(l.createdAt)}</span>
+          </div>
+          <p className="text-white/40 text-[11px] mt-1">{estr(l.badgeNumber)} · {estr(l.details)}{l.ipAddress ? ` · ${estr(l.ipAddress)}` : ''}</p>
         </GlassCard>
       ))}
     </div>
@@ -465,9 +678,14 @@ export function EmsApp() {
   if (subScreen) {
     const screens: Record<string, ReactNode> = {
       hospitals: <HospitalsScreen />,
-      ambulances: <ListScreen title="Ambulances" useHook={useEmsAmbulances} />,
-      incidents: <ListScreen title="Incidents" useHook={useEmsIncidents} />,
-      personnel: <ListScreen title="EMS Staff" useHook={useEmsPersonnel} />,
+      ambulances: <AmbulancesScreen />,
+      incidents: <IncidentsScreen />,
+      personnel: <PersonnelScreen />,
+      records: <RecordsScreen />,
+      treatments: <TreatmentsScreen />,
+      notes: <NotesScreen />,
+      alerts: <AlertsScreen />,
+      audit: <AuditScreen />,
       analytics: <AnalyticsScreen />,
     };
     return (
@@ -508,7 +726,8 @@ export function EmsApp() {
               <div className="p-4 grid grid-cols-2 gap-3">
                 {[
                   ['hospitals', 'Hospitals'], ['ambulances', 'Ambulances'], ['incidents', 'Incidents'],
-                  ['personnel', 'Staff'], ['analytics', 'Analytics'],
+                  ['personnel', 'Staff'], ['records', 'Medical Records'], ['treatments', 'Treatments'],
+                  ['notes', 'Notes'], ['alerts', 'Alerts'], ['audit', 'Audit Log'], ['analytics', 'Analytics'],
                 ].map(([id, label]) => (
                   <button
                     key={id}

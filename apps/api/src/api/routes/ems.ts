@@ -37,6 +37,11 @@ router.get('/incidents', authenticate, emsController.incidents);
 router.post('/incidents', authenticate, emsController.createIncident);
 
 router.get('/personnel', authenticate, emsController.personnel);
+router.get('/records/all', authenticate, emsController.medicalRecordsList);
+router.get('/treatments', authenticate, emsController.treatmentsList);
+router.get('/notes', authenticate, emsController.notes);
+router.post('/notes', authenticate, emsController.createNote);
+router.get('/audit-log', authenticate, emsController.auditLog);
 router.post('/search', authenticate, emsController.search);
 router.get('/analytics', authenticate, emsController.analytics);
 router.post('/alert', authenticate, emsController.alert);

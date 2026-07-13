@@ -56,6 +56,12 @@ router.patch('/citations/:id/resolve', authenticate, justiceController.resolveCi
 router.get('/docket', authenticate, justiceController.docket);
 router.post('/docket', authenticate, justiceController.publishDocket);
 
+router.get('/notes', authenticate, justiceController.legalNotes);
+router.post('/notes', authenticate, justiceController.createLegalNote);
+router.get('/documents', authenticate, justiceController.documents);
+router.post('/documents', authenticate, justiceController.createDocument);
+router.get('/audit-log', authenticate, justiceController.auditLog);
+
 router.post('/search', authenticate, justiceController.search);
 router.get('/analytics', authenticate, justiceController.analytics);
 

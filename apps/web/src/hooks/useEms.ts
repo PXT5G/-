@@ -168,3 +168,35 @@ export function useHelicopterDispatch() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ems'] }),
   });
 }
+
+export function useEmsRecords() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['ems', 'records'], queryFn: () => emsService.getRecords(token!), enabled: Boolean(token) });
+}
+
+export function useEmsTreatments() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['ems', 'treatments'], queryFn: () => emsService.getTreatments(token!), enabled: Boolean(token) });
+}
+
+export function useEmsNotes() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['ems', 'notes'], queryFn: () => emsService.getNotes(token!), enabled: Boolean(token) });
+}
+
+export function useEmsAuditLog() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['ems', 'audit-log'], queryFn: () => emsService.getAuditLog(token!), enabled: Boolean(token) });
+}
+
+export function useEmsCreate() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['ems'] });
+  return {
+    incident: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.createIncident(token!, b), onSuccess: invalidate }),
+    patient: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.createPatientRecord(token!, b), onSuccess: invalidate }),
+    note: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.createNote(token!, b), onSuccess: invalidate }),
+    alert: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.broadcastAlert(token!, b), onSuccess: invalidate }),
+  };
+}

@@ -1263,4 +1263,81 @@ export async function addCourtroomLiveUpdate(
   return { courtroomId, message, employeeId: official.employeeId };
 }
 
+export async function listLegalNotes(userId: string, userRole?: string, subjectId?: string) {
+  await assertJusticePermission(userId, 'cases.view', userRole);
+  const { JusticeNote } = await import('../database/models/JusticeNote');
+  const query: Record<string, unknown> = { deletedAt: null };
+  if (subjectId) query.subjectId = subjectId;
+  return JusticeNote.find(query).sort({ createdAt: -1 }).limit(100);
+}
+
+export async function createLegalNote(
+  actorId: string,
+  data: { content: string; subjectType?: string; subjectId?: string },
+  userRole?: string,
+) {
+  await assertJusticePermission(actorId, 'cases.manage', userRole);
+  const official = await requireOfficial(actorId);
+  const { JusticeNote } = await import('../database/models/JusticeNote');
+  const note = await JusticeNote.create({
+    noteId: `JNOTE-${uuidv4().slice(0, 8).toUpperCase()}`,
+    officialId: official.userId,
+    officialName: official.employeeId,
+    content: data.content,
+    subjectType: (data.subjectType as never) ?? 'general',
+    subjectId: data.subjectId,
+    createdBy: new Types.ObjectId(actorId),
+  });
+  await logJusticeAction({ userId: actorId, actorId, action: 'legal_note_create', resource: 'justice_note', resourceId: note.noteId, employeeId: official.employeeId });
+  return note;
+}
+
+export async function listDocuments(userId: string, userRole?: string, caseId?: string) {
+  await assertJusticePermission(userId, 'cases.view', userRole);
+  const { JusticeDocument } = await import('../database/models/JusticeDocument');
+  const query: Record<string, unknown> = { deletedAt: null };
+  if (caseId) query.caseId = caseId;
+  return JusticeDocument.find(query).sort({ createdAt: -1 }).limit(100);
+}
+
+export async function createDocument(
+  actorId: string,
+  data: { title: string; type?: string; caseId?: string; content: string },
+  userRole?: string,
+) {
+  await assertJusticePermission(actorId, 'cases.manage', userRole);
+  const official = await requireOfficial(actorId);
+  const { JusticeDocument } = await import('../database/models/JusticeDocument');
+  const doc = await JusticeDocument.create({
+    documentId: `JDOC-${uuidv4().slice(0, 8).toUpperCase()}`,
+    title: data.title,
+    type: (data.type as never) ?? 'order',
+    caseId: data.caseId,
+    content: data.content,
+    filedByOfficialId: official.userId,
+    filedByName: official.employeeId,
+    status: 'filed',
+    createdBy: new Types.ObjectId(actorId),
+  });
+  await logJusticeAction({ userId: actorId, actorId, action: 'document_file', resource: 'justice_document', resourceId: doc.documentId, employeeId: official.employeeId });
+  return doc;
+}
+
+export async function listAuditLog(userId: string, userRole?: string, limit = 100) {
+  await assertJusticePermission(userId, 'audit.view', userRole);
+  const { JusticeDutyLog } = await import('../database/models/JusticeDutyLog');
+  const logs = await JusticeDutyLog.find({ deletedAt: null }).sort({ createdAt: -1 }).limit(Math.min(limit, 200));
+  return logs.map((l) => {
+    const doc = l as typeof l & { createdAt: Date; employeeId?: string; action: string; details?: string; ipAddress?: string };
+    return {
+      logId: (l as unknown as { logId: string }).logId,
+      employeeId: doc.employeeId,
+      action: doc.action,
+      details: doc.details,
+      ipAddress: doc.ipAddress,
+      createdAt: doc.createdAt.toISOString(),
+    };
+  });
+}
+
 export { getRolePermissions, updateRolePermissions };

@@ -264,6 +264,42 @@ export const createEvidence = asyncHandler(async (req: AuthRequest, res: Respons
   } catch (e) { mapError(e); }
 });
 
+export const citations = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await policeService.listCitations(req.user!.userId, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const notes = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await policeService.listNotes(req.user!.userId, req.user!.role, req.query.subjectId as string | undefined);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const panics = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await policeService.listActivePanics(req.user!.userId, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const auditLog = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await policeService.listAuditLog(req.user!.userId, req.user!.role, Number(req.query.limit) || 100);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const transferEvidence = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ action: z.string().min(1), notes: z.string().optional() }).parse(req.body ?? {});
+  try {
+    const data = await policeService.transferEvidenceCustody(getActorId(req), String(req.params.id), body, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
 export const search = asyncHandler(async (req: AuthRequest, res: Response) => {
   const body = z.object({
     searchType: z.enum(['person', 'vehicle', 'plate', 'property', 'business', 'phone', 'identity', 'weapon']),

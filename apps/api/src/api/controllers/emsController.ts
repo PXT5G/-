@@ -355,6 +355,42 @@ export const alert = asyncHandler(async (req: AuthRequest, res: Response) => {
   } catch (e) { mapError(e); }
 });
 
+export const medicalRecordsList = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await emsService.listAllMedicalRecords(req.user!.userId, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const treatmentsList = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await emsService.listTreatments(req.user!.userId, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const notes = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await emsService.listEmsNotes(req.user!.userId, req.user!.role, req.query.subjectId as string | undefined);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const createNote = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ content: z.string().min(1), subjectType: z.string().optional(), subjectId: z.string().optional() }).parse(req.body ?? {});
+  try {
+    const data = await emsService.createEmsNote(getActorId(req), body, req.user!.role);
+    res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const auditLog = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await emsService.listAuditLog(req.user!.userId, req.user!.role, Number(req.query.limit) || 100);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
 export const rbac = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     const data = await emsService.getRbac(req.user!.userId, req.user!.role);

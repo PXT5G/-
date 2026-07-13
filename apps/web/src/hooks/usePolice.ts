@@ -33,9 +33,11 @@ export function usePoliceSocketSync() {
 
   useEffect(() => {
     if (!isAuthenticated || !token) return;
+    // Full socket parity — every backend-emitted police event
     const events = [
       'police:dispatch:new', 'police:dispatch:update', 'police:officer:status',
-      'police:911:new', 'police:panic', 'police:bolo:new', 'police:initialized',
+      'police:911:new', 'police:panic', 'police:bolo:new', 'police:warrant:new',
+      'police:case:update', 'police:evidence:new', 'police:initialized',
     ];
     const unsubs = events.map((ev) =>
       realtimeService.on(ev as never, () => {
@@ -134,4 +136,84 @@ export function usePolicePanic() {
     mutationFn: () => policeService.triggerPanic(token!),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['police'] }),
   });
+}
+
+export function usePoliceReports() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'reports'],
+    queryFn: () => policeService.getReports(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePoliceCitations() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'citations'],
+    queryFn: () => policeService.getCitations(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePoliceCases() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'cases'],
+    queryFn: () => policeService.getCases(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePoliceEvidence() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'evidence'],
+    queryFn: () => policeService.getEvidence(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePoliceNotes() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'notes'],
+    queryFn: () => policeService.getNotes(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePolicePanics() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'panics'],
+    queryFn: () => policeService.getPanics(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePoliceAuditLog() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'audit-log'],
+    queryFn: () => policeService.getAuditLog(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePoliceCreate() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['police'] });
+  return {
+    report: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createReport(token!, b), onSuccess: invalidate }),
+    citation: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createCitation(token!, b), onSuccess: invalidate }),
+    caseFile: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createCase(token!, b), onSuccess: invalidate }),
+    evidence: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createEvidence(token!, b), onSuccess: invalidate }),
+    bolo: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createBolo(token!, b), onSuccess: invalidate }),
+    warrant: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createWarrant(token!, b), onSuccess: invalidate }),
+    note: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createNote(token!, b), onSuccess: invalidate }),
+    dispatch: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createDispatch(token!, b), onSuccess: invalidate }),
+    custody: useMutation({ mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => policeService.transferEvidence(token!, id, body), onSuccess: invalidate }),
+  };
 }

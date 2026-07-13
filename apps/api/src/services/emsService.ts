@@ -1089,4 +1089,60 @@ export async function broadcastAlert(actorId: string, title: string, body: strin
   return { broadcast: true };
 }
 
+export async function listAllMedicalRecords(userId: string, userRole?: string) {
+  await assertEmsPermission(userId, 'records.view', userRole);
+  return EmsMedicalRecord.find({ deletedAt: null }).sort({ createdAt: -1 }).limit(100);
+}
+
+export async function listTreatments(userId: string, userRole?: string) {
+  await assertEmsPermission(userId, 'records.view', userRole);
+  return EmsTreatment.find({ deletedAt: null }).sort({ createdAt: -1 }).limit(100);
+}
+
+export async function listEmsNotes(userId: string, userRole?: string, subjectId?: string) {
+  await assertEmsPermission(userId, 'mdt.access', userRole);
+  const { EmsNote } = await import('../database/models/EmsNote');
+  const query: Record<string, unknown> = { deletedAt: null };
+  if (subjectId) query.subjectId = subjectId;
+  return EmsNote.find(query).sort({ createdAt: -1 }).limit(100);
+}
+
+export async function createEmsNote(
+  actorId: string,
+  data: { content: string; subjectType?: string; subjectId?: string },
+  userRole?: string,
+) {
+  await assertEmsPermission(actorId, 'mdt.access', userRole);
+  const personnel = await requirePersonnel(actorId);
+  const { EmsNote } = await import('../database/models/EmsNote');
+  const note = await EmsNote.create({
+    noteId: `ENOTE-${uuidv4().slice(0, 8).toUpperCase()}`,
+    personnelId: personnel.userId,
+    personnelName: personnel.badgeNumber,
+    content: data.content,
+    subjectType: (data.subjectType as never) ?? 'general',
+    subjectId: data.subjectId,
+    createdBy: new Types.ObjectId(actorId),
+  });
+  await logEmsAction({ userId: actorId, actorId, action: 'ems_note_create', resource: 'ems_note', resourceId: note.noteId, badgeNumber: personnel.badgeNumber });
+  return note;
+}
+
+export async function listAuditLog(userId: string, userRole?: string, limit = 100) {
+  await assertEmsPermission(userId, 'audit.view', userRole);
+  const { EmsDutyLog } = await import('../database/models/EmsDutyLog');
+  const logs = await EmsDutyLog.find({ deletedAt: null }).sort({ createdAt: -1 }).limit(Math.min(limit, 200));
+  return logs.map((l) => {
+    const doc = l as typeof l & { createdAt: Date; logId: string; badgeNumber?: string; action: string; details?: string; ipAddress?: string };
+    return {
+      logId: doc.logId,
+      badgeNumber: doc.badgeNumber,
+      action: doc.action,
+      details: doc.details,
+      ipAddress: doc.ipAddress,
+      createdAt: doc.createdAt.toISOString(),
+    };
+  });
+}
+
 export { getRolePermissions, updateRolePermissions };

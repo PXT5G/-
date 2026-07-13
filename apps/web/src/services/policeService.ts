@@ -111,6 +111,61 @@ export const policeService = {
     return res.data!;
   },
 
+  async createEvidence(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/police/evidence', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async transferEvidence(token: string, id: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>(`/api/police/evidence/${id}/custody`, {
+      method: 'PATCH', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getCitations(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/police/citations', { token });
+    return res.data!;
+  },
+
+  async getNotes(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/police/notes', { token });
+    return res.data!;
+  },
+
+  async createNote(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/police/notes', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async createCase(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/police/cases', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async createWarrant(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/police/warrants', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getPanics(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/police/panics', { token });
+    return res.data!;
+  },
+
+  async getAuditLog(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/police/audit-log', { token });
+    return res.data!;
+  },
+
   async search(token: string, searchType: string, query: string) {
     const res = await apiRequest<ApiResponse<unknown>>('/api/police/search', {
       method: 'POST', token, body: JSON.stringify({ searchType, query }),

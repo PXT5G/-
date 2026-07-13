@@ -145,4 +145,52 @@ export const emsService = {
     const res = await apiRequest<ApiResponse<unknown>>('/api/ems/analytics', { token });
     return res.data!;
   },
+
+  async createIncident(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/ems/incidents', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getRecords(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/ems/records/all', { token });
+    return res.data!;
+  },
+
+  async getTreatments(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/ems/treatments', { token });
+    return res.data!;
+  },
+
+  async getNotes(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/ems/notes', { token });
+    return res.data!;
+  },
+
+  async createNote(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/ems/notes', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async createPatientRecord(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/ems/patients', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async broadcastAlert(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/ems/alert', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getAuditLog(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/ems/audit-log', { token });
+    return res.data!;
+  },
 };

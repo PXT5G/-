@@ -10,7 +10,7 @@ export interface IPoliceEvidence extends Document {
   type: 'photo' | 'video' | 'document' | 'physical' | 'digital' | 'bodycam';
   fileUrl?: string;
   lockerNumber?: string;
-  chainOfCustody: { officerId: Types.ObjectId; badge: string; action: string; at: Date }[];
+  chainOfCustody: { officerId: Types.ObjectId; badge: string; action: string; notes?: string; at: Date }[];
   collectedByOfficerId: Types.ObjectId;
   collectedByBadge: string;
   location?: string;
@@ -34,6 +34,7 @@ const policeEvidenceSchema = new Schema<IPoliceEvidence>(
       officerId: { type: Schema.Types.ObjectId, ref: 'User' },
       badge: { type: String },
       action: { type: String },
+      notes: { type: String },
       at: { type: Date },
     }],
     collectedByOfficerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

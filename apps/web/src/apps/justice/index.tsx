@@ -8,9 +8,19 @@ import {
   useJusticeOfficials, useJusticeCourtrooms, useJusticeLaws, useJusticeDocket,
   useJusticeAnalytics, useUpdateJusticeStatus, useJusticeSearch,
   useReviewWarrant, useResolveCitation, useJusticeSocketSync, useJusticeInit,
+  useJusticeSentences, useJusticeNotes, useJusticeDocuments, useJusticeAuditLog, useJusticeCreate,
 } from '@/hooks/useJustice';
 import { useHaptic } from '@/hooks/useSound';
 import { cn } from '@/utils/cn';
+import {
+  RecordCard, SectionTitle, PrimaryButton, Field, TextArea, Segmented,
+  CreatePanel, EmptyState as GovEmpty, StructuredResults,
+} from '@/apps/gov-shared/GovKit';
+
+function jrec(item: unknown) { return item as Record<string, unknown>; }
+function jstr(v: unknown) { return v === undefined || v === null ? '' : String(v); }
+function jarr(v: unknown): unknown[] { return Array.isArray(v) ? v : []; }
+function jdate(v: unknown) { return v ? new Date(String(v)).toLocaleString() : ''; }
 
 type Tab = 'mdt' | 'docket' | 'cases' | 'hearings' | 'search' | 'more';
 type SubScreen = string | null;
@@ -157,38 +167,86 @@ function DocketScreen() {
 
 function CasesScreen() {
   const { data, isLoading } = useJusticeCases();
+  const create = useJusticeCreate();
+  const { tap } = useHaptic();
+  const [title, setTitle] = useState('');
+  const [defendantName, setDefendantName] = useState('');
+  const [description, setDescription] = useState('');
+  const [open, setOpen] = useState<string | null>(null);
   if (isLoading) return <LoadingState />;
-  if (!data?.length) return <EmptyState message="No cases on file" />;
+  const list = jarr(data).map(jrec);
+  const filtered = list;
 
   return (
     <div className="p-4 space-y-3">
-      <h2 className="text-white font-bold text-lg">Cases</h2>
-      {(data as Record<string, unknown>[]).map((c) => (
-        <GlassCard key={String(c.caseId)} className="p-4">
-          <div className="flex justify-between mb-1">
-            <span className="text-gulf-gold font-semibold text-sm">{String(c.caseNumber)}</span>
-            <span className="text-white/50 text-xs capitalize">{String(c.status)}</span>
-          </div>
-          <p className="text-white text-sm">{String(c.title)}</p>
-          <p className="text-white/40 text-xs mt-1">Defendant: {String(c.defendantName)}</p>
-          {Boolean(c.policeCaseId) && (
-            <p className="text-white/30 text-xs mt-1">Police: {String(c.policeCaseId)}</p>
-          )}
-        </GlassCard>
-      ))}
+      <SectionTitle>Court Cases</SectionTitle>
+      <CreatePanel label="Open Case">
+        <Field label="Case Title" value={title} onChange={setTitle} />
+        <Field label="Defendant" value={defendantName} onChange={setDefendantName} />
+        <TextArea label="Description" value={description} onChange={setDescription} />
+        <PrimaryButton
+          label={create.caseFile.isPending ? 'Opening...' : 'Open Case'}
+          disabled={!title || !defendantName || create.caseFile.isPending}
+          onClick={() => { tap(); create.caseFile.mutate({ title, defendantName, description }, { onSuccess: () => { setTitle(''); setDefendantName(''); setDescription(''); } }); }}
+        />
+      </CreatePanel>
+      {filtered.length === 0 ? <GovEmpty message="No cases on file" /> : filtered.map((c) => {
+        const timeline = jarr(c.timeline).map(jrec);
+        const isOpen = open === jstr(c.caseId);
+        return (
+          <RecordCard
+            key={jstr(c.caseId)}
+            title={jstr(c.title)}
+            subtitle={jstr(c.caseNumber)}
+            status={jstr(c.status)}
+            meta={`Defendant: ${jstr(c.defendantName)}${c.policeCaseId ? ` · Police ${jstr(c.policeCaseId)}` : ''}`}
+            onClick={() => { tap(); setOpen(isOpen ? null : jstr(c.caseId)); }}
+            footer={isOpen && timeline.length > 0 ? (
+              <div className="border-t border-white/5 pt-2">
+                <p className="text-white/40 text-[10px] uppercase mb-2">Case Timeline</p>
+                {timeline.map((t, i) => (
+                  <div key={i} className="flex gap-2 py-1">
+                    <span className="text-gulf-gold text-xs">•</span>
+                    <div>
+                      <p className="text-white/80 text-xs">{jstr(t.event ?? t.description)}</p>
+                      <p className="text-white/30 text-[10px]">{jdate(t.at ?? t.date)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : undefined}
+          />
+        );
+      })}
     </div>
   );
 }
 
 function HearingsScreen() {
   const { data, isLoading } = useJusticeHearings();
+  const create = useJusticeCreate();
+  const { tap } = useHaptic();
+  const [title, setTitle] = useState('');
+  const [caseNumber, setCaseNumber] = useState('');
+  const [hearingType, setHearingType] = useState('arraignment');
+  const [scheduledAt, setScheduledAt] = useState('');
   if (isLoading) return <LoadingState />;
-  if (!data?.length) return <EmptyState message="No hearings scheduled" />;
 
   return (
     <div className="p-4 space-y-3">
-      <h2 className="text-white font-bold text-lg">Hearings</h2>
-      {(data as Record<string, unknown>[]).map((h) => (
+      <SectionTitle>Hearings</SectionTitle>
+      <CreatePanel label="Schedule Hearing">
+        <Field label="Title" value={title} onChange={setTitle} />
+        <Field label="Case Number" value={caseNumber} onChange={setCaseNumber} />
+        <Segmented options={[['arraignment', 'Arraignment'], ['pretrial', 'Pretrial'], ['motion', 'Motion'], ['sentencing', 'Sentencing'], ['bail', 'Bail']]} value={hearingType} onChange={setHearingType} />
+        <Field label="Scheduled At" value={scheduledAt} onChange={setScheduledAt} type="datetime-local" />
+        <PrimaryButton
+          label={create.hearing.isPending ? 'Scheduling...' : 'Schedule Hearing'}
+          disabled={!title || !caseNumber || !scheduledAt || create.hearing.isPending}
+          onClick={() => { tap(); create.hearing.mutate({ title, caseNumber, hearingType, scheduledAt: new Date(scheduledAt).toISOString() }, { onSuccess: () => { setTitle(''); setCaseNumber(''); setScheduledAt(''); } }); }}
+        />
+      </CreatePanel>
+      {!data?.length ? <GovEmpty message="No hearings scheduled" /> : (data as Record<string, unknown>[]).map((h) => (
         <GlassCard key={String(h.hearingId)} className="p-4">
           <div className="flex justify-between mb-1">
             <span className="text-white font-medium text-sm">{String(h.title)}</span>
@@ -249,13 +307,7 @@ function SearchScreen() {
       >
         {search.isPending ? 'Searching...' : 'Search'}
       </button>
-      {search.data && (
-        <GlassCard className="p-4">
-          <pre className="text-white/80 text-xs overflow-auto max-h-64 whitespace-pre-wrap">
-            {JSON.stringify((search.data as Record<string, unknown>).results, null, 2)}
-          </pre>
-        </GlassCard>
-      )}
+      {search.data !== undefined && <StructuredResults results={(search.data as Record<string, unknown>).results} type={searchType} />}
       {search.isError && <ErrorState message="Search failed or permission denied" />}
     </div>
   );
@@ -340,16 +392,158 @@ function CitationsScreen() {
   );
 }
 
-function ListScreen({ title, useHook }: { title: string; useHook: () => { data?: unknown[]; isLoading: boolean } }) {
-  const { data, isLoading } = useHook();
+function AppealsScreen() {
+  const { data, isLoading } = useJusticeAppeals();
   if (isLoading) return <LoadingState />;
-  if (!data?.length) return <EmptyState message={`No ${title.toLowerCase()} records`} />;
+  const list = jarr(data).map(jrec);
+  if (!list.length) return <GovEmpty message="No appeals filed" />;
   return (
     <div className="p-4 space-y-3">
-      <h2 className="text-white font-bold text-lg">{title}</h2>
-      {data.map((item, i) => (
-        <GlassCard key={i} className="p-4">
-          <pre className="text-white/80 text-xs whitespace-pre-wrap">{JSON.stringify(item, null, 2)}</pre>
+      <SectionTitle>Appeals</SectionTitle>
+      {list.map((a) => (
+        <RecordCard
+          key={jstr(a.appealId)}
+          title={jstr(a.caseNumber ?? a.appealId)}
+          subtitle={jstr(a.grounds ?? a.reason)}
+          status={jstr(a.status)}
+          meta={`Filed by ${jstr(a.filedByName ?? a.appellant)} · ${jdate(a.createdAt)}`}
+          rows={[{ label: 'Decision', value: jstr(a.decision) || 'Pending' }]}
+        />
+      ))}
+    </div>
+  );
+}
+
+function TrialsScreen() {
+  const { data, isLoading } = useJusticeTrials();
+  if (isLoading) return <LoadingState />;
+  const list = jarr(data).map(jrec);
+  if (!list.length) return <GovEmpty message="No trials on record" />;
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Trials & Verdicts</SectionTitle>
+      {list.map((t) => (
+        <RecordCard
+          key={jstr(t.trialId)}
+          title={jstr(t.caseNumber ?? t.title)}
+          subtitle={jstr(t.defendantName)}
+          status={jstr(t.verdict ?? t.status)}
+          meta={`${jstr(t.courtroomId)} · ${jdate(t.scheduledAt ?? t.createdAt)}`}
+          rows={[
+            { label: 'Judge', value: jstr(t.judgeEmployeeId) },
+            { label: 'Verdict', value: jstr(t.verdict) || 'Pending' },
+          ]}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SentencesScreen() {
+  const { data, isLoading } = useJusticeSentences();
+  if (isLoading) return <LoadingState />;
+  const list = jarr(data).map(jrec);
+  if (!list.length) return <GovEmpty message="No sentences issued" />;
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Sentencing</SectionTitle>
+      {list.map((s) => (
+        <RecordCard
+          key={jstr(s.sentenceId)}
+          title={jstr(s.defendantName ?? s.caseNumber)}
+          subtitle={jstr(s.type ?? s.sentenceType)}
+          status={jstr(s.status)}
+          meta={`${jstr(s.judgeEmployeeId)} · ${jdate(s.createdAt)}`}
+          rows={[
+            { label: 'Prison days', value: jstr(s.prisonDays) || '0' },
+            { label: 'Fine', value: s.fineAmount ? `$${Number(s.fineAmount).toLocaleString()}` : '—' },
+            { label: 'Details', value: jstr(s.description ?? s.notes) },
+          ]}
+        />
+      ))}
+    </div>
+  );
+}
+
+function DocumentsScreen() {
+  const { data, isLoading } = useJusticeDocuments();
+  const create = useJusticeCreate();
+  const { tap } = useHaptic();
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [type, setType] = useState('order');
+  if (isLoading) return <LoadingState />;
+  const list = jarr(data).map(jrec);
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Judicial Documents</SectionTitle>
+      <CreatePanel label="File Document">
+        <Field label="Title" value={title} onChange={setTitle} />
+        <Segmented options={[['order', 'Order'], ['ruling', 'Ruling'], ['motion', 'Motion'], ['brief', 'Brief'], ['notice', 'Notice']]} value={type} onChange={setType} />
+        <TextArea label="Content" value={content} onChange={setContent} />
+        <PrimaryButton
+          label={create.document.isPending ? 'Filing...' : 'File Document'}
+          disabled={!title || !content || create.document.isPending}
+          onClick={() => { tap(); create.document.mutate({ title, type, content }, { onSuccess: () => { setTitle(''); setContent(''); } }); }}
+        />
+      </CreatePanel>
+      {list.length === 0 ? <GovEmpty message="No documents filed" /> : list.map((d) => (
+        <RecordCard
+          key={jstr(d.documentId)}
+          title={jstr(d.title)}
+          subtitle={jstr(d.type)}
+          status={jstr(d.status)}
+          meta={`${jstr(d.filedByName)} · ${jdate(d.createdAt)}`}
+          rows={[{ label: 'Case', value: jstr(d.caseId) || '—' }, { label: 'Content', value: jstr(d.content) }]}
+        />
+      ))}
+    </div>
+  );
+}
+
+function NotesScreen() {
+  const { data, isLoading } = useJusticeNotes();
+  const create = useJusticeCreate();
+  const { tap } = useHaptic();
+  const [content, setContent] = useState('');
+  if (isLoading) return <LoadingState />;
+  const list = jarr(data).map(jrec);
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Legal Notes</SectionTitle>
+      <CreatePanel label="Add Note" defaultOpen>
+        <TextArea label="Note" value={content} onChange={setContent} />
+        <PrimaryButton
+          label={create.note.isPending ? 'Saving...' : 'Save Note'}
+          disabled={!content || create.note.isPending}
+          onClick={() => { tap(); create.note.mutate({ content }, { onSuccess: () => setContent('') }); }}
+        />
+      </CreatePanel>
+      {list.length === 0 ? <GovEmpty message="No legal notes" /> : list.map((n) => (
+        <GlassCard key={jstr(n.noteId)} className="p-4">
+          <p className="text-white/80 text-sm">{jstr(n.content)}</p>
+          <p className="text-white/30 text-[10px] mt-2">{jstr(n.officialName)} · {jdate(n.createdAt)}</p>
+        </GlassCard>
+      ))}
+    </div>
+  );
+}
+
+function AuditScreen() {
+  const { data, isLoading, error } = useJusticeAuditLog();
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message="Audit access denied" />;
+  const list = jarr(data).map(jrec);
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Audit Log</SectionTitle>
+      {list.length === 0 ? <GovEmpty message="No audit records" /> : list.map((l) => (
+        <GlassCard key={jstr(l.logId)} className="p-3">
+          <div className="flex justify-between">
+            <span className="text-white text-xs font-medium capitalize">{jstr(l.action).replace(/_/g, ' ')}</span>
+            <span className="text-white/30 text-[10px]">{jdate(l.createdAt)}</span>
+          </div>
+          <p className="text-white/40 text-[11px] mt-1">{jstr(l.employeeId)} · {jstr(l.details)}{l.ipAddress ? ` · ${jstr(l.ipAddress)}` : ''}</p>
         </GlassCard>
       ))}
     </div>
@@ -488,12 +682,16 @@ export function JusticeApp() {
     const screens: Record<string, ReactNode> = {
       warrants: <WarrantsScreen />,
       citations: <CitationsScreen />,
-      appeals: <ListScreen title="Appeals" useHook={useJusticeAppeals} />,
+      appeals: <AppealsScreen />,
       laws: <LawsScreen />,
       officials: <OfficialsScreen />,
       analytics: <AnalyticsScreen />,
-      trials: <ListScreen title="Trials" useHook={useJusticeTrials} />,
+      trials: <TrialsScreen />,
       courtrooms: <CourtroomsScreen />,
+      sentences: <SentencesScreen />,
+      documents: <DocumentsScreen />,
+      notes: <NotesScreen />,
+      audit: <AuditScreen />,
     };
     return (
       <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
@@ -533,8 +731,9 @@ export function JusticeApp() {
               <div className="p-4 grid grid-cols-2 gap-3">
                 {[
                   ['warrants', 'Warrants'], ['citations', 'Citations'], ['appeals', 'Appeals'],
-                  ['laws', 'Laws'], ['officials', 'Staff'], ['analytics', 'Analytics'],
-                  ['trials', 'Trials'], ['courtrooms', 'Courtrooms'],
+                  ['trials', 'Trials'], ['sentences', 'Sentencing'], ['documents', 'Documents'],
+                  ['notes', 'Legal Notes'], ['laws', 'Laws'], ['officials', 'Staff'],
+                  ['courtrooms', 'Courtrooms'], ['audit', 'Audit Log'], ['analytics', 'Analytics'],
                 ].map(([id, label]) => (
                   <button
                     key={id}

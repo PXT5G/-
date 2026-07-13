@@ -160,4 +160,45 @@ export const justiceService = {
     });
     return res.data!;
   },
+
+  async getSentences(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/justice/sentences', { token });
+    return res.data!;
+  },
+
+  async getNotes(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/justice/notes', { token });
+    return res.data!;
+  },
+
+  async createNote(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/justice/notes', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getDocuments(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/justice/documents', { token });
+    return res.data!;
+  },
+
+  async createDocument(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/justice/documents', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getAuditLog(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/justice/audit-log', { token });
+    return res.data!;
+  },
+
+  async scheduleHearingFor(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/justice/hearings', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
 };

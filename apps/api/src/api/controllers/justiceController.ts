@@ -471,6 +471,43 @@ export const courtroomLive = asyncHandler(async (req: AuthRequest, res: Response
   } catch (e) { mapError(e); }
 });
 
+export const legalNotes = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await justiceService.listLegalNotes(req.user!.userId, req.user!.role, req.query.subjectId as string | undefined);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const createLegalNote = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ content: z.string().min(1), subjectType: z.string().optional(), subjectId: z.string().optional() }).parse(req.body ?? {});
+  try {
+    const data = await justiceService.createLegalNote(getActorId(req), body, req.user!.role);
+    res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const documents = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await justiceService.listDocuments(req.user!.userId, req.user!.role, req.query.caseId as string | undefined);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const createDocument = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ title: z.string().min(1), type: z.string().optional(), caseId: z.string().optional(), content: z.string().min(1) }).parse(req.body ?? {});
+  try {
+    const data = await justiceService.createDocument(getActorId(req), body, req.user!.role);
+    res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const auditLog = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await justiceService.listAuditLog(req.user!.userId, req.user!.role, Number(req.query.limit) || 100);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
 export const rbac = asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     const data = await justiceService.getRbac(req.user!.userId, req.user!.role);

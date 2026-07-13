@@ -498,6 +498,41 @@ export async function createCitation(actorId: string, data: {
   return citation;
 }
 
+export async function listCitations(userId: string, userRole?: string) {
+  await assertPolicePermission(userId, 'cases.view', userRole);
+  return PoliceCitation.find({ deletedAt: null }).sort({ createdAt: -1 }).limit(100);
+}
+
+export async function listNotes(userId: string, userRole?: string, subjectId?: string) {
+  await assertPolicePermission(userId, 'notes.view', userRole);
+  const query: Record<string, unknown> = { deletedAt: null };
+  if (subjectId) query.subjectId = subjectId;
+  return PoliceNote.find(query).sort({ createdAt: -1 }).limit(100);
+}
+
+export async function listActivePanics(userId: string, userRole?: string) {
+  await assertPolicePermission(userId, 'dashboard.view', userRole);
+  return PolicePanicEvent.find({ status: 'active', deletedAt: null }).sort({ createdAt: -1 }).limit(20);
+}
+
+export async function listAuditLog(userId: string, userRole?: string, limit = 100) {
+  await assertPolicePermission(userId, 'audit.view', userRole);
+  const { PoliceDutyLog } = await import('../database/models/PoliceDutyLog');
+  const logs = await PoliceDutyLog.find({ deletedAt: null }).sort({ createdAt: -1 }).limit(Math.min(limit, 200));
+  return logs.map((l) => {
+    const doc = l as typeof l & { createdAt: Date };
+    return {
+      logId: l.logId,
+      officerBadge: l.officerBadge,
+      action: l.action,
+      details: l.details,
+      ipAddress: l.ipAddress,
+      deviceUuid: l.deviceUuid,
+      createdAt: doc.createdAt.toISOString(),
+    };
+  });
+}
+
 export async function listCases(userId: string, userRole?: string) {
   await assertPolicePermission(userId, 'cases.view', userRole);
   return PoliceCase.find({ deletedAt: null }).sort({ updatedAt: -1 }).limit(100);
@@ -544,6 +579,33 @@ export async function createEvidence(actorId: string, data: Partial<InstanceType
     createdBy: new Types.ObjectId(actorId),
   });
   await broadcastPolice('police:evidence:new', { evidenceId: evidence.evidenceId, title: evidence.title });
+  return evidence;
+}
+
+export async function transferEvidenceCustody(
+  actorId: string,
+  evidenceId: string,
+  data: { action: string; notes?: string },
+  userRole?: string,
+) {
+  await assertPolicePermission(actorId, 'evidence.manage', userRole);
+  const officer = await requireOfficer(actorId);
+  const evidence = await PoliceEvidence.findOne({ evidenceId, deletedAt: null });
+  if (!evidence) throw new Error('EVIDENCE_NOT_FOUND');
+  evidence.chainOfCustody.push({
+    officerId: officer.userId,
+    badge: officer.badgeNumber,
+    action: data.action,
+    notes: data.notes,
+    at: new Date(),
+  } as never);
+  evidence.updatedBy = new Types.ObjectId(actorId);
+  await evidence.save();
+  await logPoliceAction({
+    userId: actorId, actorId, action: 'evidence_custody_transfer', resource: 'police_evidence',
+    resourceId: evidenceId, metadata: { action: data.action }, officerBadge: officer.badgeNumber,
+  });
+  await broadcastPolice('police:evidence:new', { evidenceId, title: evidence.title });
   return evidence;
 }
 
