@@ -28,6 +28,7 @@ function mapError(err: unknown): never {
     APPEAL_NOT_FOUND: [404, 'Appeal not found'],
     CITATION_NOT_FOUND: [404, 'Citation not found'],
     COURTROOM_NOT_FOUND: [404, 'Courtroom not found'],
+    DOCUMENT_NOT_FOUND: [404, 'Document not found'],
     INVALID_SEARCH_TYPE: [400, 'Invalid search type'],
     USER_NOT_FOUND: [404, 'User not found'],
   };
@@ -498,6 +499,21 @@ export const createDocument = asyncHandler(async (req: AuthRequest, res: Respons
   try {
     const data = await justiceService.createDocument(getActorId(req), body, req.user!.role);
     res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const reviseDocument = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ title: z.string().optional(), content: z.string().min(1) }).parse(req.body ?? {});
+  try {
+    const data = await justiceService.reviseDocument(getActorId(req), String(req.params.id), body, req.user!.role);
+    res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const documentVersions = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await justiceService.listDocumentVersions(req.user!.userId, String(req.params.id), req.user!.role);
+    res.json({ success: true, data });
   } catch (e) { mapError(e); }
 });
 

@@ -201,4 +201,16 @@ export const justiceService = {
     });
     return res.data!;
   },
+
+  async reviseDocument(token: string, id: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>(`/api/justice/documents/${id}/revise`, {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getDocumentVersions(token: string, id: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>(`/api/justice/documents/${id}/versions`, { token });
+    return res.data!;
+  },
 };

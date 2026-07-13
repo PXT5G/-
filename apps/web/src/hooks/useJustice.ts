@@ -225,5 +225,16 @@ export function useJusticeCreate() {
     sentence: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.issueSentence(token!, b), onSuccess: invalidate }),
     note: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.createNote(token!, b), onSuccess: invalidate }),
     document: useMutation({ mutationFn: (b: Record<string, unknown>) => justiceService.createDocument(token!, b), onSuccess: invalidate }),
+    revise: useMutation({ mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => justiceService.reviseDocument(token!, id, body), onSuccess: invalidate }),
+    caseUpdate: useMutation({ mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => justiceService.updateCase(token!, id, body), onSuccess: invalidate }),
   };
+}
+
+export function useJusticeDocumentVersions(documentId: string | null) {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['justice', 'document-versions', documentId],
+    queryFn: () => justiceService.getDocumentVersions(token!, documentId!),
+    enabled: Boolean(token) && Boolean(documentId),
+  });
 }

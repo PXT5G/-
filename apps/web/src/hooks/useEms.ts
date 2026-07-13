@@ -198,5 +198,13 @@ export function useEmsCreate() {
     patient: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.createPatientRecord(token!, b), onSuccess: invalidate }),
     note: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.createNote(token!, b), onSuccess: invalidate }),
     alert: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.broadcastAlert(token!, b), onSuccess: invalidate }),
+    shift: useMutation({ mutationFn: (b: Record<string, unknown>) => emsService.createShift(token!, b), onSuccess: invalidate }),
+    clock: useMutation({ mutationFn: ({ id, action }: { id: string; action: 'start' | 'end' }) => emsService.clockShift(token!, id, action), onSuccess: invalidate }),
+    equipment: useMutation({ mutationFn: ({ id, body }: { id: string; body: { add?: string; remove?: string } }) => emsService.updateEquipment(token!, id, body), onSuccess: invalidate }),
   };
+}
+
+export function useEmsShifts() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({ queryKey: ['ems', 'shifts'], queryFn: () => emsService.getShifts(token!), enabled: Boolean(token) });
 }

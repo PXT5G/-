@@ -201,6 +201,24 @@ export function usePoliceAuditLog() {
   });
 }
 
+export function usePolicePrison() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'prison'],
+    queryFn: () => policeService.getPrison(token!),
+    enabled: Boolean(token),
+  });
+}
+
+export function usePoliceShifts() {
+  const token = useAuthStore((s) => s.getAccessToken());
+  return useQuery({
+    queryKey: ['police', 'shifts'],
+    queryFn: () => policeService.getShifts(token!),
+    enabled: Boolean(token),
+  });
+}
+
 export function usePoliceCreate() {
   const token = useAuthStore((s) => s.getAccessToken());
   const queryClient = useQueryClient();
@@ -215,5 +233,10 @@ export function usePoliceCreate() {
     note: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createNote(token!, b), onSuccess: invalidate }),
     dispatch: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createDispatch(token!, b), onSuccess: invalidate }),
     custody: useMutation({ mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => policeService.transferEvidence(token!, id, body), onSuccess: invalidate }),
+    caseUpdate: useMutation({ mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => policeService.updateCase(token!, id, body), onSuccess: invalidate }),
+    book: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.bookInmate(token!, b), onSuccess: invalidate }),
+    release: useMutation({ mutationFn: (id: string) => policeService.releaseInmate(token!, id), onSuccess: invalidate }),
+    shift: useMutation({ mutationFn: (b: Record<string, unknown>) => policeService.createShift(token!, b), onSuccess: invalidate }),
+    clock: useMutation({ mutationFn: ({ id, action }: { id: string; action: 'start' | 'end' }) => policeService.clockShift(token!, id, action), onSuccess: invalidate }),
   };
 }

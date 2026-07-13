@@ -1295,7 +1295,8 @@ export async function createLegalNote(
 export async function listDocuments(userId: string, userRole?: string, caseId?: string) {
   await assertJusticePermission(userId, 'cases.view', userRole);
   const { JusticeDocument } = await import('../database/models/JusticeDocument');
-  const query: Record<string, unknown> = { deletedAt: null };
+  // Only latest versions in the main list; history via /documents/:id/versions.
+  const query: Record<string, unknown> = { deletedAt: null, isLatest: { $ne: false } };
   if (caseId) query.caseId = caseId;
   return JusticeDocument.find(query).sort({ createdAt: -1 }).limit(100);
 }
@@ -1308,8 +1309,12 @@ export async function createDocument(
   await assertJusticePermission(actorId, 'cases.manage', userRole);
   const official = await requireOfficial(actorId);
   const { JusticeDocument } = await import('../database/models/JusticeDocument');
+  const documentId = `JDOC-${uuidv4().slice(0, 8).toUpperCase()}`;
   const doc = await JusticeDocument.create({
-    documentId: `JDOC-${uuidv4().slice(0, 8).toUpperCase()}`,
+    documentId,
+    rootId: documentId,
+    version: 1,
+    isLatest: true,
     title: data.title,
     type: (data.type as never) ?? 'order',
     caseId: data.caseId,
@@ -1321,6 +1326,57 @@ export async function createDocument(
   });
   await logJusticeAction({ userId: actorId, actorId, action: 'document_file', resource: 'justice_document', resourceId: doc.documentId, employeeId: official.employeeId });
   return doc;
+}
+
+/**
+ * Document versioning: filing a revision creates a new immutable version
+ * sharing the original rootId; the previous version is preserved.
+ */
+export async function reviseDocument(
+  actorId: string,
+  documentId: string,
+  data: { title?: string; content: string },
+  userRole?: string,
+) {
+  await assertJusticePermission(actorId, 'cases.manage', userRole);
+  const official = await requireOfficial(actorId);
+  const { JusticeDocument } = await import('../database/models/JusticeDocument');
+  const prev = await JusticeDocument.findOne({ documentId, deletedAt: null });
+  if (!prev) throw new Error('DOCUMENT_NOT_FOUND');
+
+  const rootId = prev.rootId ?? prev.documentId;
+  const latest = await JusticeDocument.findOne({ rootId, deletedAt: null }).sort({ version: -1 });
+  const nextVersion = (latest?.version ?? 1) + 1;
+
+  await JusticeDocument.updateMany({ rootId, deletedAt: null }, { $set: { isLatest: false } });
+  const doc = await JusticeDocument.create({
+    documentId: `JDOC-${uuidv4().slice(0, 8).toUpperCase()}`,
+    rootId,
+    version: nextVersion,
+    isLatest: true,
+    title: data.title ?? prev.title,
+    type: prev.type,
+    caseId: prev.caseId,
+    content: data.content,
+    filedByOfficialId: official.userId,
+    filedByName: official.employeeId,
+    status: 'filed',
+    createdBy: new Types.ObjectId(actorId),
+  });
+  await logJusticeAction({
+    userId: actorId, actorId, action: 'document_revise', resource: 'justice_document',
+    resourceId: doc.documentId, metadata: { rootId, version: nextVersion }, employeeId: official.employeeId,
+  });
+  return doc;
+}
+
+export async function listDocumentVersions(userId: string, documentId: string, userRole?: string) {
+  await assertJusticePermission(userId, 'cases.view', userRole);
+  const { JusticeDocument } = await import('../database/models/JusticeDocument');
+  const doc = await JusticeDocument.findOne({ documentId, deletedAt: null });
+  if (!doc) throw new Error('DOCUMENT_NOT_FOUND');
+  const rootId = doc.rootId ?? doc.documentId;
+  return JusticeDocument.find({ rootId, deletedAt: null }).sort({ version: -1 });
 }
 
 export async function listAuditLog(userId: string, userRole?: string, limit = 100) {

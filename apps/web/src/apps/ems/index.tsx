@@ -8,12 +8,14 @@ import {
   useEmsAnalytics, useUpdateEmsStatus, useEmsSearch, useAssignAmbulance,
   useRouteHospital, useHelicopterDispatch, useEmsSocketSync, useEmsInit,
   useEmsRecords, useEmsTreatments, useEmsNotes, useEmsAuditLog, useEmsCreate,
+  useEmsShifts,
 } from '@/hooks/useEms';
 import { useHaptic } from '@/hooks/useSound';
 import { cn } from '@/utils/cn';
 import {
   RecordCard, SectionTitle, PrimaryButton, Field, TextArea, Segmented,
-  CreatePanel, EmptyState as GovEmpty, StructuredResults,
+  CreatePanel, EmptyState as GovEmpty, StructuredResults, CommandPalette,
+  usePinned, useRecentSections, useFormMemory, type PaletteCommand,
 } from '@/apps/gov-shared/GovKit';
 
 function erec(item: unknown) { return item as Record<string, unknown>; }
@@ -419,25 +421,119 @@ function AnalyticsScreen() {
 
 function AmbulancesScreen() {
   const { data, isLoading } = useEmsAmbulances();
+  const { tap } = useHaptic();
+  const [editing, setEditing] = useState<string | null>(null);
   if (isLoading) return <LoadingState />;
   const list = earr(data).map(erec);
   if (!list.length) return <GovEmpty message="Fleet is empty" />;
   return (
     <div className="p-4 space-y-3">
       <SectionTitle>Ambulance Fleet</SectionTitle>
-      {list.map((a) => (
-        <RecordCard
-          key={estr(a.ambulanceId)}
-          title={estr(a.callSign)}
-          subtitle={`${estr(a.plateNumber)} · ${estr(a.type)}`}
-          status={estr(a.status)}
-          chips={earr(a.equipment).map(String)}
-          rows={[
-            { label: 'Mileage', value: a.mileage ? `${Number(a.mileage).toLocaleString()} km` : '—' },
-            { label: 'Last service', value: edate(a.lastServiceAt) || '—' },
-          ]}
+      {list.map((a) => {
+        const ambId = estr(a.ambulanceId);
+        return (
+          <RecordCard
+            key={ambId}
+            title={estr(a.callSign)}
+            subtitle={`${estr(a.plateNumber)} · ${estr(a.type)}`}
+            status={estr(a.status)}
+            chips={earr(a.equipment).map(String)}
+            onClick={() => { tap(); setEditing(editing === ambId ? null : ambId); }}
+            rows={[
+              { label: 'Mileage', value: a.mileage ? `${Number(a.mileage).toLocaleString()} km` : '—' },
+              { label: 'Last service', value: edate(a.lastServiceAt) || '—' },
+            ]}
+            footer={editing === ambId ? <EquipmentEditor ambulanceId={ambId} equipment={earr(a.equipment).map(String)} /> : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** Equipment management: add/remove items on an ambulance inline. */
+function EquipmentEditor({ ambulanceId, equipment }: { ambulanceId: string; equipment: string[] }) {
+  const create = useEmsCreate();
+  const { tap } = useHaptic();
+  const [item, setItem] = useState('');
+  return (
+    <div className="border-t border-white/5 pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+      <p className="text-white/40 text-[10px] uppercase">Equipment Management</p>
+      <div className="flex flex-wrap gap-1.5">
+        {equipment.map((eq) => (
+          <button
+            key={eq}
+            type="button"
+            onClick={() => { tap(); create.equipment.mutate({ id: ambulanceId, body: { remove: eq } }); }}
+            className="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-white/70 hover:bg-red-500/20 hover:text-red-300"
+            title="Tap to remove"
+          >
+            {eq} ✕
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input value={item} onChange={(e) => setItem(e.target.value)} placeholder="Add equipment" className="flex-1 min-w-0 bg-white/10 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30" />
+        <button type="button" disabled={!item} onClick={() => { tap(); create.equipment.mutate({ id: ambulanceId, body: { add: item } }); setItem(''); }} className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs disabled:opacity-40">Add</button>
+      </div>
+    </div>
+  );
+}
+
+/** Staff scheduling: roster + one-tap clock in/out mirrored to duty status. */
+function ShiftsScreen() {
+  const { data, isLoading } = useEmsShifts();
+  const { data: dashboard } = useEmsDashboard();
+  const create = useEmsCreate();
+  const { tap } = useHaptic();
+  const [badgeNumber, setBadgeNumber] = useState('');
+  const [shiftType, setShiftType] = useState('ambulance');
+  const [startAt, setStartAt] = useState('');
+  const [endAt, setEndAt] = useState('');
+  if (isLoading) return <LoadingState />;
+  const myBadge = estr((dashboard?.personnel as Record<string, unknown> | undefined)?.badgeNumber);
+  const list = earr(data).map(erec);
+
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Staff Scheduling</SectionTitle>
+      <CreatePanel label="Schedule Shift">
+        <Field label="Badge (blank = me)" value={badgeNumber} onChange={setBadgeNumber} placeholder={myBadge} />
+        <Segmented options={[['ambulance', 'Ambulance'], ['hospital', 'Hospital'], ['dispatch', 'Dispatch'], ['helicopter', 'Air Med']]} value={shiftType} onChange={setShiftType} />
+        <Field label="Start" value={startAt} onChange={setStartAt} type="datetime-local" />
+        <Field label="End" value={endAt} onChange={setEndAt} type="datetime-local" />
+        <PrimaryButton
+          label={create.shift.isPending ? 'Scheduling...' : 'Schedule Shift'}
+          disabled={!startAt || !endAt || create.shift.isPending}
+          onClick={() => { tap(); create.shift.mutate({ badgeNumber: badgeNumber || undefined, shiftType, startAt: new Date(startAt).toISOString(), endAt: new Date(endAt).toISOString() }, { onSuccess: () => { setStartAt(''); setEndAt(''); } }); }}
         />
-      ))}
+      </CreatePanel>
+      {list.length === 0 ? <GovEmpty message="No shifts scheduled" /> : list.map((s) => {
+        const isMine = estr(s.badgeNumber) === myBadge;
+        const status = estr(s.status);
+        return (
+          <RecordCard
+            key={estr(s.shiftId)}
+            title={`${estr(s.badgeNumber)}${isMine ? ' (you)' : ''}`}
+            subtitle={`${estr(s.shiftType)} shift`}
+            status={status}
+            statusToneOverride={status === 'active' ? 'green' : undefined}
+            rows={[
+              { label: 'Window', value: `${edate(s.startAt)} → ${edate(s.endAt)}` },
+              { label: 'Clocked', value: s.actualStartAt ? `${edate(s.actualStartAt)}${s.actualEndAt ? ` → ${edate(s.actualEndAt)}` : ' (on shift)'}` : '—' },
+            ]}
+            footer={isMine && (status === 'scheduled' || status === 'active') ? (
+              <button
+                type="button"
+                onClick={() => { tap(); create.clock.mutate({ id: estr(s.shiftId), action: status === 'scheduled' ? 'start' : 'end' }); }}
+                className={cn('w-full py-2 rounded-xl text-xs font-semibold', status === 'scheduled' ? 'bg-gulf-gold/20 text-gulf-gold' : 'bg-red-500/20 text-red-300')}
+              >
+                {status === 'scheduled' ? 'Clock In — go on duty' : 'Clock Out — end shift'}
+              </button>
+            ) : undefined}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -446,11 +542,13 @@ function IncidentsScreen() {
   const { data, isLoading } = useEmsIncidents();
   const create = useEmsCreate();
   const { tap } = useHaptic();
+  // Smart defaults: location/district remembered from the last incident report.
+  const memory = useFormMemory('ems-incident');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState('multi_vehicle');
-  const [location, setLocation] = useState('');
-  const [district, setDistrict] = useState('');
+  const [location, setLocation] = useState(() => memory.recall().location ?? '');
+  const [district, setDistrict] = useState(() => memory.recall().district ?? '');
   const [open, setOpen] = useState<string | null>(null);
   if (isLoading) return <LoadingState />;
   const list = earr(data).map(erec);
@@ -466,7 +564,11 @@ function IncidentsScreen() {
         <PrimaryButton
           label={create.incident.isPending ? 'Reporting...' : 'Report Incident'}
           disabled={!title || !description || !location || !district || create.incident.isPending}
-          onClick={() => { tap(); create.incident.mutate({ title, description, type, location, district }, { onSuccess: () => { setTitle(''); setDescription(''); setLocation(''); setDistrict(''); } }); }}
+          onClick={() => {
+            tap();
+            memory.remember({ location, district });
+            create.incident.mutate({ title, description, type, location, district }, { onSuccess: () => { setTitle(''); setDescription(''); } });
+          }}
         />
       </CreatePanel>
       {list.length === 0 ? <GovEmpty message="No incidents reported" /> : list.map((inc) => {
@@ -662,13 +764,42 @@ function EmptyState({ message }: { message: string }) {
   return <p className="text-white/40 text-center py-12 text-sm">{message}</p>;
 }
 
+const EMS_SCREENS: Record<string, ReactNode> = {
+  hospitals: <HospitalsScreen />,
+  ambulances: <AmbulancesScreen />,
+  incidents: <IncidentsScreen />,
+  personnel: <PersonnelScreen />,
+  shifts: <ShiftsScreen />,
+  records: <RecordsScreen />,
+  treatments: <TreatmentsScreen />,
+  notes: <NotesScreen />,
+  alerts: <AlertsScreen />,
+  audit: <AuditScreen />,
+  analytics: <AnalyticsScreen />,
+};
+
+const EMS_MORE_ITEMS: [string, string][] = [
+  ['hospitals', 'Hospitals'], ['ambulances', 'Ambulances'], ['incidents', 'Incidents'],
+  ['personnel', 'Staff'], ['shifts', 'Shifts'], ['records', 'Medical Records'],
+  ['treatments', 'Treatments'], ['notes', 'Notes'], ['alerts', 'Alerts'],
+  ['audit', 'Audit Log'], ['analytics', 'Analytics'],
+];
+
 export function EmsApp() {
   const [tab, setTab] = useState<Tab>('mdt');
   const [subScreen, setSubScreen] = useState<SubScreen>(null);
   const { tap } = useHaptic();
+  const { pinned, toggle: togglePin } = usePinned('ems');
+  const { recents, record } = useRecentSections('ems');
+  const updateStatus = useUpdateEmsStatus();
 
   useEmsInit();
   useEmsSocketSync();
+
+  const openSection = (id: string) => {
+    record(id);
+    setSubScreen(id);
+  };
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'mdt', label: 'MDT', icon: '🚑' },
@@ -679,30 +810,34 @@ export function EmsApp() {
     { id: 'more', label: 'More', icon: '⋯' },
   ];
 
+  const paletteCommands: PaletteCommand[] = [
+    ...tabs.filter((t) => t.id !== 'more').map((t) => ({
+      id: `tab:${t.id}`, label: `Go to ${t.label}`, hint: 'tab',
+      run: () => { setSubScreen(null); setTab(t.id); },
+    })),
+    ...EMS_MORE_ITEMS.map(([id, label]) => ({
+      id, label, hint: 'section', keywords: id,
+      run: () => openSection(id),
+    })),
+    { id: 'act:onduty', label: 'Go On Duty', hint: 'action', keywords: 'status clock', run: () => updateStatus.mutate('on_duty') },
+    { id: 'act:offduty', label: 'Go Off Duty', hint: 'action', keywords: 'status clock', run: () => updateStatus.mutate('off_duty') },
+  ];
+
+  const orderedMore = [...EMS_MORE_ITEMS].sort((a, b) => Number(pinned.includes(b[0])) - Number(pinned.includes(a[0])));
+
   if (subScreen) {
-    const screens: Record<string, ReactNode> = {
-      hospitals: <HospitalsScreen />,
-      ambulances: <AmbulancesScreen />,
-      incidents: <IncidentsScreen />,
-      personnel: <PersonnelScreen />,
-      records: <RecordsScreen />,
-      treatments: <TreatmentsScreen />,
-      notes: <NotesScreen />,
-      alerts: <AlertsScreen />,
-      audit: <AuditScreen />,
-      analytics: <AnalyticsScreen />,
-    };
     return (
-      <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
-        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-gulf-gold text-sm p-4">‹ MDT</button>
-        <div className="flex-1 overflow-y-auto">{screens[subScreen] ?? <EmptyState message="Section not found" />}</div>
+      <div className="relative h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
+        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-gulf-gold text-sm p-4 text-left">‹ MDT</button>
+        <div className="flex-1 overflow-y-auto">{EMS_SCREENS[subScreen] ?? <EmptyState message="Section not found" />}</div>
+        <CommandPalette commands={paletteCommands} recents={recents} />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
-      <header className="px-4 pt-4 pb-2 border-b border-white/10">
+    <div className="relative h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
+      <header className="px-4 pt-4 pb-2 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🚑</span>
           <div>
@@ -710,6 +845,7 @@ export function EmsApp() {
             <p className="text-gulf-gold/80 text-[10px] uppercase tracking-widest">Emergency Medical Services</p>
           </div>
         </div>
+        <span className="text-white/25 text-[10px] border border-white/15 rounded-md px-1.5 py-0.5">⌘K</span>
       </header>
 
       <div className="flex-1 overflow-y-auto">
@@ -721,26 +857,31 @@ export function EmsApp() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            {tab === 'mdt' && <MdtDashboard onNavigate={setSubScreen} />}
+            {tab === 'mdt' && <MdtDashboard onNavigate={openSection} />}
             {tab === 'units' && <UnitsScreen />}
             {tab === 'dispatch' && <DispatchScreen />}
             {tab === 'patients' && <PatientsScreen />}
             {tab === 'search' && <SearchScreen />}
             {tab === 'more' && (
               <div className="p-4 grid grid-cols-2 gap-3">
-                {[
-                  ['hospitals', 'Hospitals'], ['ambulances', 'Ambulances'], ['incidents', 'Incidents'],
-                  ['personnel', 'Staff'], ['records', 'Medical Records'], ['treatments', 'Treatments'],
-                  ['notes', 'Notes'], ['alerts', 'Alerts'], ['audit', 'Audit Log'], ['analytics', 'Analytics'],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => { tap(); setSubScreen(id); }}
-                    className="py-6 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10"
-                  >
-                    {label}
-                  </button>
+                {orderedMore.map(([id, label]) => (
+                  <div key={id} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { tap(); openSection(id); }}
+                      className="w-full py-6 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10"
+                    >
+                      {label}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={pinned.includes(id) ? `Unpin ${label}` : `Pin ${label}`}
+                      onClick={(e) => { e.stopPropagation(); tap(); togglePin(id); }}
+                      className={cn('absolute top-1.5 right-2 text-sm', pinned.includes(id) ? 'text-gulf-gold' : 'text-white/20')}
+                    >
+                      ★
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -764,6 +905,7 @@ export function EmsApp() {
           </button>
         ))}
       </nav>
+      <CommandPalette commands={paletteCommands} recents={recents} />
     </div>
   );
 }

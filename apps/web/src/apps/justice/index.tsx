@@ -9,13 +9,35 @@ import {
   useJusticeAnalytics, useUpdateJusticeStatus, useJusticeSearch,
   useReviewWarrant, useResolveCitation, useJusticeSocketSync, useJusticeInit,
   useJusticeSentences, useJusticeNotes, useJusticeDocuments, useJusticeAuditLog, useJusticeCreate,
+  useJusticeDocumentVersions,
 } from '@/hooks/useJustice';
 import { useHaptic } from '@/hooks/useSound';
 import { cn } from '@/utils/cn';
 import {
   RecordCard, SectionTitle, PrimaryButton, Field, TextArea, Segmented,
-  CreatePanel, EmptyState as GovEmpty, StructuredResults,
+  CreatePanel, EmptyState as GovEmpty, StructuredResults, CommandPalette,
+  TimelineEntry, usePinned, useRecentSections, type PaletteCommand,
 } from '@/apps/gov-shared/GovKit';
+
+/** Legal templates: one tap pre-fills the document form with standard text. */
+const LEGAL_TEMPLATES: { id: string; label: string; type: string; title: string; content: string }[] = [
+  {
+    id: 'protective', label: 'Protective Order', type: 'order', title: 'Protective Order',
+    content: 'IT IS HEREBY ORDERED that the respondent shall remain at least 100 meters from the petitioner, their residence, and their place of employment, effective immediately and until further order of this Court.',
+  },
+  {
+    id: 'subpoena', label: 'Witness Subpoena', type: 'notice', title: 'Subpoena — Witness Appearance',
+    content: 'YOU ARE HEREBY COMMANDED to appear before this Court at the date and time noted on the docket to give testimony in the matter referenced. Failure to appear may result in contempt of court.',
+  },
+  {
+    id: 'dismissal', label: 'Motion to Dismiss', type: 'motion', title: 'Motion to Dismiss',
+    content: 'COMES NOW the moving party and respectfully moves this Honorable Court to dismiss the above-captioned matter for lack of sufficient evidence, and states the grounds as follows:',
+  },
+  {
+    id: 'continuance', label: 'Order of Continuance', type: 'order', title: 'Order of Continuance',
+    content: 'IT IS HEREBY ORDERED that the hearing in the above-captioned matter is continued. All parties shall be notified of the new date through the court docket.',
+  },
+];
 
 function jrec(item: unknown) { return item as Record<string, unknown>; }
 function jstr(v: unknown) { return v === undefined || v === null ? '' : String(v); }
@@ -201,23 +223,45 @@ function CasesScreen() {
             status={jstr(c.status)}
             meta={`Defendant: ${jstr(c.defendantName)}${c.policeCaseId ? ` · Police ${jstr(c.policeCaseId)}` : ''}`}
             onClick={() => { tap(); setOpen(isOpen ? null : jstr(c.caseId)); }}
-            footer={isOpen && timeline.length > 0 ? (
-              <div className="border-t border-white/5 pt-2">
-                <p className="text-white/40 text-[10px] uppercase mb-2">Case Timeline</p>
-                {timeline.map((t, i) => (
-                  <div key={i} className="flex gap-2 py-1">
-                    <span className="text-gulf-gold text-xs">•</span>
-                    <div>
-                      <p className="text-white/80 text-xs">{jstr(t.event ?? t.description)}</p>
-                      <p className="text-white/30 text-[10px]">{jdate(t.at ?? t.date)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : undefined}
+            footer={isOpen ? <JusticeCaseDetail caseDoc={c} timeline={timeline} /> : undefined}
           />
         );
       })}
+    </div>
+  );
+}
+
+/** Case assignment + timeline: assign judge/prosecutor without leaving the list. */
+function JusticeCaseDetail({ caseDoc: c, timeline }: { caseDoc: Record<string, unknown>; timeline: Record<string, unknown>[] }) {
+  const create = useJusticeCreate();
+  const { tap } = useHaptic();
+  const [judge, setJudge] = useState('');
+  const [prosecutor, setProsecutor] = useState('');
+  const caseId = jstr(c.caseId);
+  const patch = (body: Record<string, unknown>) => { tap(); create.caseUpdate.mutate({ id: caseId, body }); };
+
+  return (
+    <div className="border-t border-white/5 pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap gap-1.5">
+        {Boolean(c.judgeEmployeeId) && <span className="text-[10px] px-2 py-0.5 rounded-md bg-gulf-gold/15 text-gulf-gold">⚖️ Judge {jstr(c.judgeEmployeeId)}</span>}
+        {Boolean(c.prosecutorEmployeeId) && <span className="text-[10px] px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-300">Prosecutor {jstr(c.prosecutorEmployeeId)}</span>}
+      </div>
+      <div className="flex gap-2">
+        <input value={judge} onChange={(e) => setJudge(e.target.value)} placeholder="Assign judge (employee id)" className="flex-1 min-w-0 bg-white/10 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30" />
+        <button type="button" disabled={!judge} onClick={() => { patch({ judgeEmployeeId: judge, event: `Judge ${judge} assigned` }); setJudge(''); }} className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs disabled:opacity-40">Assign</button>
+      </div>
+      <div className="flex gap-2">
+        <input value={prosecutor} onChange={(e) => setProsecutor(e.target.value)} placeholder="Assign prosecutor" className="flex-1 min-w-0 bg-white/10 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30" />
+        <button type="button" disabled={!prosecutor} onClick={() => { patch({ prosecutorEmployeeId: prosecutor, event: `Prosecutor ${prosecutor} assigned` }); setProsecutor(''); }} className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs disabled:opacity-40">Assign</button>
+      </div>
+      {timeline.length > 0 && (
+        <div>
+          <p className="text-white/40 text-[10px] uppercase mb-1">Case Timeline</p>
+          {timeline.slice().reverse().map((t, i) => (
+            <TimelineEntry key={i} event={jstr(t.event ?? t.description)} meta={jdate(t.at ?? t.date)} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -472,12 +516,32 @@ function DocumentsScreen() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [type, setType] = useState('order');
+  const [expanded, setExpanded] = useState<string | null>(null);
   if (isLoading) return <LoadingState />;
   const list = jarr(data).map(jrec);
+
+  const applyTemplate = (id: string) => {
+    const t = LEGAL_TEMPLATES.find((x) => x.id === id);
+    if (!t) return;
+    setTitle(t.title);
+    setType(t.type);
+    setContent(t.content);
+  };
+
   return (
     <div className="p-4 space-y-3">
       <SectionTitle>Judicial Documents</SectionTitle>
       <CreatePanel label="File Document">
+        <div>
+          <span className="text-white/50 text-xs">Legal Templates</span>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {LEGAL_TEMPLATES.map((t) => (
+              <button key={t.id} type="button" onClick={() => { tap(); applyTemplate(t.id); }} className="px-3 py-1.5 rounded-full text-xs bg-white/10 text-white hover:bg-white/15">
+                📋 {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <Field label="Title" value={title} onChange={setTitle} />
         <Segmented options={[['order', 'Order'], ['ruling', 'Ruling'], ['motion', 'Motion'], ['brief', 'Brief'], ['notice', 'Notice']]} value={type} onChange={setType} />
         <TextArea label="Content" value={content} onChange={setContent} />
@@ -487,15 +551,88 @@ function DocumentsScreen() {
           onClick={() => { tap(); create.document.mutate({ title, type, content }, { onSuccess: () => { setTitle(''); setContent(''); } }); }}
         />
       </CreatePanel>
-      {list.length === 0 ? <GovEmpty message="No documents filed" /> : list.map((d) => (
-        <RecordCard
-          key={jstr(d.documentId)}
-          title={jstr(d.title)}
-          subtitle={jstr(d.type)}
-          status={jstr(d.status)}
-          meta={`${jstr(d.filedByName)} · ${jdate(d.createdAt)}`}
-          rows={[{ label: 'Case', value: jstr(d.caseId) || '—' }, { label: 'Content', value: jstr(d.content) }]}
-        />
+      {list.length === 0 ? <GovEmpty message="No documents filed" /> : list.map((d) => {
+        const docId = jstr(d.documentId);
+        const version = Number(d.version ?? 1);
+        return (
+          <RecordCard
+            key={docId}
+            title={jstr(d.title)}
+            subtitle={`${jstr(d.type)} · v${version}`}
+            status={jstr(d.status)}
+            meta={`${jstr(d.filedByName)} · ${jdate(d.createdAt)}`}
+            onClick={() => { tap(); setExpanded(expanded === docId ? null : docId); }}
+            rows={[{ label: 'Case', value: jstr(d.caseId) || '—' }, { label: 'Content', value: jstr(d.content) }]}
+            footer={expanded === docId ? <DocumentVersioning documentId={docId} currentContent={jstr(d.content)} /> : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/** Version history + file-revision editor for one document. */
+function DocumentVersioning({ documentId, currentContent }: { documentId: string; currentContent: string }) {
+  const { data: versions, isLoading } = useJusticeDocumentVersions(documentId);
+  const create = useJusticeCreate();
+  const { tap } = useHaptic();
+  const [draft, setDraft] = useState(currentContent);
+  const list = jarr(versions).map(jrec);
+
+  return (
+    <div className="border-t border-white/5 pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+      <p className="text-white/40 text-[10px] uppercase">Version History</p>
+      {isLoading ? <p className="text-white/30 text-xs">Loading…</p> : list.map((v) => (
+        <TimelineEntry key={jstr(v.documentId)} event={`v${jstr(v.version)} — ${jstr(v.title)}`} meta={`${jstr(v.filedByName)} · ${jdate(v.createdAt)}`} />
+      ))}
+      <TextArea label="Revise content (files a new version)" value={draft} onChange={setDraft} />
+      <PrimaryButton
+        label={create.revise.isPending ? 'Filing revision...' : 'File Revision'}
+        disabled={!draft || draft === currentContent || create.revise.isPending}
+        onClick={() => { tap(); create.revise.mutate({ id: documentId, body: { content: draft } }); }}
+      />
+    </div>
+  );
+}
+
+/** Court Calendar: hearings grouped chronologically by day. */
+function CalendarScreen() {
+  const { data, isLoading } = useJusticeHearings();
+  if (isLoading) return <LoadingState />;
+  const list = jarr(data).map(jrec)
+    .filter((h) => h.scheduledAt)
+    .sort((a, b) => new Date(jstr(a.scheduledAt)).getTime() - new Date(jstr(b.scheduledAt)).getTime());
+  const byDay = new Map<string, Record<string, unknown>[]>();
+  for (const h of list) {
+    const day = new Date(jstr(h.scheduledAt)).toDateString();
+    byDay.set(day, [...(byDay.get(day) ?? []), h]);
+  }
+  if (byDay.size === 0) return <GovEmpty message="No hearings on the calendar" />;
+  return (
+    <div className="p-4 space-y-4">
+      <SectionTitle>Court Calendar</SectionTitle>
+      {[...byDay.entries()].map(([day, hearings]) => (
+        <div key={day}>
+          <p className="text-gulf-gold text-xs font-semibold uppercase tracking-wide mb-2">{day}</p>
+          <div className="space-y-2">
+            {hearings.map((h) => (
+              <GlassCard key={jstr(h.hearingId)} className="p-3 flex items-center gap-3">
+                <div className="text-center shrink-0 w-14">
+                  <p className="text-white text-sm font-bold">{new Date(jstr(h.scheduledAt)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-white/30 text-[10px] capitalize">{jstr(h.hearingType)}</p>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-sm truncate">{jstr(h.title)}</p>
+                  <p className="text-white/40 text-xs">{jstr(h.caseNumber)} · {jstr(h.courtroomId)}</p>
+                </div>
+                <span className={cn('text-[10px] px-2 py-0.5 rounded-full capitalize shrink-0',
+                  h.status === 'in_progress' ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-white/60')}>
+                  {jstr(h.status).replace('_', ' ')}
+                </span>
+              </GlassCard>
+            ))}
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -661,13 +798,45 @@ function EmptyState({ message }: { message: string }) {
   return <p className="text-white/40 text-center py-12 text-sm">{message}</p>;
 }
 
+const JUSTICE_SCREENS: Record<string, ReactNode> = {
+  warrants: <WarrantsScreen />,
+  citations: <CitationsScreen />,
+  appeals: <AppealsScreen />,
+  laws: <LawsScreen />,
+  officials: <OfficialsScreen />,
+  analytics: <AnalyticsScreen />,
+  trials: <TrialsScreen />,
+  courtrooms: <CourtroomsScreen />,
+  sentences: <SentencesScreen />,
+  documents: <DocumentsScreen />,
+  calendar: <CalendarScreen />,
+  notes: <NotesScreen />,
+  audit: <AuditScreen />,
+};
+
+const JUSTICE_MORE_ITEMS: [string, string][] = [
+  ['calendar', 'Court Calendar'], ['warrants', 'Warrants'], ['citations', 'Citations'],
+  ['appeals', 'Appeals'], ['trials', 'Trials'], ['sentences', 'Sentencing'],
+  ['documents', 'Documents'], ['notes', 'Legal Notes'], ['laws', 'Laws'],
+  ['officials', 'Staff'], ['courtrooms', 'Courtrooms'], ['audit', 'Audit Log'],
+  ['analytics', 'Analytics'],
+];
+
 export function JusticeApp() {
   const [tab, setTab] = useState<Tab>('mdt');
   const [subScreen, setSubScreen] = useState<SubScreen>(null);
   const { tap } = useHaptic();
+  const { pinned, toggle: togglePin } = usePinned('justice');
+  const { recents, record } = useRecentSections('justice');
+  const updateStatus = useUpdateJusticeStatus();
 
   useJusticeInit();
   useJusticeSocketSync();
+
+  const openSection = (id: string) => {
+    record(id);
+    setSubScreen(id);
+  };
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'mdt', label: 'MDT', icon: '⚖️' },
@@ -678,32 +847,34 @@ export function JusticeApp() {
     { id: 'more', label: 'More', icon: '⋯' },
   ];
 
+  const paletteCommands: PaletteCommand[] = [
+    ...tabs.filter((t) => t.id !== 'more').map((t) => ({
+      id: `tab:${t.id}`, label: `Go to ${t.label}`, hint: 'tab',
+      run: () => { setSubScreen(null); setTab(t.id); },
+    })),
+    ...JUSTICE_MORE_ITEMS.map(([id, label]) => ({
+      id, label, hint: 'section', keywords: id,
+      run: () => openSection(id),
+    })),
+    { id: 'act:incourt', label: 'Set Status: In Court', hint: 'action', run: () => updateStatus.mutate('in_court') },
+    { id: 'act:onduty', label: 'Set Status: On Duty', hint: 'action', run: () => updateStatus.mutate('on_duty') },
+  ];
+
+  const orderedMore = [...JUSTICE_MORE_ITEMS].sort((a, b) => Number(pinned.includes(b[0])) - Number(pinned.includes(a[0])));
+
   if (subScreen) {
-    const screens: Record<string, ReactNode> = {
-      warrants: <WarrantsScreen />,
-      citations: <CitationsScreen />,
-      appeals: <AppealsScreen />,
-      laws: <LawsScreen />,
-      officials: <OfficialsScreen />,
-      analytics: <AnalyticsScreen />,
-      trials: <TrialsScreen />,
-      courtrooms: <CourtroomsScreen />,
-      sentences: <SentencesScreen />,
-      documents: <DocumentsScreen />,
-      notes: <NotesScreen />,
-      audit: <AuditScreen />,
-    };
     return (
-      <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
-        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-gulf-gold text-sm p-4">‹ MDT</button>
-        <div className="flex-1 overflow-y-auto">{screens[subScreen] ?? <EmptyState message="Section not found" />}</div>
+      <div className="relative h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
+        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-gulf-gold text-sm p-4 text-left">‹ MDT</button>
+        <div className="flex-1 overflow-y-auto">{JUSTICE_SCREENS[subScreen] ?? <EmptyState message="Section not found" />}</div>
+        <CommandPalette commands={paletteCommands} recents={recents} />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
-      <header className="px-4 pt-4 pb-2 border-b border-white/10">
+    <div className="relative h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
+      <header className="px-4 pt-4 pb-2 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-2xl">⚖️</span>
           <div>
@@ -711,6 +882,7 @@ export function JusticeApp() {
             <p className="text-gulf-gold/80 text-[10px] uppercase tracking-widest">Judicial MDT</p>
           </div>
         </div>
+        <span className="text-white/25 text-[10px] border border-white/15 rounded-md px-1.5 py-0.5">⌘K</span>
       </header>
 
       <div className="flex-1 overflow-y-auto">
@@ -722,27 +894,31 @@ export function JusticeApp() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
           >
-            {tab === 'mdt' && <MdtDashboard onNavigate={setSubScreen} />}
+            {tab === 'mdt' && <MdtDashboard onNavigate={openSection} />}
             {tab === 'docket' && <DocketScreen />}
             {tab === 'cases' && <CasesScreen />}
             {tab === 'hearings' && <HearingsScreen />}
             {tab === 'search' && <SearchScreen />}
             {tab === 'more' && (
               <div className="p-4 grid grid-cols-2 gap-3">
-                {[
-                  ['warrants', 'Warrants'], ['citations', 'Citations'], ['appeals', 'Appeals'],
-                  ['trials', 'Trials'], ['sentences', 'Sentencing'], ['documents', 'Documents'],
-                  ['notes', 'Legal Notes'], ['laws', 'Laws'], ['officials', 'Staff'],
-                  ['courtrooms', 'Courtrooms'], ['audit', 'Audit Log'], ['analytics', 'Analytics'],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => { tap(); setSubScreen(id); }}
-                    className="py-6 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10"
-                  >
-                    {label}
-                  </button>
+                {orderedMore.map(([id, label]) => (
+                  <div key={id} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { tap(); openSection(id); }}
+                      className="w-full py-6 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10"
+                    >
+                      {label}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={pinned.includes(id) ? `Unpin ${label}` : `Pin ${label}`}
+                      onClick={(e) => { e.stopPropagation(); tap(); togglePin(id); }}
+                      className={cn('absolute top-1.5 right-2 text-sm', pinned.includes(id) ? 'text-gulf-gold' : 'text-white/20')}
+                    >
+                      ★
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -766,6 +942,7 @@ export function JusticeApp() {
           </button>
         ))}
       </nav>
+      <CommandPalette commands={paletteCommands} recents={recents} />
     </div>
   );
 }

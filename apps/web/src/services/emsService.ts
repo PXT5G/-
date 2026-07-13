@@ -193,4 +193,30 @@ export const emsService = {
     const res = await apiRequest<ApiResponse<unknown[]>>('/api/ems/audit-log', { token });
     return res.data!;
   },
+
+  async getShifts(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/ems/shifts', { token });
+    return res.data!;
+  },
+
+  async createShift(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/ems/shifts', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async clockShift(token: string, id: string, action: 'start' | 'end') {
+    const res = await apiRequest<ApiResponse<unknown>>(`/api/ems/shifts/${id}/clock`, {
+      method: 'PATCH', token, body: JSON.stringify({ action }),
+    });
+    return res.data!;
+  },
+
+  async updateEquipment(token: string, id: string, body: { add?: string; remove?: string }) {
+    const res = await apiRequest<ApiResponse<unknown>>(`/api/ems/ambulances/${id}/equipment`, {
+      method: 'PATCH', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
 };

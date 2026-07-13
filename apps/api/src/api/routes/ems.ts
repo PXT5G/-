@@ -33,6 +33,10 @@ router.post('/admissions', authenticate, emsController.admit);
 router.patch('/admissions/:id/discharge', authenticate, emsController.discharge);
 
 router.get('/ambulances', authenticate, emsController.ambulances);
+router.patch('/ambulances/:id/equipment', authenticate, emsController.updateEquipment);
+router.get('/shifts', authenticate, emsController.shifts);
+router.post('/shifts', authenticate, emsController.createShift);
+router.patch('/shifts/:id/clock', authenticate, emsController.clockShift);
 router.get('/incidents', authenticate, emsController.incidents);
 router.post('/incidents', authenticate, emsController.createIncident);
 

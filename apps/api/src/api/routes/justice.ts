@@ -60,6 +60,8 @@ router.get('/notes', authenticate, justiceController.legalNotes);
 router.post('/notes', authenticate, justiceController.createLegalNote);
 router.get('/documents', authenticate, justiceController.documents);
 router.post('/documents', authenticate, justiceController.createDocument);
+router.post('/documents/:id/revise', authenticate, justiceController.reviseDocument);
+router.get('/documents/:id/versions', authenticate, justiceController.documentVersions);
 router.get('/audit-log', authenticate, justiceController.auditLog);
 
 router.post('/search', authenticate, justiceController.search);

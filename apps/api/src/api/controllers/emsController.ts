@@ -24,6 +24,9 @@ function mapError(err: unknown): never {
     DEPARTMENT_NOT_FOUND: [404, 'Department not found'],
     ADMISSION_NOT_FOUND: [404, 'Admission not found'],
     NO_HOSPITAL_AVAILABLE: [404, 'No hospital available'],
+    SHIFT_NOT_FOUND: [404, 'Shift not found'],
+    AMBULANCE_NOT_FOUND: [404, 'Ambulance not found'],
+    PERSONNEL_NOT_FOUND: [404, 'Personnel not found'],
     INVALID_SEARCH_TYPE: [400, 'Invalid search type'],
     USER_NOT_FOUND: [404, 'User not found'],
   };
@@ -381,6 +384,43 @@ export const createNote = asyncHandler(async (req: AuthRequest, res: Response) =
   try {
     const data = await emsService.createEmsNote(getActorId(req), body, req.user!.role);
     res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const shifts = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await emsService.listShifts(req.user!.userId, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const createShift = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({
+    badgeNumber: z.string().optional(),
+    shiftType: z.enum(['ambulance', 'hospital', 'dispatch', 'helicopter', 'admin']).optional(),
+    startAt: z.string().min(1),
+    endAt: z.string().min(1),
+    hospitalId: z.string().optional(),
+  }).parse(req.body ?? {});
+  try {
+    const data = await emsService.createShift(getActorId(req), body, req.user!.role);
+    res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const clockShift = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ action: z.enum(['start', 'end']) }).parse(req.body ?? {});
+  try {
+    const data = await emsService.clockShift(getActorId(req), String(req.params.id), body.action, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const updateEquipment = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ add: z.string().optional(), remove: z.string().optional() }).parse(req.body ?? {});
+  try {
+    const data = await emsService.updateAmbulanceEquipment(getActorId(req), String(req.params.id), body, req.user!.role);
+    res.json({ success: true, data });
   } catch (e) { mapError(e); }
 });
 

@@ -3,6 +3,10 @@ import { auditSchemaFields } from '../baseSchema';
 
 export interface IJusticeDocument extends Document {
   documentId: string;
+  /** Stable id shared by all versions of the same document. */
+  rootId: string;
+  version: number;
+  isLatest: boolean;
   title: string;
   type: 'order' | 'ruling' | 'motion' | 'brief' | 'transcript' | 'notice' | 'other';
   caseId?: string;
@@ -18,6 +22,9 @@ export interface IJusticeDocument extends Document {
 const justiceDocumentSchema = new Schema<IJusticeDocument>(
   {
     documentId: { type: String, required: true, unique: true, index: true },
+    rootId: { type: String, index: true },
+    version: { type: Number, default: 1 },
+    isLatest: { type: Boolean, default: true, index: true },
     title: { type: String, required: true },
     type: { type: String, enum: ['order', 'ruling', 'motion', 'brief', 'transcript', 'notice', 'other'], default: 'order' },
     caseId: { type: String, index: true },

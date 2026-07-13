@@ -166,6 +166,51 @@ export const policeService = {
     return res.data!;
   },
 
+  async updateCase(token: string, id: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>(`/api/police/cases/${id}`, {
+      method: 'PATCH', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async getPrison(token: string) {
+    const res = await apiRequest<ApiResponse<{ cells: unknown[]; inmates: unknown[] }>>('/api/police/prison', { token });
+    return res.data!;
+  },
+
+  async bookInmate(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/police/prison/book', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async releaseInmate(token: string, id: string) {
+    const res = await apiRequest<ApiResponse<unknown>>(`/api/police/prison/inmates/${id}/release`, {
+      method: 'PATCH', token, body: JSON.stringify({}),
+    });
+    return res.data!;
+  },
+
+  async getShifts(token: string) {
+    const res = await apiRequest<ApiResponse<unknown[]>>('/api/police/shifts', { token });
+    return res.data!;
+  },
+
+  async createShift(token: string, body: Record<string, unknown>) {
+    const res = await apiRequest<ApiResponse<unknown>>('/api/police/shifts', {
+      method: 'POST', token, body: JSON.stringify(body),
+    });
+    return res.data!;
+  },
+
+  async clockShift(token: string, id: string, action: 'start' | 'end') {
+    const res = await apiRequest<ApiResponse<unknown>>(`/api/police/shifts/${id}/clock`, {
+      method: 'PATCH', token, body: JSON.stringify({ action }),
+    });
+    return res.data!;
+  },
+
   async search(token: string, searchType: string, query: string) {
     const res = await apiRequest<ApiResponse<unknown>>('/api/police/search', {
       method: 'POST', token, body: JSON.stringify({ searchType, query }),

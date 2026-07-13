@@ -18,6 +18,11 @@ function mapError(err: unknown): never {
     PERMISSION_DENIED: [403, 'Permission denied'],
     NOT_AN_OFFICER: [403, 'Not registered as police officer'],
     DISPATCH_NOT_FOUND: [404, 'Dispatch not found'],
+    CASE_NOT_FOUND: [404, 'Case not found'],
+    EVIDENCE_NOT_FOUND: [404, 'Evidence not found'],
+    INMATE_NOT_FOUND: [404, 'Inmate not found'],
+    SHIFT_NOT_FOUND: [404, 'Shift not found'],
+    OFFICER_NOT_FOUND: [404, 'Officer not found'],
     APP_NOT_INSTALLED: [403, 'Police app not installed'],
     INVALID_SEARCH_TYPE: [400, 'Invalid search type'],
     TARGET_NOT_FOUND: [404, 'Target not found'],
@@ -261,6 +266,78 @@ export const createEvidence = asyncHandler(async (req: AuthRequest, res: Respons
   try {
     const data = await policeService.createEvidence(getActorId(req), body as never, req.user!.role);
     res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const updateCase = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({
+    status: z.enum(['open', 'investigating', 'pending_court', 'closed']).optional(),
+    event: z.string().optional(),
+    addEvidenceId: z.string().optional(),
+    addReportId: z.string().optional(),
+    addSuspect: z.string().optional(),
+    addCharge: z.string().optional(),
+  }).parse(req.body ?? {});
+  try {
+    const data = await policeService.updateCase(getActorId(req), String(req.params.id), body, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const prison = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await policeService.getPrisonOverview(req.user!.userId, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const bookInmate = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({
+    name: z.string().min(1),
+    charges: z.array(z.string()).optional(),
+    jailDays: z.number().int().positive().optional(),
+    cellId: z.string().optional(),
+    notes: z.string().optional(),
+  }).parse(req.body ?? {});
+  try {
+    const data = await policeService.bookInmate(getActorId(req), body, req.user!.role);
+    res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const releaseInmate = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await policeService.releaseInmate(getActorId(req), String(req.params.id), req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const shifts = asyncHandler(async (req: AuthRequest, res: Response) => {
+  try {
+    const data = await policeService.listShifts(req.user!.userId, req.user!.role);
+    res.json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const createShift = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({
+    officerBadge: z.string().optional(),
+    shiftType: z.enum(['patrol', 'dispatch', 'detective', 'traffic', 'swat', 'admin']).optional(),
+    startAt: z.string().min(1),
+    endAt: z.string().min(1),
+    district: z.string().optional(),
+  }).parse(req.body ?? {});
+  try {
+    const data = await policeService.createShift(getActorId(req), body, req.user!.role);
+    res.status(201).json({ success: true, data });
+  } catch (e) { mapError(e); }
+});
+
+export const clockShift = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const body = z.object({ action: z.enum(['start', 'end']) }).parse(req.body ?? {});
+  try {
+    const data = await policeService.clockShift(getActorId(req), String(req.params.id), body.action, req.user!.role);
+    res.json({ success: true, data });
   } catch (e) { mapError(e); }
 });
 

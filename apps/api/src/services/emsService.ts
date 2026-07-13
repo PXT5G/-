@@ -1128,6 +1128,104 @@ export async function createEmsNote(
   return note;
 }
 
+/* ─── Staff Scheduling ───────────────────────────────────────────────────── */
+
+export async function listShifts(userId: string, userRole?: string) {
+  await assertEmsPermission(userId, 'mdt.access', userRole);
+  const { EmsShift } = await import('../database/models/EmsShift');
+  return EmsShift.find({ deletedAt: null }).sort({ startAt: -1 }).limit(100);
+}
+
+export async function createShift(
+  actorId: string,
+  data: { badgeNumber?: string; shiftType?: string; startAt: string; endAt: string; hospitalId?: string },
+  userRole?: string,
+) {
+  await assertEmsPermission(actorId, 'units.manage', userRole);
+  const personnel = await requirePersonnel(actorId);
+  const { EmsShift } = await import('../database/models/EmsShift');
+
+  let target = personnel;
+  if (data.badgeNumber && data.badgeNumber !== personnel.badgeNumber) {
+    const other = await EmsPersonnel.findOne({ badgeNumber: data.badgeNumber, deletedAt: null });
+    if (!other) throw new Error('PERSONNEL_NOT_FOUND');
+    target = other;
+  }
+
+  const shift = await EmsShift.create({
+    shiftId: `SHF-${uuidv4().slice(0, 8).toUpperCase()}`,
+    personnelId: target.userId,
+    badgeNumber: target.badgeNumber,
+    shiftType: (data.shiftType as never) ?? 'ambulance',
+    startAt: new Date(data.startAt),
+    endAt: new Date(data.endAt),
+    status: 'scheduled',
+    hospitalId: data.hospitalId,
+    createdBy: new Types.ObjectId(actorId),
+  });
+  await logEmsAction({
+    userId: actorId, actorId, action: 'shift_create', resource: 'ems_shift',
+    resourceId: shift.shiftId, metadata: { badgeNumber: target.badgeNumber }, badgeNumber: personnel.badgeNumber,
+  });
+  await broadcastEms('ems:unit:update', { kind: 'shift', shiftId: shift.shiftId, badgeNumber: target.badgeNumber });
+  return shift;
+}
+
+export async function clockShift(actorId: string, shiftId: string, action: 'start' | 'end', userRole?: string) {
+  await assertEmsPermission(actorId, 'mdt.access', userRole);
+  const personnel = await requirePersonnel(actorId);
+  const { EmsShift } = await import('../database/models/EmsShift');
+  const shift = await EmsShift.findOne({ shiftId, deletedAt: null });
+  if (!shift) throw new Error('SHIFT_NOT_FOUND');
+
+  if (action === 'start') {
+    shift.status = 'active';
+    shift.actualStartAt = new Date();
+  } else {
+    shift.status = 'completed';
+    shift.actualEndAt = new Date();
+  }
+  shift.updatedBy = new Types.ObjectId(actorId);
+  await shift.save();
+
+  if (shift.badgeNumber === personnel.badgeNumber) {
+    await updatePersonnelStatus(actorId, action === 'start' ? 'on_duty' : 'off_duty', actorId, userRole);
+  }
+
+  await logEmsAction({
+    userId: actorId, actorId, action: `shift_${action}`, resource: 'ems_shift',
+    resourceId: shiftId, badgeNumber: personnel.badgeNumber,
+  });
+  await broadcastEms('ems:unit:update', { kind: 'shift', shiftId, status: shift.status });
+  return shift;
+}
+
+/* ─── Equipment Management ───────────────────────────────────────────────── */
+
+export async function updateAmbulanceEquipment(
+  actorId: string,
+  ambulanceId: string,
+  data: { add?: string; remove?: string },
+  userRole?: string,
+) {
+  await assertEmsPermission(actorId, 'ambulances.manage', userRole);
+  const personnel = await requirePersonnel(actorId);
+  const ambulance = await EmsAmbulance.findOne({ ambulanceId, deletedAt: null });
+  if (!ambulance) throw new Error('AMBULANCE_NOT_FOUND');
+
+  if (data.add && !ambulance.equipment.includes(data.add)) ambulance.equipment.push(data.add);
+  if (data.remove) ambulance.equipment = ambulance.equipment.filter((e) => e !== data.remove);
+  ambulance.updatedBy = new Types.ObjectId(actorId);
+  await ambulance.save();
+
+  await logEmsAction({
+    userId: actorId, actorId, action: 'ambulance_equipment_update', resource: 'ems_ambulance',
+    resourceId: ambulanceId, metadata: data, badgeNumber: personnel.badgeNumber,
+  });
+  await broadcastEms('ems:unit:update', { kind: 'equipment', ambulanceId, equipment: ambulance.equipment });
+  return ambulance;
+}
+
 export async function listAuditLog(userId: string, userRole?: string, limit = 100) {
   await assertEmsPermission(userId, 'audit.view', userRole);
   const { EmsDutyLog } = await import('../database/models/EmsDutyLog');

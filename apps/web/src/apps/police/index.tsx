@@ -8,6 +8,7 @@ import {
   useUpdatePoliceStatus, usePoliceSearch, usePolicePanic, usePoliceSocketSync, usePoliceInit,
   usePoliceReports, usePoliceCitations, usePoliceCases, usePoliceEvidence,
   usePoliceNotes, usePolicePanics, usePoliceAuditLog, usePoliceCreate,
+  usePolicePrison, usePoliceShifts,
 } from '@/hooks/usePolice';
 import { useAuthStore } from '@/stores/authStore';
 import { policeService } from '@/services/policeService';
@@ -17,7 +18,8 @@ import { cn } from '@/utils/cn';
 import {
   GlassCard, LoadingState, ErrorState, EmptyState, RecordCard, SectionTitle,
   PrimaryButton, Field, TextArea, Segmented, CreatePanel, FilterBar, Badge,
-  statusTone, StructuredResults,
+  statusTone, StructuredResults, CommandPalette, TimelineEntry,
+  usePinned, useRecentSections, useFormMemory, type PaletteCommand,
 } from '@/apps/gov-shared/GovKit';
 
 type Tab = 'mdt' | 'units' | 'dispatch' | 'search' | 'more';
@@ -455,10 +457,12 @@ function CitationsScreen() {
   const { data, isLoading } = usePoliceCitations();
   const create = usePoliceCreate();
   const { tap } = useHaptic();
+  // Smart defaults: violation code + location are remembered from the last citation.
+  const memory = useFormMemory('police-citation');
   const [violatorName, setViolatorName] = useState('');
-  const [violationCode, setViolationCode] = useState('');
+  const [violationCode, setViolationCode] = useState(() => memory.recall().violationCode ?? '');
   const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState(() => memory.recall().location ?? '');
   const list = arr(data).map(rec);
   const { query, setQuery, filtered } = useFilterSort(list, (c) => `${str(c.violatorName)} ${str(c.violationCode)}`);
   if (isLoading) return <LoadingState />;
@@ -473,7 +477,11 @@ function CitationsScreen() {
         <PrimaryButton
           label={create.citation.isPending ? 'Issuing...' : 'Issue Citation'}
           disabled={!violatorName || !violationCode || !location || create.citation.isPending}
-          onClick={() => { tap(); create.citation.mutate({ violatorName, violationCode, description, location }, { onSuccess: () => { setViolatorName(''); setViolationCode(''); setDescription(''); setLocation(''); } }); }}
+          onClick={() => {
+            tap();
+            memory.remember({ violationCode, location });
+            create.citation.mutate({ violatorName, violationCode, description, location }, { onSuccess: () => { setViolatorName(''); setDescription(''); } });
+          }}
         />
       </CreatePanel>
       <FilterBar query={query} onQuery={setQuery} />
@@ -495,6 +503,7 @@ function CitationsScreen() {
   );
 }
 
+/** Case Builder: expandable case detail with timeline + link/assign actions. */
 function CasesScreen() {
   const { data, isLoading } = usePoliceCases();
   const create = usePoliceCreate();
@@ -507,7 +516,7 @@ function CasesScreen() {
   if (isLoading) return <LoadingState />;
   return (
     <div className="p-4 space-y-3">
-      <SectionTitle>Case Management</SectionTitle>
+      <SectionTitle>Case Builder</SectionTitle>
       <CreatePanel label="Open Case">
         <Field label="Case Title" value={title} onChange={setTitle} />
         <TextArea label="Description" value={description} onChange={setDescription} />
@@ -519,7 +528,6 @@ function CasesScreen() {
       </CreatePanel>
       <FilterBar query={query} onQuery={setQuery} />
       {filtered.length === 0 ? <EmptyState message="No cases" /> : filtered.map((c) => {
-        const timeline = arr(c.timeline).map(rec);
         const isOpen = open === str(c.caseId);
         return (
           <RecordCard
@@ -531,19 +539,185 @@ function CasesScreen() {
             chips={arr(c.charges).map(String)}
             onClick={() => { tap(); setOpen(isOpen ? null : str(c.caseId)); }}
             rows={[{ label: 'Description', value: str(c.description) }, { label: 'Suspects', value: arr(c.suspectNames).join(', ') || '—' }]}
-            footer={isOpen && timeline.length > 0 ? (
-              <div className="border-t border-white/5 pt-2">
-                <p className="text-white/40 text-[10px] uppercase mb-2">Case Timeline</p>
-                {timeline.map((t, i) => (
-                  <div key={i} className="flex gap-2 py-1">
-                    <span className="text-gulf-gold text-xs">•</span>
-                    <div>
-                      <p className="text-white/80 text-xs">{str(t.event)}</p>
-                      <p className="text-white/30 text-[10px]">{fmtDate(t.at)} · {str(t.officerBadge)}</p>
-                    </div>
-                  </div>
-                ))}
+            footer={isOpen ? <CaseBuilder caseDoc={c} /> : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function CaseBuilder({ caseDoc: c }: { caseDoc: Record<string, unknown> }) {
+  const create = usePoliceCreate();
+  const { tap } = useHaptic();
+  const [suspect, setSuspect] = useState('');
+  const [charge, setCharge] = useState('');
+  const [evidenceId, setEvidenceId] = useState('');
+  const timeline = arr(c.timeline).map(rec);
+  const caseId = str(c.caseId);
+  const status = str(c.status);
+  const nextStatus: Record<string, string> = { open: 'investigating', investigating: 'pending_court', pending_court: 'closed' };
+  const patch = (body: Record<string, unknown>) => { tap(); create.caseUpdate.mutate({ id: caseId, body }); };
+
+  return (
+    <div className="border-t border-white/5 pt-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-wrap gap-1.5">
+        {arr(c.evidenceIds).map((id) => <span key={String(id)} className="text-[10px] px-2 py-0.5 rounded-md bg-gulf-gold/15 text-gulf-gold">🔒 {String(id)}</span>)}
+        {arr(c.reportIds).map((id) => <span key={String(id)} className="text-[10px] px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-300">📄 {String(id)}</span>)}
+      </div>
+      <div className="flex gap-2">
+        <input value={suspect} onChange={(e) => setSuspect(e.target.value)} placeholder="Add suspect" className="flex-1 min-w-0 bg-white/10 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30" />
+        <button type="button" disabled={!suspect} onClick={() => { patch({ addSuspect: suspect }); setSuspect(''); }} className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs disabled:opacity-40">Add</button>
+      </div>
+      <div className="flex gap-2">
+        <input value={charge} onChange={(e) => setCharge(e.target.value)} placeholder="Add charge" className="flex-1 min-w-0 bg-white/10 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30" />
+        <button type="button" disabled={!charge} onClick={() => { patch({ addCharge: charge }); setCharge(''); }} className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs disabled:opacity-40">Add</button>
+      </div>
+      <div className="flex gap-2">
+        <input value={evidenceId} onChange={(e) => setEvidenceId(e.target.value)} placeholder="Link evidence ID (EVD-…)" className="flex-1 min-w-0 bg-white/10 text-white rounded-lg px-2.5 py-1.5 text-xs outline-none placeholder:text-white/30" />
+        <button type="button" disabled={!evidenceId} onClick={() => { patch({ addEvidenceId: evidenceId }); setEvidenceId(''); }} className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs disabled:opacity-40">Link</button>
+      </div>
+      {nextStatus[status] && (
+        <button type="button" onClick={() => patch({ status: nextStatus[status] })} className="w-full py-2 rounded-xl bg-gulf-gold/20 text-gulf-gold text-xs font-semibold">
+          Advance to {nextStatus[status].replace('_', ' ')}
+        </button>
+      )}
+      {timeline.length > 0 && (
+        <div>
+          <p className="text-white/40 text-[10px] uppercase mb-1">Case Timeline</p>
+          {timeline.slice().reverse().map((t, i) => (
+            <TimelineEntry key={i} event={str(t.event)} meta={`${fmtDate(t.at)} · ${str(t.officerBadge)}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PrisonScreen() {
+  const { data, isLoading } = usePolicePrison();
+  const create = usePoliceCreate();
+  const { tap } = useHaptic();
+  const [name, setName] = useState('');
+  const [charges, setCharges] = useState('');
+  const [jailDays, setJailDays] = useState('1');
+  if (isLoading) return <LoadingState />;
+  const cells = arr((data as Record<string, unknown> | undefined)?.cells).map(rec);
+  const inmates = arr((data as Record<string, unknown> | undefined)?.inmates).map(rec);
+  const inCustody = inmates.filter((i) => i.status === 'in_custody');
+
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Prison Management</SectionTitle>
+      <GlassCard className="p-4">
+        <h3 className="text-white/60 text-xs uppercase mb-3">Cell Blocks</h3>
+        <div className="grid grid-cols-4 gap-2">
+          {cells.map((cell) => {
+            const occ = Number(cell.occupied);
+            const cap = Number(cell.capacity);
+            return (
+              <div key={str(cell.cellId)} className={cn('rounded-xl p-2 text-center border', occ >= cap ? 'bg-red-500/15 border-red-500/30' : occ > 0 ? 'bg-yellow-500/10 border-yellow-500/25' : 'bg-white/5 border-white/10')}>
+                <p className="text-white text-xs font-semibold">{str(cell.block)}{str(cell.number)}</p>
+                <p className={cn('text-[10px]', occ >= cap ? 'text-red-300' : 'text-white/50')}>{occ}/{cap}</p>
               </div>
+            );
+          })}
+        </div>
+      </GlassCard>
+      <CreatePanel label="Book Inmate">
+        <Field label="Name" value={name} onChange={setName} />
+        <Field label="Charges (comma separated)" value={charges} onChange={setCharges} />
+        <Field label="Jail Days" value={jailDays} onChange={setJailDays} type="number" />
+        <PrimaryButton
+          label={create.book.isPending ? 'Booking...' : 'Book — auto-assign cell'}
+          disabled={!name || create.book.isPending}
+          onClick={() => { tap(); create.book.mutate({ name, charges: charges.split(',').map((s) => s.trim()).filter(Boolean), jailDays: Number(jailDays) || 1 }, { onSuccess: () => { setName(''); setCharges(''); setJailDays('1'); } }); }}
+        />
+      </CreatePanel>
+      <p className="text-white/60 text-xs uppercase">In Custody ({inCustody.length})</p>
+      {inCustody.length === 0 ? <EmptyState message="No inmates in custody" /> : inCustody.map((i) => (
+        <RecordCard
+          key={str(i.inmateId)}
+          title={str(i.name)}
+          subtitle={`Cell ${str(i.cellId) || 'unassigned'} · ${str(i.inmateId)}`}
+          status="in custody"
+          statusToneOverride="red"
+          chips={arr(i.charges).map(String)}
+          rows={[
+            { label: 'Booked', value: `${fmtDate(i.bookedAt)} by ${str(i.bookedByBadge)}` },
+            { label: 'Release', value: fmtDate(i.releaseAt) },
+          ]}
+          footer={
+            <button type="button" onClick={() => { tap(); create.release.mutate(str(i.inmateId)); }} className="w-full py-2 rounded-xl bg-green-600/25 text-green-300 text-xs font-semibold">
+              Release Inmate
+            </button>
+          }
+        />
+      ))}
+      {inmates.filter((i) => i.status === 'released').length > 0 && (
+        <>
+          <p className="text-white/60 text-xs uppercase mt-2">Recently Released</p>
+          {inmates.filter((i) => i.status === 'released').slice(0, 5).map((i) => (
+            <GlassCard key={str(i.inmateId)} className="p-3 flex justify-between items-center">
+              <span className="text-white/70 text-sm">{str(i.name)}</span>
+              <span className="text-white/30 text-xs">{fmtDate(i.releasedAt)}</span>
+            </GlassCard>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ShiftsScreen() {
+  const { data, isLoading } = usePoliceShifts();
+  const { data: dashboard } = usePoliceDashboard();
+  const create = usePoliceCreate();
+  const { tap } = useHaptic();
+  const [officerBadge, setOfficerBadge] = useState('');
+  const [shiftType, setShiftType] = useState('patrol');
+  const [startAt, setStartAt] = useState('');
+  const [endAt, setEndAt] = useState('');
+  if (isLoading) return <LoadingState />;
+  const myBadge = str((dashboard?.officer as Record<string, unknown> | undefined)?.badgeNumber);
+  const list = arr(data).map(rec);
+
+  return (
+    <div className="p-4 space-y-3">
+      <SectionTitle>Shift Management</SectionTitle>
+      <CreatePanel label="Schedule Shift">
+        <Field label="Officer Badge (blank = me)" value={officerBadge} onChange={setOfficerBadge} placeholder={myBadge} />
+        <Segmented options={[['patrol', 'Patrol'], ['dispatch', 'Dispatch'], ['detective', 'Detective'], ['traffic', 'Traffic'], ['swat', 'SWAT']]} value={shiftType} onChange={setShiftType} />
+        <Field label="Start" value={startAt} onChange={setStartAt} type="datetime-local" />
+        <Field label="End" value={endAt} onChange={setEndAt} type="datetime-local" />
+        <PrimaryButton
+          label={create.shift.isPending ? 'Scheduling...' : 'Schedule Shift'}
+          disabled={!startAt || !endAt || create.shift.isPending}
+          onClick={() => { tap(); create.shift.mutate({ officerBadge: officerBadge || undefined, shiftType, startAt: new Date(startAt).toISOString(), endAt: new Date(endAt).toISOString() }, { onSuccess: () => { setStartAt(''); setEndAt(''); } }); }}
+        />
+      </CreatePanel>
+      {list.length === 0 ? <EmptyState message="No shifts scheduled" /> : list.map((s) => {
+        const isMine = str(s.officerBadge) === myBadge;
+        const status = str(s.status);
+        return (
+          <RecordCard
+            key={str(s.shiftId)}
+            title={`${str(s.officerBadge)}${isMine ? ' (you)' : ''}`}
+            subtitle={`${str(s.shiftType)} shift`}
+            status={status}
+            statusToneOverride={status === 'active' ? 'green' : undefined}
+            rows={[
+              { label: 'Window', value: `${fmtDate(s.startAt)} → ${fmtDate(s.endAt)}` },
+              { label: 'Clocked', value: s.actualStartAt ? `${fmtDate(s.actualStartAt)}${s.actualEndAt ? ` → ${fmtDate(s.actualEndAt)}` : ' (on shift)'}` : '—' },
+            ]}
+            footer={isMine && (status === 'scheduled' || status === 'active') ? (
+              <button
+                type="button"
+                onClick={() => { tap(); create.clock.mutate({ id: str(s.shiftId), action: status === 'scheduled' ? 'start' : 'end' }); }}
+                className={cn('w-full py-2 rounded-xl text-xs font-semibold', status === 'scheduled' ? 'bg-gulf-gold/20 text-gulf-gold' : 'bg-red-500/20 text-red-300')}
+              >
+                {status === 'scheduled' ? 'Clock In — go on duty' : 'Clock Out — end shift'}
+              </button>
             ) : undefined}
           />
         );
@@ -732,6 +906,8 @@ const SUB_SCREENS: Record<string, ReactNode> = {
   citations: <CitationsScreen />,
   cases: <CasesScreen />,
   evidence: <EvidenceScreen />,
+  prison: <PrisonScreen />,
+  shifts: <ShiftsScreen />,
   notes: <NotesScreen />,
   panics: <PanicsScreen />,
   audit: <AuditScreen />,
@@ -740,8 +916,9 @@ const SUB_SCREENS: Record<string, ReactNode> = {
 
 const MORE_ITEMS: [string, string][] = [
   ['bolo', 'BOLO'], ['wanted', 'Wanted'], ['warrants', 'Warrants'],
-  ['reports', 'Reports'], ['citations', 'Citations'], ['cases', 'Cases'],
-  ['evidence', 'Evidence'], ['notes', 'Notes'], ['panics', 'Panic Alerts'],
+  ['reports', 'Reports'], ['citations', 'Citations'], ['cases', 'Case Builder'],
+  ['evidence', 'Evidence'], ['prison', 'Prison'], ['shifts', 'Shifts'],
+  ['notes', 'Notes'], ['panics', 'Panic Alerts'],
   ['audit', 'Audit Log'], ['analytics', 'Analytics'],
 ];
 
@@ -749,9 +926,18 @@ export function PoliceApp() {
   const [tab, setTab] = useState<Tab>('mdt');
   const [subScreen, setSubScreen] = useState<SubScreen>(null);
   const { tap } = useHaptic();
+  const { pinned, toggle: togglePin } = usePinned('police');
+  const { recents, record } = useRecentSections('police');
+  const updateStatus = useUpdatePoliceStatus();
+  const panic = usePolicePanic();
 
   usePoliceInit();
   usePoliceSocketSync();
+
+  const openSection = (id: string) => {
+    record(id);
+    setSubScreen(id);
+  };
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'mdt', label: 'MDT', icon: '📟' },
@@ -761,18 +947,37 @@ export function PoliceApp() {
     { id: 'more', label: 'More', icon: '⋯' },
   ];
 
+  // ⌘K commands: every tab, every section, plus one-keystroke duty actions.
+  const paletteCommands: PaletteCommand[] = [
+    ...tabs.filter((t) => t.id !== 'more').map((t) => ({
+      id: `tab:${t.id}`, label: `Go to ${t.label}`, hint: 'tab',
+      run: () => { setSubScreen(null); setTab(t.id); },
+    })),
+    ...MORE_ITEMS.map(([id, label]) => ({
+      id, label, hint: 'section', keywords: id,
+      run: () => openSection(id),
+    })),
+    { id: 'act:onduty', label: 'Go On Duty', hint: 'action', keywords: 'status clock', run: () => updateStatus.mutate('on_duty') },
+    { id: 'act:offduty', label: 'Go Off Duty', hint: 'action', keywords: 'status clock', run: () => updateStatus.mutate('off_duty') },
+    { id: 'act:panic', label: '🚨 Trigger Panic', hint: 'action', keywords: 'emergency help', run: () => panic.mutate() },
+  ];
+
+  // Pinned sections first, then the rest — fewer taps to frequent tools.
+  const orderedMore = [...MORE_ITEMS].sort((a, b) => Number(pinned.includes(b[0])) - Number(pinned.includes(a[0])));
+
   if (subScreen) {
     return (
-      <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
-        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-gulf-gold text-sm p-4">‹ MDT</button>
+      <div className="relative h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
+        <button type="button" onClick={() => { tap(); setSubScreen(null); }} className="text-gulf-gold text-sm p-4 text-left">‹ MDT</button>
         <div className="flex-1 overflow-y-auto">{SUB_SCREENS[subScreen] ?? <EmptyState message="Section not found" />}</div>
+        <CommandPalette commands={paletteCommands} recents={recents} />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
-      <header className="px-4 pt-4 pb-2 border-b border-white/10">
+    <div className="relative h-full flex flex-col bg-gradient-to-b from-[#0a0a12] to-black">
+      <header className="px-4 pt-4 pb-2 border-b border-white/10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🚔</span>
           <div>
@@ -780,26 +985,36 @@ export function PoliceApp() {
             <p className="text-gulf-gold/80 text-[10px] uppercase tracking-widest">Mobile Data Terminal</p>
           </div>
         </div>
+        <span className="text-white/25 text-[10px] border border-white/15 rounded-md px-1.5 py-0.5">⌘K</span>
       </header>
 
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-            {tab === 'mdt' && <MdtDashboard onNavigate={setSubScreen} />}
+            {tab === 'mdt' && <MdtDashboard onNavigate={openSection} />}
             {tab === 'units' && <UnitsScreen />}
             {tab === 'dispatch' && <DispatchScreen />}
             {tab === 'search' && <SearchScreen />}
             {tab === 'more' && (
               <div className="p-4 grid grid-cols-2 gap-3">
-                {MORE_ITEMS.map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => { tap(); setSubScreen(id); }}
-                    className="py-6 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10"
-                  >
-                    {label}
-                  </button>
+                {orderedMore.map(([id, label]) => (
+                  <div key={id} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => { tap(); openSection(id); }}
+                      className="w-full py-6 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10"
+                    >
+                      {label}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={pinned.includes(id) ? `Unpin ${label}` : `Pin ${label}`}
+                      onClick={(e) => { e.stopPropagation(); tap(); togglePin(id); }}
+                      className={cn('absolute top-1.5 right-2 text-sm', pinned.includes(id) ? 'text-gulf-gold' : 'text-white/20')}
+                    >
+                      ★
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -820,6 +1035,7 @@ export function PoliceApp() {
           </button>
         ))}
       </nav>
+      <CommandPalette commands={paletteCommands} recents={recents} />
     </div>
   );
 }

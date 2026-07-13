@@ -556,6 +556,239 @@ export async function createCase(actorId: string, data: Partial<InstanceType<typ
   return caseDoc;
 }
 
+/** Case Builder: link evidence/reports, update status, append timeline events. */
+export async function updateCase(
+  actorId: string,
+  caseId: string,
+  updates: {
+    status?: 'open' | 'investigating' | 'pending_court' | 'closed';
+    event?: string;
+    addEvidenceId?: string;
+    addReportId?: string;
+    addSuspect?: string;
+    addCharge?: string;
+  },
+  userRole?: string,
+) {
+  await assertPolicePermission(actorId, 'cases.manage', userRole);
+  const officer = await requireOfficer(actorId);
+  const caseDoc = await PoliceCase.findOne({ caseId, deletedAt: null });
+  if (!caseDoc) throw new Error('CASE_NOT_FOUND');
+
+  const events: string[] = [];
+  if (updates.status && updates.status !== caseDoc.status) {
+    caseDoc.status = updates.status;
+    if (updates.status === 'closed') caseDoc.closedAt = new Date();
+    events.push(`Status changed to ${updates.status}`);
+  }
+  if (updates.addEvidenceId && !caseDoc.evidenceIds.includes(updates.addEvidenceId)) {
+    caseDoc.evidenceIds.push(updates.addEvidenceId);
+    events.push(`Evidence ${updates.addEvidenceId} linked`);
+  }
+  if (updates.addReportId && !caseDoc.reportIds.includes(updates.addReportId)) {
+    caseDoc.reportIds.push(updates.addReportId);
+    events.push(`Report ${updates.addReportId} linked`);
+  }
+  if (updates.addSuspect && !caseDoc.suspectNames.includes(updates.addSuspect)) {
+    caseDoc.suspectNames.push(updates.addSuspect);
+    events.push(`Suspect added: ${updates.addSuspect}`);
+  }
+  if (updates.addCharge && !caseDoc.charges.includes(updates.addCharge)) {
+    caseDoc.charges.push(updates.addCharge);
+    events.push(`Charge added: ${updates.addCharge}`);
+  }
+  if (updates.event) events.push(updates.event);
+
+  for (const event of events) {
+    caseDoc.timeline.push({ at: new Date(), event, officerBadge: officer.badgeNumber });
+  }
+  caseDoc.updatedBy = new Types.ObjectId(actorId);
+  await caseDoc.save();
+
+  await logPoliceAction({
+    userId: actorId, actorId, action: 'case_update', resource: 'police_case',
+    resourceId: caseId, metadata: { events }, officerBadge: officer.badgeNumber,
+  });
+  await broadcastPolice('police:case:update', { caseId, status: caseDoc.status });
+  return caseDoc;
+}
+
+/* ─── Prison Management ──────────────────────────────────────────────────── */
+
+async function seedDefaultCells() {
+  const { PoliceCell } = await import('../database/models/PoliceCell');
+  if (await PoliceCell.countDocuments() > 0) return;
+  const cells = [];
+  for (const block of ['A', 'B']) {
+    for (let n = 1; n <= 4; n++) {
+      cells.push({ cellId: `CELL-${block}${n}`, block, number: n, capacity: 2, status: 'open' as const });
+    }
+  }
+  await PoliceCell.insertMany(cells);
+}
+
+export async function getPrisonOverview(userId: string, userRole?: string) {
+  await assertPolicePermission(userId, 'dashboard.view', userRole);
+  await seedDefaultCells();
+  const { PoliceCell } = await import('../database/models/PoliceCell');
+  const { PoliceInmate } = await import('../database/models/PoliceInmate');
+  const [cells, inmates] = await Promise.all([
+    PoliceCell.find({ deletedAt: null }).sort({ block: 1, number: 1 }),
+    PoliceInmate.find({ deletedAt: null }).sort({ status: 1, releaseAt: 1 }).limit(100),
+  ]);
+  const occupancy = new Map<string, number>();
+  for (const i of inmates) {
+    if (i.status === 'in_custody' && i.cellId) occupancy.set(i.cellId, (occupancy.get(i.cellId) ?? 0) + 1);
+  }
+  return {
+    cells: cells.map((c) => ({
+      cellId: c.cellId, block: c.block, number: c.number, capacity: c.capacity,
+      status: c.status, occupied: occupancy.get(c.cellId) ?? 0,
+    })),
+    inmates,
+  };
+}
+
+export async function bookInmate(
+  actorId: string,
+  data: { name: string; charges?: string[]; jailDays?: number; cellId?: string; notes?: string },
+  userRole?: string,
+) {
+  await assertPolicePermission(actorId, 'reports.arrest', userRole);
+  const officer = await requireOfficer(actorId);
+  await seedDefaultCells();
+  const { PoliceCell } = await import('../database/models/PoliceCell');
+  const { PoliceInmate } = await import('../database/models/PoliceInmate');
+
+  // Smart default: auto-assign the least-occupied open cell when none given.
+  let cellId = data.cellId;
+  if (!cellId) {
+    const cells = await PoliceCell.find({ deletedAt: null, status: 'open' }).sort({ block: 1, number: 1 });
+    const counts = await PoliceInmate.aggregate([
+      { $match: { status: 'in_custody', deletedAt: null } },
+      { $group: { _id: '$cellId', count: { $sum: 1 } } },
+    ]);
+    const byCell = new Map<string, number>(counts.map((c) => [String(c._id), c.count as number]));
+    const free = cells.find((c) => (byCell.get(c.cellId) ?? 0) < c.capacity);
+    cellId = free?.cellId;
+  }
+
+  const jailDays = Math.max(1, data.jailDays ?? 1);
+  const bookedAt = new Date();
+  const inmate = await PoliceInmate.create({
+    inmateId: id('INM'),
+    name: data.name,
+    charges: data.charges ?? [],
+    jailDays,
+    cellId,
+    bookedByBadge: officer.badgeNumber,
+    bookedAt,
+    releaseAt: new Date(bookedAt.getTime() + jailDays * 86400000),
+    status: 'in_custody',
+    notes: data.notes,
+    createdBy: new Types.ObjectId(actorId),
+  });
+
+  await logPoliceAction({
+    userId: actorId, actorId, action: 'inmate_book', resource: 'police_inmate',
+    resourceId: inmate.inmateId, metadata: { cellId, jailDays }, officerBadge: officer.badgeNumber,
+  });
+  await broadcastPolice('police:announcement', { kind: 'prison', inmateId: inmate.inmateId, name: inmate.name });
+  return inmate;
+}
+
+export async function releaseInmate(actorId: string, inmateId: string, userRole?: string) {
+  await assertPolicePermission(actorId, 'cases.manage', userRole);
+  const officer = await requireOfficer(actorId);
+  const { PoliceInmate } = await import('../database/models/PoliceInmate');
+  const inmate = await PoliceInmate.findOne({ inmateId, deletedAt: null });
+  if (!inmate) throw new Error('INMATE_NOT_FOUND');
+  inmate.status = 'released';
+  inmate.releasedAt = new Date();
+  inmate.updatedBy = new Types.ObjectId(actorId);
+  await inmate.save();
+  await logPoliceAction({
+    userId: actorId, actorId, action: 'inmate_release', resource: 'police_inmate',
+    resourceId: inmateId, officerBadge: officer.badgeNumber,
+  });
+  await broadcastPolice('police:announcement', { kind: 'prison', inmateId, released: true });
+  return inmate;
+}
+
+/* ─── Shift Management ───────────────────────────────────────────────────── */
+
+export async function listShifts(userId: string, userRole?: string) {
+  await assertPolicePermission(userId, 'duty.log', userRole);
+  const { PoliceShift } = await import('../database/models/PoliceShift');
+  return PoliceShift.find({ deletedAt: null }).sort({ startAt: -1 }).limit(100);
+}
+
+export async function createShift(
+  actorId: string,
+  data: { officerBadge?: string; shiftType?: string; startAt: string; endAt: string; district?: string },
+  userRole?: string,
+) {
+  await assertPolicePermission(actorId, 'shifts.manage', userRole);
+  const officer = await requireOfficer(actorId);
+  const { PoliceShift } = await import('../database/models/PoliceShift');
+
+  let target = officer;
+  if (data.officerBadge && data.officerBadge !== officer.badgeNumber) {
+    const other = await PoliceOfficer.findOne({ badgeNumber: data.officerBadge, deletedAt: null });
+    if (!other) throw new Error('OFFICER_NOT_FOUND');
+    target = other;
+  }
+
+  const shift = await PoliceShift.create({
+    shiftId: id('SHF'),
+    officerId: target.userId,
+    officerBadge: target.badgeNumber,
+    shiftType: (data.shiftType as never) ?? 'patrol',
+    startAt: new Date(data.startAt),
+    endAt: new Date(data.endAt),
+    status: 'scheduled',
+    district: data.district,
+    createdBy: new Types.ObjectId(actorId),
+  });
+  await logPoliceAction({
+    userId: actorId, actorId, action: 'shift_create', resource: 'police_shift',
+    resourceId: shift.shiftId, metadata: { officerBadge: target.badgeNumber }, officerBadge: officer.badgeNumber,
+  });
+  await broadcastPolice('police:announcement', { kind: 'shift', shiftId: shift.shiftId, officerBadge: target.badgeNumber });
+  return shift;
+}
+
+/** Clock in/out: flips shift status and mirrors it onto officer duty status. */
+export async function clockShift(actorId: string, shiftId: string, action: 'start' | 'end', userRole?: string) {
+  await assertPolicePermission(actorId, 'duty.log', userRole);
+  const officer = await requireOfficer(actorId);
+  const { PoliceShift } = await import('../database/models/PoliceShift');
+  const shift = await PoliceShift.findOne({ shiftId, deletedAt: null });
+  if (!shift) throw new Error('SHIFT_NOT_FOUND');
+
+  if (action === 'start') {
+    shift.status = 'active';
+    shift.actualStartAt = new Date();
+  } else {
+    shift.status = 'completed';
+    shift.actualEndAt = new Date();
+  }
+  shift.updatedBy = new Types.ObjectId(actorId);
+  await shift.save();
+
+  // Mirror onto duty status only when clocking own shift (reuses status pipeline + socket event).
+  if (shift.officerBadge === officer.badgeNumber) {
+    await updateOfficerStatus(actorId, action === 'start' ? 'on_duty' : 'off_duty', actorId, userRole);
+  }
+
+  await logPoliceAction({
+    userId: actorId, actorId, action: `shift_${action}`, resource: 'police_shift',
+    resourceId: shiftId, officerBadge: officer.badgeNumber,
+  });
+  await broadcastPolice('police:announcement', { kind: 'shift', shiftId, status: shift.status });
+  return shift;
+}
+
 export async function listEvidence(userId: string, userRole?: string) {
   await assertPolicePermission(userId, 'evidence.view', userRole);
   return PoliceEvidence.find({ deletedAt: null }).sort({ createdAt: -1 }).limit(100);

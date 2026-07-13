@@ -1,7 +1,11 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { cn } from '@/utils/cn';
+import { fuzzyMatch, rankCommands, statusTone, readStore, writeStore, type PaletteCommand } from './govLogic';
+
+export { fuzzyMatch, rankCommands, statusTone } from './govLogic';
+export type { PaletteCommand } from './govLogic';
 
 /**
  * Shared presentational kit for the three government apps (Police, Justice,
@@ -54,22 +58,6 @@ export function Badge({ label, tone = 'gray' }: { label: string; tone?: keyof ty
       {label}
     </span>
   );
-}
-
-/** Status → tone mapping shared across gov domains */
-export function statusTone(status?: string): keyof typeof BADGE_TONES {
-  switch (status) {
-    case 'active': case 'open': case 'filed': case 'issued': case 'available': case 'on_duty': case 'approved': case 'guilty':
-      return 'green';
-    case 'pending': case 'draft': case 'investigating': case 'scheduled': case 'contested': case 'break': case 'under_review':
-      return 'yellow';
-    case 'resolved': case 'closed': case 'served': case 'paid': case 'discharged': case 'off_duty': case 'dismissed':
-      return 'gray';
-    case 'panic': case 'critical': case 'high': case 'extreme': case 'denied': case 'en_route':
-      return 'red';
-    default:
-      return 'gold';
-  }
 }
 
 export function Row({ label, value }: { label: string; value: ReactNode }) {
@@ -249,6 +237,145 @@ export function StructuredResults({ results, type }: { results: unknown; type: s
           />
         );
       })}
+    </div>
+  );
+}
+
+/* ─── Workflow intelligence: pinned sections, recents, form memory ───────── */
+
+/** Pinned section ids per gov app, persisted locally. Pinned items surface first. */
+export function usePinned(appId: string) {
+  const key = `gov-pinned:${appId}`;
+  const [pinned, setPinned] = useState<string[]>(() => readStore<string[]>(key, []));
+  const toggle = useCallback((id: string) => {
+    setPinned((prev) => {
+      const next = prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id];
+      writeStore(key, next);
+      return next;
+    });
+  }, [key]);
+  return { pinned, toggle };
+}
+
+/** Recently opened sections per gov app — powers palette ordering and quick access. */
+export function useRecentSections(appId: string) {
+  const key = `gov-recents:${appId}`;
+  const [recents, setRecents] = useState<string[]>(() => readStore<string[]>(key, []));
+  const record = useCallback((id: string) => {
+    setRecents((prev) => {
+      const next = [id, ...prev.filter((p) => p !== id)].slice(0, 8);
+      writeStore(key, next);
+      return next;
+    });
+  }, [key]);
+  return { recents, record };
+}
+
+/**
+ * Form memory: remembers the last submitted values for a form so repeat
+ * actions start pre-filled (smart defaults, fewer keystrokes).
+ */
+export function useFormMemory(formKey: string) {
+  const key = `gov-form:${formKey}`;
+  const remember = useCallback((values: Record<string, string>) => {
+    writeStore(key, values);
+  }, [key]);
+  const recall = useCallback((): Record<string, string> => readStore<Record<string, string>>(key, {}), [key]);
+  return { remember, recall };
+}
+
+/* ─── Command palette (⌘K / Ctrl+K) ─────────────────────────────────────── */
+
+/**
+ * ⌘K command palette shared by the government apps. Opens with Cmd/Ctrl+K,
+ * fuzzy-filters commands, arrow keys + Enter to run, Escape to close.
+ * Rendered inside the app container so the OS shell stays untouched.
+ */
+export function CommandPalette({ commands, recents }: { commands: PaletteCommand[]; recents: string[] }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [index, setIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setOpen((o) => !o);
+        setQuery('');
+        setIndex(0);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
+
+  const results = useMemo(() => rankCommands(commands, query, recents).slice(0, 8), [commands, query, recents]);
+
+  if (!open) return null;
+
+  const runAt = (i: number) => {
+    const cmd = results[i];
+    if (cmd) {
+      setOpen(false);
+      cmd.run();
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 z-50 flex flex-col items-center pt-16 px-5 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)}>
+      <div className="w-full rounded-2xl bg-[#16161d] border border-white/15 overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setIndex(0); }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown') { e.preventDefault(); setIndex((i) => Math.min(i + 1, results.length - 1)); }
+            if (e.key === 'ArrowUp') { e.preventDefault(); setIndex((i) => Math.max(i - 1, 0)); }
+            if (e.key === 'Enter') { e.preventDefault(); runAt(index); }
+            if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
+          }}
+          placeholder="Type a command or section..."
+          className="w-full bg-transparent text-white px-4 py-3 text-sm outline-none placeholder:text-white/30 border-b border-white/10"
+        />
+        <div className="max-h-72 overflow-y-auto">
+          {results.length === 0 && <p className="text-white/40 text-xs text-center py-6">No matching commands</p>}
+          {results.map((cmd, i) => (
+            <button
+              key={cmd.id}
+              type="button"
+              onClick={() => runAt(i)}
+              onMouseEnter={() => setIndex(i)}
+              className={cn(
+                'w-full flex items-center justify-between px-4 py-2.5 text-left',
+                i === index ? 'bg-gulf-gold/20' : 'bg-transparent',
+              )}
+            >
+              <span className={cn('text-sm', i === index ? 'text-gulf-gold' : 'text-white/85')}>{cmd.label}</span>
+              {cmd.hint && <span className="text-white/30 text-[10px] uppercase">{cmd.hint}</span>}
+            </button>
+          ))}
+        </div>
+        <p className="text-white/25 text-[10px] px-4 py-2 border-t border-white/10">↑↓ navigate · Enter run · Esc close</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Split-pane timeline entry (shared timeline rendering) ──────────────── */
+
+export function TimelineEntry({ event, meta }: { event: string; meta: string }) {
+  return (
+    <div className="flex gap-2 py-1">
+      <span className="text-gulf-gold text-xs">•</span>
+      <div>
+        <p className="text-white/80 text-xs">{event}</p>
+        <p className="text-white/30 text-[10px]">{meta}</p>
+      </div>
     </div>
   );
 }
