@@ -1,25 +1,15 @@
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 import type {
   PremiumExperienceSnapshot,
   WidgetRegistrySnapshot,
   NotificationHistorySnapshot,
 } from '@/types';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
 
 export const premiumExperienceService = {
   async getProfile(): Promise<PremiumExperienceSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PremiumExperienceSnapshot }>(
       '/api/device/premium/profile',
@@ -29,7 +19,7 @@ export const premiumExperienceService = {
   },
 
   async updateProfile(updates: Partial<PremiumExperienceSnapshot>): Promise<PremiumExperienceSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PremiumExperienceSnapshot }>(
       '/api/device/premium/profile',
@@ -39,7 +29,7 @@ export const premiumExperienceService = {
   },
 
   async getAppLibrary(): Promise<Record<string, unknown>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: Record<string, unknown> }>(
       '/api/device/premium/app-library',
@@ -49,7 +39,7 @@ export const premiumExperienceService = {
   },
 
   async getWidgetRegistry(): Promise<WidgetRegistrySnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: WidgetRegistrySnapshot[] }>(
       '/api/device/premium/widgets/registry',
@@ -59,7 +49,7 @@ export const premiumExperienceService = {
   },
 
   async getWidgetData(type: string): Promise<Record<string, unknown>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: Record<string, unknown> }>(
       `/api/device/premium/widgets/${type}/data`,
@@ -69,7 +59,7 @@ export const premiumExperienceService = {
   },
 
   async getNotificationHistory(): Promise<NotificationHistorySnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: NotificationHistorySnapshot[] }>(
       '/api/device/premium/notifications/history',
@@ -79,7 +69,7 @@ export const premiumExperienceService = {
   },
 
   async trackAppUsage(bundleId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return;
     await apiRequest('/api/device/premium/track-app', {
       method: 'POST',
@@ -89,7 +79,7 @@ export const premiumExperienceService = {
   },
 
   async addQuickNote(note: string): Promise<string[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: string[] }>(
       '/api/device/premium/quick-notes',

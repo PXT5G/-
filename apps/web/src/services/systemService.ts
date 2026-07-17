@@ -1,4 +1,5 @@
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 import type {
   DeviceLocationState,
   NetworkStateSnapshot,
@@ -9,21 +10,10 @@ import type {
   SystemPermissionType,
 } from '@/types';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
 
 export const systemService = {
   async initialize(): Promise<{ ready: boolean; services: string[] }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { ready: boolean; services: string[] } }>(
       '/api/system/ready',
@@ -33,7 +23,7 @@ export const systemService = {
   },
 
   async getLocation(appId?: string): Promise<DeviceLocationState> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const qs = appId ? `?appId=${encodeURIComponent(appId)}` : '';
     const res = await apiRequest<{ success: boolean; data: DeviceLocationState }>(
@@ -44,7 +34,7 @@ export const systemService = {
   },
 
   async setLocationEnabled(enabled: boolean): Promise<DeviceLocationState> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DeviceLocationState }>(
       '/api/system/location',
@@ -54,7 +44,7 @@ export const systemService = {
   },
 
   async getNetwork(): Promise<NetworkStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: NetworkStateSnapshot }>(
       '/api/system/network',
@@ -64,7 +54,7 @@ export const systemService = {
   },
 
   async updateNetwork(updates: Partial<NetworkStateSnapshot>): Promise<NetworkStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: NetworkStateSnapshot }>(
       '/api/system/network',
@@ -74,7 +64,7 @@ export const systemService = {
   },
 
   async getDeviceState(): Promise<DeviceStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DeviceStateSnapshot }>(
       '/api/system/device',
@@ -84,7 +74,7 @@ export const systemService = {
   },
 
   async getJobs(): Promise<BackgroundJobInfo[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: BackgroundJobInfo[] }>(
       '/api/system/jobs',
@@ -94,7 +84,7 @@ export const systemService = {
   },
 
   async cancelJob(id: string): Promise<BackgroundJobInfo> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: BackgroundJobInfo }>(
       `/api/system/jobs/${id}/cancel`,
@@ -104,7 +94,7 @@ export const systemService = {
   },
 
   async getPermissions(appId?: string): Promise<Array<{ appId: string; permission: string; granted: boolean }>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const qs = appId ? `?appId=${encodeURIComponent(appId)}` : '';
     const res = await apiRequest<{ success: boolean; data: Array<{ appId: string; permission: string; granted: boolean }> }>(
@@ -115,7 +105,7 @@ export const systemService = {
   },
 
   async grantPermission(appId: string, permission: SystemPermissionType): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest('/api/system/permissions/grant', {
       method: 'POST',
@@ -125,7 +115,7 @@ export const systemService = {
   },
 
   async revokePermission(appId: string, permission: SystemPermissionType): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest('/api/system/permissions/revoke', {
       method: 'POST',
@@ -135,7 +125,7 @@ export const systemService = {
   },
 
   async getDiagnostics(): Promise<DiagnosticsReport> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DiagnosticsReport }>(
       '/api/system/diagnostics',
@@ -145,7 +135,7 @@ export const systemService = {
   },
 
   async collectDiagnostics(): Promise<DiagnosticsReport> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DiagnosticsReport }>(
       '/api/system/diagnostics/collect',
@@ -155,7 +145,7 @@ export const systemService = {
   },
 
   async replayEvents(params?: { namespace?: string; limit?: number }): Promise<SystemEventInfo[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const qs = new URLSearchParams();
     if (params?.namespace) qs.set('namespace', params.namespace);
@@ -168,7 +158,7 @@ export const systemService = {
   },
 
   async getBackgroundTasks(): Promise<string[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: string[] }>(
       '/api/system/diagnostics/tasks',

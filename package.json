@@ -13,7 +13,10 @@
     "dev:api": "npm run dev --workspace=@gulfos/api",
     "build": "npm run build --workspace=@gulfos/shared && npm run build --workspace=@gulfos/api && npm run build --workspace=@gulfos/web",
     "start": "concurrently \"npm run start --workspace=@gulfos/api\" \"npm run start --workspace=@gulfos/web\"",
-    "lint": "npm run lint --workspace=@gulfos/web"
+    "lint": "npm run lint --workspace=@gulfos/web",
+    "demo": "bash scripts/run-gulfos-demo.sh",
+    "showcase": "bash scripts/run-gulfos-showcase.sh",
+    "demo:quick": "npm run demo --workspace=@gulfos/web"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

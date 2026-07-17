@@ -5,6 +5,8 @@ import { auditSchemaFields } from '../baseSchema';
 export interface IPhoneCall extends Document {
   callId: string;
   userId: Types.ObjectId;
+  phoneId?: string;
+  characterRecordId?: string;
   direction: CallDirection;
   status: CallStatus;
   callType: CallType;
@@ -42,6 +44,8 @@ const phoneCallSchema = new Schema<IPhoneCall>(
   {
     callId: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    phoneId: { type: String, index: true },
+    characterRecordId: { type: String, index: true },
     direction: { type: String, required: true, index: true },
     status: { type: String, required: true, index: true },
     callType: { type: String, required: true, default: 'voice' },

@@ -1,16 +1,6 @@
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
 
 export interface DeviceStorageBreakdown {
   total: number;
@@ -155,7 +145,7 @@ export interface LargestApp {
 
 export const deviceStorageService = {
   async getStorage(): Promise<DeviceStorageBreakdown> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DeviceStorageBreakdown }>(
       '/api/device/storage',
@@ -165,7 +155,7 @@ export const deviceStorageService = {
   },
 
   async checkInstall(bundleId: string): Promise<{ required: number; available: boolean; free: number }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{
       success: boolean;
@@ -175,7 +165,7 @@ export const deviceStorageService = {
   },
 
   async getLargestApps(): Promise<LargestApp[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return [];
     const res = await apiRequest<{ success: boolean; data: LargestApp[] }>(
       '/api/device/storage/largest-apps',
@@ -185,7 +175,7 @@ export const deviceStorageService = {
   },
 
   async getPackages(): Promise<InstalledPackageInfo[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return [];
     const res = await apiRequest<{ success: boolean; data: InstalledPackageInfo[] }>(
       '/api/device/storage/packages',
@@ -195,7 +185,7 @@ export const deviceStorageService = {
   },
 
   async clearAllCache(): Promise<DeviceStorageBreakdown> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: DeviceStorageBreakdown }>(
       '/api/device/storage/clear-cache',
@@ -205,7 +195,7 @@ export const deviceStorageService = {
   },
 
   async setCapacity(capacity: number): Promise<DeviceStorageBreakdown> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { breakdown: DeviceStorageBreakdown } }>(
       '/api/device/storage/capacity',
@@ -215,7 +205,7 @@ export const deviceStorageService = {
   },
 
   async getCapacityTiers(): Promise<Array<{ bytes: number; label: string }>> {
-    const token = getToken();
+    const token = getAccessToken();
     const res = await apiRequest<{ success: boolean; data: Array<{ bytes: number; label: string }> }>(
       '/api/device/storage/capacity-tiers',
       { token }
@@ -224,7 +214,7 @@ export const deviceStorageService = {
   },
 
   async getHardware(): Promise<HardwareProfile> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: HardwareProfile }>(
       '/api/device/hardware',
@@ -234,7 +224,7 @@ export const deviceStorageService = {
   },
 
   async getRam(): Promise<RamUsage> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: RamUsage }>(
       '/api/device/ram',
@@ -244,7 +234,7 @@ export const deviceStorageService = {
   },
 
   async getTaskManager(): Promise<RamUsage & { tasks: RamAppEntry[] }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: RamUsage & { tasks: RamAppEntry[] } }>(
       '/api/device/task-manager',
@@ -254,7 +244,7 @@ export const deviceStorageService = {
   },
 
   async launchApp(bundleId: string): Promise<{ allowed: boolean; reason?: string }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { allowed: boolean; reason?: string } }>(
       `/api/device/ram/launch/${bundleId}`,
@@ -264,25 +254,25 @@ export const deviceStorageService = {
   },
 
   async backgroundApp(bundleId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return;
     await apiRequest(`/api/device/ram/background/${bundleId}`, { method: 'POST', token });
   },
 
   async stopApp(bundleId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return;
     await apiRequest(`/api/device/ram/stop/${bundleId}`, { method: 'POST', token });
   },
 
   async forceStopApp(bundleId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/device/ram/force-stop/${bundleId}`, { method: 'POST', token });
   },
 
   async getLowStorageStatus(): Promise<LowStorageStatus> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: LowStorageStatus }>(
       '/api/device/low-storage',
@@ -292,7 +282,7 @@ export const deviceStorageService = {
   },
 
   async getTrash(): Promise<TrashInfo> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: TrashInfo }>(
       '/api/device/trash',
@@ -302,7 +292,7 @@ export const deviceStorageService = {
   },
 
   async emptyTrash(): Promise<DeviceStorageBreakdown> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { breakdown: DeviceStorageBreakdown } }>(
       '/api/device/trash/empty',

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useWidgetStore } from '@/stores/widgetStore';
 import { usePremiumExperienceStore } from '@/stores/premiumExperienceStore';
 import { WidgetContent } from '@/components/widgets/WidgetContent';
@@ -16,7 +17,8 @@ const DEFAULT_WIDGETS = [
 ];
 
 export function WidgetRenderer({ pageIndex }: WidgetRendererProps) {
-  const instances = useWidgetStore((s) => s.getInstancesForPage(pageIndex));
+  const allInstances = useWidgetStore((s) => s.instances);
+  const instances = useMemo(() => allInstances.filter((i) => i.pageIndex === pageIndex), [allInstances, pageIndex]);
   const profile = usePremiumExperienceStore((s) => s.profile);
 
   if (instances.length === 0 && pageIndex === 0) {

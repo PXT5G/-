@@ -3,6 +3,7 @@
 export const NOTIFICATION_PROVIDER_CHANNELS = [
   'socket',
   'event_bus',
+  'discord',
 ] as const;
 
 export type NotificationProviderChannel = (typeof NOTIFICATION_PROVIDER_CHANNELS)[number];
@@ -16,6 +17,12 @@ export interface NotificationDeliveryContext {
   body: string;
   priority: string;
   payload: Record<string, unknown>;
+  category?: string;
+  externalCharacterId?: string;
+  phoneId?: string;
+  icon?: string;
+  image?: string;
+  actions?: { id: string; label: string; destructive?: boolean }[];
 }
 
 export interface NotificationProvider {

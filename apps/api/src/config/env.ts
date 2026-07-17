@@ -17,6 +17,14 @@ const envSchema = z.object({
   SERVICE_AUTH_TOKEN: z.string().min(16).optional(),
   SERVICE_AUTH_TOKEN_PREVIOUS: z.string().min(16).optional(),
   TOKEN_ENCRYPTION_KEY: z.string().min(32).optional(),
+  PHONE_PRESENCE_ENFORCE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  DISCORD_NOTIFICATIONS_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
 });
 
 const parsed = envSchema.safeParse(process.env);

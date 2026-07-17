@@ -1,6 +1,7 @@
 'use client';
 
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 import type {
   StoreApp,
   StoreCategory,
@@ -13,43 +14,31 @@ import type {
   AppStorageInfo,
 } from '../types';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
-
 export const gulfStoreService = {
   async getFeatured(): Promise<StoreApp[]> {
     const res = await apiRequest<{ success: boolean; data: StoreApp[] }>('/api/store/featured', {
-      token: getToken(),
+      token: getAccessToken(),
     });
     return res.data ?? [];
   },
 
   async getTrending(): Promise<StoreApp[]> {
     const res = await apiRequest<{ success: boolean; data: StoreApp[] }>('/api/store/trending', {
-      token: getToken(),
+      token: getAccessToken(),
     });
     return res.data ?? [];
   },
 
   async getRecommended(): Promise<StoreApp[]> {
     const res = await apiRequest<{ success: boolean; data: StoreApp[] }>('/api/store/recommended', {
-      token: getToken(),
+      token: getAccessToken(),
     });
     return res.data ?? [];
   },
 
   async getEditorsChoice(): Promise<StoreApp[]> {
     const res = await apiRequest<{ success: boolean; data: StoreApp[] }>('/api/store/editors-choice', {
-      token: getToken(),
+      token: getAccessToken(),
     });
     return res.data ?? [];
   },
@@ -62,7 +51,7 @@ export const gulfStoreService = {
   async getByCategory(category: string): Promise<StoreApp[]> {
     const res = await apiRequest<{ success: boolean; data: StoreApp[] }>(
       `/api/store/categories/${category}`,
-      { token: getToken() }
+      { token: getAccessToken() }
     );
     return res.data ?? [];
   },
@@ -70,7 +59,7 @@ export const gulfStoreService = {
   async search(q: string, sort = 'relevance'): Promise<StoreApp[]> {
     const res = await apiRequest<{ success: boolean; data: StoreApp[] }>(
       `/api/store/search?q=${encodeURIComponent(q)}&sort=${sort}`,
-      { token: getToken() }
+      { token: getAccessToken() }
     );
     return res.data ?? [];
   },
@@ -78,7 +67,7 @@ export const gulfStoreService = {
   async getAppDetail(bundleId: string): Promise<StoreApp> {
     const res = await apiRequest<{ success: boolean; data: StoreApp }>(
       `/api/store/apps/${bundleId}`,
-      { token: getToken() }
+      { token: getAccessToken() }
     );
     return res.data!;
   },
@@ -87,7 +76,7 @@ export const gulfStoreService = {
     const qs = version ? `?version=${encodeURIComponent(version)}` : '';
     const res = await apiRequest<{ success: boolean; data: { manifest: PackageManifest; storageRequired: number } }>(
       `/api/store/apps/${bundleId}/manifest${qs}`,
-      { token: getToken() }
+      { token: getAccessToken() }
     );
     return res.data!;
   },
@@ -100,7 +89,7 @@ export const gulfStoreService = {
   },
 
   async postReview(bundleId: string, review: { rating: number; title: string; body: string }): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/apps/${bundleId}/reviews`, {
       method: 'POST',
@@ -110,7 +99,7 @@ export const gulfStoreService = {
   },
 
   async install(bundleId: string, approvedPermissions: string[]): Promise<{ downloadId: string }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { downloadId: string } }>(
       `/api/store/apps/${bundleId}/install`,
@@ -120,7 +109,7 @@ export const gulfStoreService = {
   },
 
   async completeInstall(downloadId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/downloads/${downloadId}/complete`, { method: 'POST', token });
   },
@@ -129,7 +118,7 @@ export const gulfStoreService = {
     bundleId: string,
     options: { keepUserData?: boolean; keepSettings?: boolean; keepSession?: boolean; keepData?: boolean } = {}
   ): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/apps/${bundleId}/uninstall`, {
       method: 'DELETE',
@@ -143,7 +132,7 @@ export const gulfStoreService = {
   },
 
   async update(bundleId: string, approvedPermissions: string[]): Promise<{ downloadId: string }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { downloadId: string } }>(
       `/api/store/apps/${bundleId}/update`,
@@ -153,37 +142,37 @@ export const gulfStoreService = {
   },
 
   async completeUpdate(downloadId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/downloads/${downloadId}/complete-update`, { method: 'POST', token });
   },
 
   async pauseDownload(downloadId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/downloads/${downloadId}/pause`, { method: 'POST', token });
   },
 
   async resumeDownload(downloadId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/downloads/${downloadId}/resume`, { method: 'POST', token });
   },
 
   async cancelDownload(downloadId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/downloads/${downloadId}/cancel`, { method: 'POST', token });
   },
 
   async retryDownload(downloadId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/store/downloads/${downloadId}/retry`, { method: 'POST', token });
   },
 
   async getDownloadQueue(): Promise<StoreDownload[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return [];
     const res = await apiRequest<{ success: boolean; data: StoreDownload[] }>(
       '/api/store/downloads/queue',
@@ -193,7 +182,7 @@ export const gulfStoreService = {
   },
 
   async getInstalled(): Promise<{ apps: InstalledStoreApp[]; registry: RegistryEntry[] }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return { apps: [], registry: [] };
     const res = await apiRequest<{ success: boolean; data: InstalledStoreApp[]; registry: RegistryEntry[] }>(
       '/api/store/installed',
@@ -203,7 +192,7 @@ export const gulfStoreService = {
   },
 
   async getRegistry(): Promise<RegistryEntry[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return [];
     const res = await apiRequest<{ success: boolean; data: RegistryEntry[] }>(
       '/api/store/registry',
@@ -213,7 +202,7 @@ export const gulfStoreService = {
   },
 
   async getAppStorage(bundleId: string): Promise<AppStorageInfo> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: AppStorageInfo }>(
       `/api/store/apps/${bundleId}/storage`,
@@ -223,7 +212,7 @@ export const gulfStoreService = {
   },
 
   async clearCache(bundleId: string): Promise<AppStorageInfo> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: AppStorageInfo }>(
       `/api/store/apps/${bundleId}/clear-cache`,
@@ -233,7 +222,7 @@ export const gulfStoreService = {
   },
 
   async clearData(bundleId: string): Promise<AppStorageInfo> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: AppStorageInfo }>(
       `/api/store/apps/${bundleId}/clear-data`,
@@ -243,7 +232,7 @@ export const gulfStoreService = {
   },
 
   async getChangelog(bundleId: string, from: string, to: string): Promise<string> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { changelog: string } }>(
       `/api/store/apps/${bundleId}/changelog?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
@@ -253,7 +242,7 @@ export const gulfStoreService = {
   },
 
   async getDownloads(): Promise<StoreDownload[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return [];
     const res = await apiRequest<{ success: boolean; data: StoreDownload[] }>(
       '/api/store/downloads',
@@ -263,7 +252,7 @@ export const gulfStoreService = {
   },
 
   async getUpdates(): Promise<InstalledStoreApp[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return [];
     const res = await apiRequest<{ success: boolean; data: InstalledStoreApp[] }>(
       '/api/store/updates',
@@ -273,7 +262,7 @@ export const gulfStoreService = {
   },
 
   async getSettings(): Promise<StoreSettings> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) return { autoUpdate: true, cellularDownloads: false, notifyUpdates: true };
     const res = await apiRequest<{ success: boolean; data: StoreSettings }>(
       '/api/store/settings',
@@ -283,7 +272,7 @@ export const gulfStoreService = {
   },
 
   async updateSettings(settings: Partial<StoreSettings>): Promise<StoreSettings> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: StoreSettings }>(
       '/api/store/settings',
@@ -293,7 +282,7 @@ export const gulfStoreService = {
   },
 
   async seedStore(): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     await apiRequest('/api/store/seed', { method: 'POST', token });
   },
 };

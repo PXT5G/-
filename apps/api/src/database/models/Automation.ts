@@ -42,6 +42,25 @@ export interface IAutomation extends Document {
   updatedAt: Date;
 }
 
+const automationTriggerSchema = new Schema(
+  {
+    triggerId: { type: String, required: true },
+    type: { type: String, required: true },
+    config: { type: Schema.Types.Mixed, default: {} },
+  },
+  { _id: false }
+);
+
+const automationActionSchema = new Schema(
+  {
+    actionId: { type: String, required: true },
+    type: { type: String, required: true },
+    config: { type: Schema.Types.Mixed, default: {} },
+    order: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
 const automationSchema = new Schema<IAutomation>(
   {
     automationId: { type: String, required: true, unique: true, index: true },
@@ -49,11 +68,7 @@ const automationSchema = new Schema<IAutomation>(
     name: { type: String, required: true },
     description: String,
     status: { type: String, required: true, default: 'draft', index: true },
-    triggers: [{
-      triggerId: String,
-      type: String,
-      config: Schema.Types.Mixed,
-    }],
+    triggers: { type: [automationTriggerSchema], default: [] },
     conditions: [{
       conditionId: String,
       field: String,
@@ -61,12 +76,7 @@ const automationSchema = new Schema<IAutomation>(
       value: Schema.Types.Mixed,
       logic: String,
     }],
-    actions: [{
-      actionId: String,
-      type: String,
-      config: Schema.Types.Mixed,
-      order: Number,
-    }],
+    actions: { type: [automationActionSchema], default: [] },
     variables: { type: Schema.Types.Mixed, default: {} },
     runCount: { type: Number, default: 0 },
     lastRunAt: Date,

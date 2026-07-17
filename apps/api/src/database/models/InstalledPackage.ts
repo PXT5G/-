@@ -2,6 +2,8 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IInstalledPackage extends Document {
   userId: Types.ObjectId;
+  phoneId?: string;
+  characterRecordId?: string;
   bundleId: string;
   packageId: string;
   version: string;
@@ -22,6 +24,8 @@ export interface IInstalledPackage extends Document {
 const installedPackageSchema = new Schema<IInstalledPackage>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    phoneId: { type: String, index: true },
+    characterRecordId: { type: String, index: true },
     bundleId: { type: String, required: true },
     packageId: { type: String, required: true },
     version: { type: String, required: true },

@@ -5,6 +5,8 @@ import { auditSchemaFields } from '../baseSchema';
 export interface ISimCard extends Document {
   simId: string;
   userId: Types.ObjectId;
+  phoneId?: string;
+  characterRecordId?: string;
   slot: SimSlot;
   carrier: string;
   phoneNumber: string;
@@ -33,6 +35,8 @@ const simCardSchema = new Schema<ISimCard>(
   {
     simId: { type: String, required: true, unique: true, index: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    phoneId: { type: String, index: true },
+    characterRecordId: { type: String, index: true },
     slot: { type: String, required: true, index: true },
     carrier: { type: String, required: true, default: 'Gulf Mobile' },
     phoneNumber: { type: String, required: true },
@@ -56,5 +60,6 @@ const simCardSchema = new Schema<ISimCard>(
 );
 
 simCardSchema.index({ userId: 1, slot: 1 });
+simCardSchema.index({ phoneId: 1, slot: 1 }, { sparse: true });
 
 export const SimCard = mongoose.model<ISimCard>('SimCard', simCardSchema);

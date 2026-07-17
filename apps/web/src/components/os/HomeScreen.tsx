@@ -67,6 +67,7 @@ export function HomeScreen() {
 
   return (
     <motion.div
+      data-testid="gulfos-home-screen"
       className="absolute inset-0 flex flex-col pt-14 pb-24"
       initial={shouldReduceMotion ? false : { scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
