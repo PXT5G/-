@@ -1,0 +1,277 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SF PRO — Apple system typography
+   ═══════════════════════════════════════════════════════════════════════════ */
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SF-Pro-Display-Light.woff2') format('woff2');
+  font-weight: 100 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SF-Pro-Display-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SF-Pro-Display-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SF-Pro-Display-Semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Pro Display';
+  src: url('/fonts/SF-Pro-Display-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'SF Pro Text';
+  src: url('/fonts/SF-Pro-Text-Semibold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   iOS 18 DESIGN TOKENS — Apple Human Interface Guidelines
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* GULFOS brand accent (replaces iOS system blue as tint) */
+  --color-gulf-gold: #D4AF37;
+  --color-gulf-black: #000000;
+  --color-gulf-white: #ffffff;
+
+  /* iOS system colors (dark appearance) */
+  --ios-blue: #0A84FF;
+  --ios-green: #30D158;
+  --ios-red: #FF453A;
+  --ios-orange: #FF9F0A;
+  --ios-yellow: #FFD60A;
+  --ios-teal: #64D2FF;
+  --ios-indigo: #5E5CE6;
+  --ios-pink: #FF375F;
+  --ios-purple: #BF5AF2;
+  --ios-gray: #8E8E93;
+  --ios-gray2: #636366;
+  --ios-gray3: #48484A;
+  --ios-gray4: #3A3A3C;
+  --ios-gray5: #2C2C2E;
+  --ios-gray6: #1C1C1E;
+
+  /* iOS label hierarchy (dark) */
+  --ios-label: #FFFFFF;
+  --ios-label-secondary: rgba(235, 235, 245, 0.6);
+  --ios-label-tertiary: rgba(235, 235, 245, 0.3);
+  --ios-label-quaternary: rgba(235, 235, 245, 0.16);
+
+  /* iOS backgrounds (dark) */
+  --ios-bg: #000000;
+  --ios-bg-secondary: #1C1C1E;
+  --ios-bg-tertiary: #2C2C2E;
+  --ios-bg-grouped: #000000;
+  --ios-bg-grouped-secondary: #1C1C1E;
+
+  /* iOS fills (dark) */
+  --ios-fill: rgba(120, 120, 128, 0.36);
+  --ios-fill-secondary: rgba(120, 120, 128, 0.32);
+  --ios-fill-tertiary: rgba(118, 118, 128, 0.24);
+  --ios-fill-quaternary: rgba(116, 116, 128, 0.18);
+
+  /* iOS separators */
+  --ios-separator: rgba(84, 84, 88, 0.6);
+  --ios-separator-opaque: #38383A;
+
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-gulf-gold: #D4AF37;
+  --color-gulf-black: #000000;
+  --color-gulf-white: #ffffff;
+
+  /* iOS palette exposed as Tailwind utilities: bg-ios-blue, text-ios-label etc. */
+  --color-ios-blue: #0A84FF;
+  --color-ios-green: #30D158;
+  --color-ios-red: #FF453A;
+  --color-ios-orange: #FF9F0A;
+  --color-ios-yellow: #FFD60A;
+  --color-ios-teal: #64D2FF;
+  --color-ios-indigo: #5E5CE6;
+  --color-ios-pink: #FF375F;
+  --color-ios-purple: #BF5AF2;
+  --color-ios-gray: #8E8E93;
+  --color-ios-gray2: #636366;
+  --color-ios-gray3: #48484A;
+  --color-ios-gray4: #3A3A3C;
+  --color-ios-gray5: #2C2C2E;
+  --color-ios-gray6: #1C1C1E;
+  --color-ios-label: #FFFFFF;
+  --color-ios-label-secondary: rgba(235, 235, 245, 0.6);
+  --color-ios-label-tertiary: rgba(235, 235, 245, 0.3);
+  --color-ios-fill: rgba(120, 120, 128, 0.36);
+  --color-ios-fill-secondary: rgba(120, 120, 128, 0.32);
+  --color-ios-fill-tertiary: rgba(118, 118, 128, 0.24);
+  --color-ios-separator: rgba(84, 84, 88, 0.6);
+
+  --font-sans: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
+  --font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif;
+}
+
+[data-theme="light"] {
+  --background: #F2F2F7;
+  --foreground: #000000;
+  --ios-label: #000000;
+  --ios-label-secondary: rgba(60, 60, 67, 0.6);
+  --ios-label-tertiary: rgba(60, 60, 67, 0.3);
+  --ios-bg: #FFFFFF;
+  --ios-bg-secondary: #F2F2F7;
+  --ios-bg-tertiary: #FFFFFF;
+  --ios-separator: rgba(60, 60, 67, 0.36);
+}
+
+[data-theme="dark"] {
+  --background: #000000;
+  --foreground: #ffffff;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1;
+}
+
+/* SF Pro Display for large text (Apple uses Display >= 20pt) */
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   iOS MATERIALS — vibrancy blur layers (HIG: ultraThin/thin/regular/thick)
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ios-material-ultrathin {
+  background: rgba(37, 37, 37, 0.45);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+.ios-material-thin {
+  background: rgba(37, 37, 37, 0.55);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+}
+.ios-material {
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+}
+.ios-material-thick {
+  background: rgba(24, 24, 24, 0.78);
+  backdrop-filter: blur(50px) saturate(180%);
+  -webkit-backdrop-filter: blur(50px) saturate(180%);
+  /* Full-screen sliding panels: promote to a compositor layer */
+  will-change: transform;
+}
+.ios-material-chrome {
+  background: rgba(18, 18, 18, 0.85);
+  backdrop-filter: blur(60px) saturate(200%);
+  -webkit-backdrop-filter: blur(60px) saturate(200%);
+}
+/* Light-tinted material for widgets / dock (iOS home screen style) */
+.ios-material-widget {
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(36px) saturate(160%);
+  -webkit-backdrop-filter: blur(36px) saturate(160%);
+}
+
+/* iOS-style continuous-corner shadow for cards */
+.ios-card-shadow {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* iOS large-title nav bar */
+.ios-large-title {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 41px;
+}
+
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WALLPAPERS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.wallpaper-gulf {
+  background:
+    radial-gradient(120% 90% at 80% -10%, #3d2f0e 0%, transparent 50%),
+    radial-gradient(120% 100% at 15% 110%, #14233f 0%, transparent 55%),
+    linear-gradient(160deg, #000000 0%, #0b0f1d 35%, #1a2340 62%, #2c2410 100%);
+  background-size: 200% 200%;
+  animation: wallpaper-shift 24s ease infinite;
+}
+
+@keyframes wallpaper-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wallpaper-gulf {
+    animation: none;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+input, textarea, select {
+  user-select: text;
+}

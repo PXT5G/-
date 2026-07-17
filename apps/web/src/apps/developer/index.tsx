@@ -1,0 +1,31 @@
+'use client';
+
+import { useDeveloperDashboard } from '@/hooks/usePhase55';
+import { cn } from '@/utils/cn';
+
+function Glass({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md', className)}>{children}</div>;
+}
+
+export function DeveloperApp() {
+  const { data, isLoading } = useDeveloperDashboard();
+  const dash = data as Record<string, unknown> | undefined;
+
+  return (
+    <div className="flex flex-col h-full bg-gradient-to-b from-[#0a1628] to-[#1a1a2e] text-white">
+      <header className="px-4 pt-4 pb-2">
+        <h1 className="text-xl font-bold text-gulf-gold">Developer Mode</h1>
+      </header>
+      <main className="flex-1 overflow-y-auto p-4">
+        {isLoading && <p className="text-center text-white/40">Loading...</p>}
+        {dash && (
+          <Glass className="p-4">
+            <p className="text-sm text-white/50 mb-2">Environment: {String(dash.environment)}</p>
+            <p className="text-sm mb-2">Background Tasks: {Array.isArray(dash.backgroundTasks) ? dash.backgroundTasks.length : 0}</p>
+            <pre className="text-[10px] text-white/50 overflow-auto max-h-96">{JSON.stringify(dash, null, 2)}</pre>
+          </Glass>
+        )}
+      </main>
+    </div>
+  );
+}

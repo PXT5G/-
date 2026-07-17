@@ -1,0 +1,44 @@
+{
+  "name": "@gulfos/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "demo": "playwright test e2e/gulfos-full-demo.spec.ts --config=playwright.config.ts",
+    "demo:audit": "playwright test e2e/gulfos-apps-audit.spec.ts --config=playwright.config.ts",
+    "demo:all": "playwright test e2e/gulfos-full-demo.spec.ts e2e/gulfos-apps-audit.spec.ts --config=playwright.config.ts",
+    "showcase": "playwright test e2e/gulfos-cinematic-showcase.spec.ts --config=playwright.showcase.config.ts",
+    "demo:ui": "playwright test e2e/gulfos-full-demo.spec.ts --config=playwright.config.ts --ui"
+  },
+  "dependencies": {
+    "@gulfos/shared": "*",
+    "@tanstack/react-query": "^5.101.2",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.42.2",
+    "next": "15.5.20",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "socket.io-client": "^4.8.3",
+    "tailwind-merge": "^3.6.0",
+    "uuid": "^14.0.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.52.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.20",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^4.1.9",
+    "zod": "^3.24.1"
+  }
+}
