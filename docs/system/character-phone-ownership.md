@@ -115,6 +115,10 @@ Every phone action must pass `assertPhoneAccess()` (which calls `verifyPhoneAcce
 
 See also: [Phone Presence Validation](./phone-presence-validation.md)
 
+## Related
+
+- [Discord Smart Notification Center V2](./discord-smart-notifications-v2.md)
+
 ## File Map
 
 ```

@@ -69,6 +69,7 @@ export function AppDetailScreen({ bundleId, onBack, onInstall, onUpdate, onDevel
       login(data.user, data.tokens);
       setAuthMode(null);
       success();
+      onInstall(bundleId);
     },
   });
 

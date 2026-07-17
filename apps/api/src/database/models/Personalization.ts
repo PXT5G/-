@@ -108,6 +108,14 @@ export interface ILockScreenProfile extends Document {
   updatedAt: Date;
 }
 
+const lockScreenWidgetSchema = new Schema(
+  {
+    type: { type: String, required: true },
+    position: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 const lockScreenProfileSchema = new Schema<ILockScreenProfile>({
   profileId: { type: String, required: true, unique: true, index: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -116,7 +124,7 @@ const lockScreenProfileSchema = new Schema<ILockScreenProfile>({
   clockFont: { type: String, default: 'default' },
   clockColor: { type: String, default: '#FFFFFF' },
   wallpaperPackId: String,
-  widgets: [{ type: String, position: String }],
+  widgets: { type: [lockScreenWidgetSchema], default: [] },
   showNotifications: { type: Boolean, default: true },
   showMusicPlayer: { type: Boolean, default: true },
   alwaysOnDisplay: { type: Boolean, default: false },

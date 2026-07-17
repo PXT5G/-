@@ -1,16 +1,8 @@
 import { apiRequest } from '@/utils/api';
-
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) return JSON.parse(raw)?.state?.tokens?.accessToken;
-  } catch { /* ignore */ }
-  return undefined;
-}
+import { getAccessToken } from '@/utils/authToken';
 
 async function api<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
-  const token = getToken();
+  const token = getAccessToken();
   if (!token) throw new Error('Authentication required');
   const res = await apiRequest<{ success: boolean; data: T }>(path, {
     method: options.method,

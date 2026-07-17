@@ -30,6 +30,16 @@ export interface IShortcut extends Document {
   updatedAt: Date;
 }
 
+const shortcutActionSchema = new Schema(
+  {
+    actionId: { type: String, required: true },
+    type: { type: String, required: true },
+    config: { type: Schema.Types.Mixed, default: {} },
+    order: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
 const shortcutSchema = new Schema<IShortcut>(
   {
     shortcutId: { type: String, required: true, unique: true, index: true },
@@ -39,12 +49,7 @@ const shortcutSchema = new Schema<IShortcut>(
     description: String,
     icon: String,
     color: String,
-    actions: [{
-      actionId: String,
-      type: String,
-      config: Schema.Types.Mixed,
-      order: Number,
-    }],
+    actions: { type: [shortcutActionSchema], default: [] },
     variables: { type: Schema.Types.Mixed, default: {} },
     isPinned: { type: Boolean, default: false },
     isFavorite: { type: Boolean, default: false },

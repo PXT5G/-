@@ -1,25 +1,15 @@
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 import type {
   ConversationSnapshot,
   MessageSnapshot,
   PresenceSnapshot,
 } from '@/types';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
 
 export const communicationService = {
   async initialize(): Promise<{ ready: boolean; userId: string }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { ready: boolean; userId: string } }>(
       '/api/communication/initialize',
@@ -29,7 +19,7 @@ export const communicationService = {
   },
 
   async getConversations(): Promise<ConversationSnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: ConversationSnapshot[] }>(
       '/api/communication/conversations',
@@ -39,7 +29,7 @@ export const communicationService = {
   },
 
   async getMessages(conversationId: string, before?: string): Promise<MessageSnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const qs = before ? `?before=${encodeURIComponent(before)}` : '';
     const res = await apiRequest<{ success: boolean; data: MessageSnapshot[] }>(
@@ -59,7 +49,7 @@ export const communicationService = {
     clientMessageId?: string;
     appId?: string;
   }): Promise<MessageSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: MessageSnapshot }>(
       '/api/communication/messages',
@@ -69,13 +59,13 @@ export const communicationService = {
   },
 
   async markConversationRead(conversationId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/communication/conversations/${conversationId}/read`, { method: 'POST', token });
   },
 
   async getPresence(userId?: string): Promise<PresenceSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const qs = userId ? `?userId=${encodeURIComponent(userId)}` : '';
     const res = await apiRequest<{ success: boolean; data: PresenceSnapshot }>(
@@ -86,7 +76,7 @@ export const communicationService = {
   },
 
   async search(q: string, type?: string): Promise<Array<Record<string, unknown>>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const qs = new URLSearchParams({ q });
     if (type) qs.set('type', type);
@@ -98,7 +88,7 @@ export const communicationService = {
   },
 
   async syncOffline(): Promise<{ synced: number }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { synced: number } }>(
       '/api/communication/sync',
@@ -108,7 +98,7 @@ export const communicationService = {
   },
 
   async getSyncStatus(): Promise<{ pending: number; failed: number; synced: number }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: { pending: number; failed: number; synced: number } }>(
       '/api/communication/sync/status',
@@ -118,7 +108,7 @@ export const communicationService = {
   },
 
   async startTyping(conversationId: string, recording = false): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/communication/conversations/${conversationId}/typing/start`, {
       method: 'POST',
@@ -128,7 +118,7 @@ export const communicationService = {
   },
 
   async stopTyping(conversationId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/communication/conversations/${conversationId}/typing/stop`, { method: 'POST', token });
   },

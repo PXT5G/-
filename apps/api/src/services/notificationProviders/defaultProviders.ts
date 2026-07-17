@@ -2,6 +2,7 @@ import type { NotificationProvider, NotificationDeliveryContext } from '../../co
 import { registerNotificationProvider } from '../notificationProviderRegistry';
 import { emitToUser } from '../socketService';
 import { publishEvent } from '../eventBusService';
+import { discordNotificationProvider } from '../discord/discordNotificationProvider';
 
 export const socketNotificationProvider: NotificationProvider = {
   id: 'socket',
@@ -30,4 +31,5 @@ export const eventBusNotificationProvider: NotificationProvider = {
 export function registerDefaultNotificationProviders(): void {
   registerNotificationProvider(socketNotificationProvider);
   registerNotificationProvider(eventBusNotificationProvider);
+  registerNotificationProvider(discordNotificationProvider);
 }

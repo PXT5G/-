@@ -1,4 +1,5 @@
 import { apiRequest } from '@/utils/api';
+import { getAccessToken } from '@/utils/authToken';
 import type {
   BatteryStateSnapshot,
   PerformanceStateSnapshot,
@@ -10,17 +11,6 @@ import type {
   GlobalSearchResult,
 } from '@/types';
 
-function getToken(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const raw = localStorage.getItem('gulfos_gulfos-auth');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return parsed?.state?.tokens?.accessToken;
-    }
-  } catch { /* ignore */ }
-  return undefined;
-}
 
 export interface PhoneOsConfigs {
   controlCenter: ControlCenterConfigSnapshot;
@@ -43,7 +33,7 @@ export interface PhoneDeviceInfo {
 
 export const phoneOsService = {
   async initialize(): Promise<PhoneDeviceInfo> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PhoneDeviceInfo }>(
       '/api/device/phone/initialize',
@@ -53,7 +43,7 @@ export const phoneOsService = {
   },
 
   async getInfo(): Promise<PhoneDeviceInfo> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PhoneDeviceInfo }>(
       '/api/device/phone/info',
@@ -63,7 +53,7 @@ export const phoneOsService = {
   },
 
   async powerAction(action: 'power_on' | 'power_off' | 'restart' | 'emergency_restart'): Promise<PhonePowerStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PhonePowerStateSnapshot }>(
       '/api/device/phone/power',
@@ -73,7 +63,7 @@ export const phoneOsService = {
   },
 
   async startCharging(chargingType: 'wired' | 'fast' | 'wireless' = 'wired'): Promise<BatteryStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: BatteryStateSnapshot }>(
       '/api/device/phone/charging/start',
@@ -83,7 +73,7 @@ export const phoneOsService = {
   },
 
   async stopCharging(): Promise<BatteryStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: BatteryStateSnapshot }>(
       '/api/device/phone/charging/stop',
@@ -93,7 +83,7 @@ export const phoneOsService = {
   },
 
   async getBattery(): Promise<BatteryStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: BatteryStateSnapshot }>(
       '/api/device/phone/battery',
@@ -103,7 +93,7 @@ export const phoneOsService = {
   },
 
   async getPerformance(): Promise<PerformanceStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PerformanceStateSnapshot }>(
       '/api/device/phone/performance',
@@ -115,7 +105,7 @@ export const phoneOsService = {
   async setPerformanceMode(
     mode: 'normal' | 'balanced' | 'performance' | 'power_saving' | 'ultra_power_saving'
   ): Promise<PerformanceStateSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PerformanceStateSnapshot }>(
       '/api/device/phone/performance/mode',
@@ -125,7 +115,7 @@ export const phoneOsService = {
   },
 
   async getDiagnostics(): Promise<Record<string, unknown>> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: Record<string, unknown> }>(
       '/api/device/phone/diagnostics',
@@ -135,7 +125,7 @@ export const phoneOsService = {
   },
 
   async getConfigs(): Promise<PhoneOsConfigs> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: PhoneOsConfigs }>(
       '/api/device/phone/configs',
@@ -145,7 +135,7 @@ export const phoneOsService = {
   },
 
   async getLiveActivities(): Promise<LiveActivitySnapshot[]> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: LiveActivitySnapshot[] }>(
       '/api/device/phone/live-activities',
@@ -163,7 +153,7 @@ export const phoneOsService = {
     appId: string;
     payload?: Record<string, unknown>;
   }): Promise<LiveActivitySnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: LiveActivitySnapshot }>(
       '/api/device/phone/live-activities',
@@ -176,7 +166,7 @@ export const phoneOsService = {
     activityId: string,
     updates: Partial<{ title: string; subtitle: string; progress: number; state: string }>
   ): Promise<LiveActivitySnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: LiveActivitySnapshot }>(
       `/api/device/phone/live-activities/${activityId}`,
@@ -186,7 +176,7 @@ export const phoneOsService = {
   },
 
   async endLiveActivity(activityId: string): Promise<LiveActivitySnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: LiveActivitySnapshot }>(
       `/api/device/phone/live-activities/${activityId}/end`,
@@ -201,7 +191,7 @@ export const phoneOsService = {
     total: number;
     categories: Record<string, number>;
   }> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const params = new URLSearchParams({ q });
     if (categories?.length) params.set('categories', categories.join(','));
@@ -213,13 +203,13 @@ export const phoneOsService = {
   },
 
   async freezeBackgroundApp(bundleId: string): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/device/phone/background/${bundleId}/freeze`, { method: 'POST', token });
   },
 
   async pinBackgroundApp(bundleId: string, pinned: boolean): Promise<void> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     await apiRequest(`/api/device/phone/background/${bundleId}/pin`, {
       method: 'POST',
@@ -229,7 +219,7 @@ export const phoneOsService = {
   },
 
   async updateLockScreen(updates: Partial<LockScreenConfigSnapshot>): Promise<LockScreenConfigSnapshot> {
-    const token = getToken();
+    const token = getAccessToken();
     if (!token) throw new Error('Authentication required');
     const res = await apiRequest<{ success: boolean; data: LockScreenConfigSnapshot }>(
       '/api/device/phone/configs/lock-screen',

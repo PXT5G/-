@@ -6,6 +6,7 @@ import { emitToUser } from './socketService';
 import { logAudit } from './auditService';
 import { checkPermission } from './permissionBrokerService';
 import { dispatchToNotificationProviders } from './notificationProviderRegistry';
+import type { DiscordNotificationCategory } from '../constants/discordNotifications';
 
 export interface BrokerNotificationInput {
   userId: string;
@@ -24,6 +25,9 @@ export interface BrokerNotificationInput {
   deepLink?: string;
   scheduledAt?: Date;
   actorId?: string;
+  category?: DiscordNotificationCategory | string;
+  externalCharacterId?: string;
+  phoneId?: string;
 }
 
 function formatNotification(notification: InstanceType<typeof Notification>) {
@@ -64,6 +68,9 @@ export async function enqueueNotification(input: BrokerNotificationInput) {
     actions: input.actions,
     deepLink: input.deepLink,
     scheduledAt: input.scheduledAt,
+    category: input.category,
+    externalCharacterId: input.externalCharacterId,
+    phoneId: input.phoneId,
     createdBy: input.actorId ? new Types.ObjectId(input.actorId) : undefined,
   });
 
@@ -115,6 +122,12 @@ export async function deliverNotification(queueId: string) {
     body: queued.body,
     priority: queued.priority,
     payload,
+    category: queued.category,
+    externalCharacterId: queued.externalCharacterId,
+    phoneId: queued.phoneId,
+    icon: queued.icon,
+    image: queued.image,
+    actions: queued.actions,
   });
 
   return formatted;
